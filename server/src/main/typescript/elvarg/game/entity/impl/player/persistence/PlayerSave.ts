@@ -546,7 +546,7 @@ export class PlayerSave {
         lookIndices.forEach((lookIndex, idx) => {
             const [min, max] = lookRanges[idx];
             const candidate = PlayerSave.toFiniteInt(raw[lookIndex], defaults[lookIndex]);
-            sanitized[lookIndex] = PlayerSave.clamp(candidate, min, max);
+            sanitized[lookIndex] = candidate; //PlayerSave.clamp(candidate, min, max);
         });
 
         const colorIndices = [
@@ -560,7 +560,7 @@ export class PlayerSave {
         colorIndices.forEach((colorIndex, idx) => {
             const [min, max] = PlayerSave.COLOR_RANGES[idx];
             const candidate = PlayerSave.toFiniteInt(raw[colorIndex], defaults[colorIndex]);
-            sanitized[colorIndex] = PlayerSave.clamp(candidate, min, max);
+            sanitized[colorIndex] = candidate; //PlayerSave.clamp(candidate, min, max);
         });
 
         sanitized[Appearance.GENDER] = gender;

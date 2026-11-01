@@ -141,6 +141,11 @@ function openMakeover({ player }) {
   return openMakeoverInterface(player);
 }
 
+function parseIntArg(value) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
 module.exports = {
   name: "MakeOverMage",
   _test: { canOpenMakeover, clickDesign },
@@ -166,6 +171,17 @@ module.exports = {
         return openMakeoverInterface(player);
       }, undefined, "Change your appearance");
     }
+
+    api.registerCommand("mmt", ({ player }) => {
+	  let looks = player.GetAppearance().getLook();
+      player.sendMessage(`Appearance: HEAD${looks[1]} CHEST${looks[2]}  ARMS${looks[3]}  HANDS${looks[4]}  LEGS${looks[5]}  FEET${looks[6]}  BEARD${looks[7]}`);
+    }, undefined, "Print your appearance");
+	
+    api.registerCommand("mms", ({ player, parts }) => {
+      let part = parseIntArg(parts[1]);
+      let num = parseIntArg(parts[2]);
+	  player.getAppearance().setLook( part, num );
+    }, undefined, "Specific change your appearance");
 
     api.onNpcInteraction("Makeover Mage", {
       "Talk-to": talkToMakeoverMage,

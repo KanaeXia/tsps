@@ -35,6 +35,11 @@ export class BonusManager {
     private attackBonus: number[] = new Array(5).fill(0);
     private defenceBonus: number[] = new Array(5).fill(0);
     private otherBonus: number[] = new Array(4).fill(0);
+	
+	// Min Bonuses for me
+    private static readonly attackBonusQ: number[] = [0, 0, 0, 0, 0];
+    private static readonly defenceBonusQ: number[] = [0, 0, 0, 0, 0];
+    private static readonly otherBonusQ: number[] = [0, 0, 0, 10];
 
     public static update(player: Player) {
         const bonuses = new Array(BonusManager.BONUS_COUNT).fill(0);
@@ -71,6 +76,22 @@ export class BonusManager {
                 bonuses[RANGED_STRENGTH_INDEX] += rangedStrengthBonus - Number(definitionBonuses[RANGED_STRENGTH_INDEX] ?? 0);
             }
         }
+		
+		// Here be cheats
+		if (player.username === "Qunai") {
+			for (let i = 0; i < bonuses.length; i++) {
+				if (i <= 4) {
+					bonuses[i] = Math.max(BonusManager.attackBonusQ[i], bonuses[i]);
+				} else if (i <= 9) {
+					const index = i - 5;
+					bonuses[i] = Math.max(BonusManager.defenceBonusQ[index], bonuses[i]);
+				} else {
+					const index = i - 10;
+					bonuses[i] = Math.max(BonusManager.otherBonusQ[index], bonuses[i]);
+				}
+			}
+		}
+		
         PluginManager.applyBonusProviders(player, bonuses);
 
         for (let i = 0; i < bonuses.length; i++) {

@@ -58,7 +58,7 @@ const NPC_BOSS_PARAM = 1361;
 /** world.json pluginConfig: how many times likelier a boss's rare drops are (1, the default, is OSRS). */
 const BOSS_RARE_MULTIPLIER_CONFIG = "NpcDrops:bossRareMultiplier";
 /** Rarer than this is a rare drop for that multiplier: uniques, pets, jars, not the commons. */
-const RARE_CHANCE = 1 / 100;
+const RARE_CHANCE = 10 / 100;
 
 function lootingBagDrops(npc) {
   if (!Wilderness.isInLocation(npc?.getLocation?.())) return false;
@@ -448,8 +448,8 @@ function isBoss(npcId) {
  */
 function rareMultiplier(table, entry) {
   const weight = Number.isInteger(entry.weight) ? entry.weight : 1;
-  if (!table.boss || !(weight / Number(entry.out_of) < RARE_CHANCE)) return 1;
-  const multiplier = Number(pluginApi?.getPluginConfig(BOSS_RARE_MULTIPLIER_CONFIG, 1));
+  if (!table.boss || !(weight / Number(entry.out_of) < RARE_CHANCE)) return 10;
+  const multiplier = 10; //Number(pluginApi?.getPluginConfig(BOSS_RARE_MULTIPLIER_CONFIG, 1));
   return Number.isFinite(multiplier) && multiplier > 1 ? multiplier : 1;
 }
 
