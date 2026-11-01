@@ -1477,6 +1477,7 @@ export interface PluginCoreApi {
   Skill: any;
   Item: any;
   Flag: any;
+  Appearance: any;
   Direction: any;
   Equipment: any;
   Bank: any;
@@ -1529,6 +1530,8 @@ export interface PluginCoreApi {
   LocModelType: any;
   MapObjects: any;
   ItemOnGroundManager: any;
+  ItemOnGround: any;
+  GroundItemState: any;
   ItemDefinition: any;
   EquipPacketListener: any;
   /** The death task; `getItemsToKeep(player)` is what a death would let the player keep. */

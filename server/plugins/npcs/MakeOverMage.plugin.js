@@ -146,6 +146,11 @@ function parseIntArg(value) {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
+/** The makeover interface's "Body types" category (plugins/npcs/Makeover.plugin.js). */
+function openFromMakeover({ player }) {
+  openMakeoverInterface(player);
+}
+
 module.exports = {
   name: "MakeOverMage",
   _test: { canOpenMakeover, clickDesign },
@@ -187,6 +192,8 @@ module.exports = {
       "Talk-to": talkToMakeoverMage,
       Makeover: openMakeover,
     });
+
+    api.onCustomEvent("makeover-mage:open", openFromMakeover);
 
     api.log("registered", {
       interfaceId: MAKEOVER_INTERFACE_ID,
