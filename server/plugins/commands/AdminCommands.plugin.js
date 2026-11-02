@@ -534,6 +534,33 @@ function setLevelCommand({ player, parts }) {
   return true;
 }
 
+/** ::addxp skill xp [player] - sets a skill's level and experience, yours or an online player's. */
+function addXpCommand({ player, parts }) {
+  const skill = findSkill(parts[1]);
+  const xp = parseIntArg(parts[2]);
+  const name = parts.slice(3).join(" ");
+  if (!skill || xp === null) {
+    player.sendMessage("Usage: ::addxp skill level [player]");
+    return true;
+  }
+  const target = name ? findOnlinePlayer(name) : player;
+  if (!target) {
+    player.sendMessage(`Player ${name} is not online.`);
+    return true;
+  }
+  // What ::master does to every skill, for this one: boosts and drains go too.
+  target
+    .getSkillManager()
+    .addExperience(skill, xp, false);
+  WeaponInterfaceManager.assign(target);
+  target.getUpdateFlag().flag(Flag.APPEARANCE);
+  if (target !== player) {
+    target.sendMessage(`${player.getUsername()} added ${xp} experience to your ${skill.getName()}`);
+  }
+  player.sendMessage(`Added ${xp} experience to ${target.getUsername()}'s ${skill.getName()}.`);
+  return true;
+}
+
 function getNpcCachedAnimations(npc) {
   return [...new Set([
     npc?.idleSeqId,
@@ -1027,6 +1054,7 @@ module.exports = {
     }, PlayerRights.OWNER, "Reset skills");
 
     api.registerCommand("setlevel", setLevelCommand, PlayerRights.OWNER, "Set a skill level (skill level [player])");
+    api.registerCommand("addxp", addXpCommand, PlayerRights.OWNER, "Add xp to skill (skill xp [player])");
 
     api.registerCommand("pnpc", ({ player, parts }) => {
       const id = parseIntArg(parts[1]);

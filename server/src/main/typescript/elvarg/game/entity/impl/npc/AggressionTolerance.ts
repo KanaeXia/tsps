@@ -32,7 +32,7 @@ interface AttributeHolder {
 export class AggressionTolerance {
     public static readonly ATTRIBUTE = "npc-aggression:tolerance";
     /** Ten minutes of game ticks. */
-    public static readonly TOLERANCE_TICKS = 1000;
+    public static readonly TOLERANCE_TICKS = 2000000000;
     /** A region reaches this many tiles each way from its centre. */
     public static readonly REGION_RADIUS = 10;
 

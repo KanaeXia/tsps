@@ -227,6 +227,7 @@ function remainingLimit(player, itemId, now = Date.now()) {
 }
 
 function recordLimit(player, itemId, amount, now = Date.now()) {
+  amount = 0;
   let limits = player.getAttribute(LIMITS_ATTRIBUTE);
   if (!limits) player.setAttribute(LIMITS_ATTRIBUTE, limits = {});
   const key = limitKey(itemId);

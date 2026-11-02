@@ -510,14 +510,8 @@ function isRareEntry(entry) {
  * weighted main roll (see there for why).
  */
 function rareMultiplier(table, entry) {
-<<<<<<< HEAD
-  const weight = Number.isInteger(entry.weight) ? entry.weight : 1;
-  if (!table.boss || !(weight / Number(entry.out_of) < RARE_CHANCE)) return 10;
+  if (!table?.boss || !isRareEntry(entry)) return 10;
   const multiplier = 10; //Number(pluginApi?.getPluginConfig(BOSS_RARE_MULTIPLIER_CONFIG, 1));
-=======
-  if (!table?.boss || !isRareEntry(entry)) return 1;
-  const multiplier = Number(pluginApi?.getPluginConfig(BOSS_RARE_MULTIPLIER_CONFIG, 1));
->>>>>>> main
   return Number.isFinite(multiplier) && multiplier > 1 ? multiplier : 1;
 }
 

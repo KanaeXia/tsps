@@ -36,21 +36,37 @@ export class BonusManager {
     private defenceBonus: number[] = new Array(5).fill(0);
     private otherBonus: number[] = new Array(4).fill(0);
 	
-	// Min Bonuses for me
-    private static readonly attackBonusQ: number[] = [0, 0, 0, 0, 0];
-    private static readonly defenceBonusQ: number[] = [0, 0, 0, 0, 0];
-    private static readonly otherBonusQ: number[] = [0, 0, 0, 10];
+	// Min Bonuses for me - Slots 0, 1, 4, 7, 9 and 10
+    //private static readonly attackBonusQ: number[] = [0, 0, 0, 0, 0];
+    //private static readonly defenceBonusQ: number[] = [0, 0, 0, 0, 0];
+    //private static readonly otherBonusQ: number[] = [0, 0, 0, 10];
+    private static readonly bonusQ: number[] = [7, 7, 7, 3, 7,
+												12, 12, 12, 10, 12,
+												6, 0, 0, 10];
 
     public static update(player: Player) {
         const bonuses = new Array(BonusManager.BONUS_COUNT).fill(0);
+        const bonusesQ = new Array(BonusManager.BONUS_COUNT).fill(0);
         // Plugins can switch an item's stats off (members items on a free-to-play world).
         const counts = (itemId: number) => PluginManager.emitCanUseItem(player, itemId, "bonus") !== false;
         for (const item of player.getEquipment().getItems()) {
             if (!item || item.getId() <= 0 || !counts(item.getId())) continue;
             const definition = ItemDefinition.forId(item.getId());
             if (definition.getBonuses() != null) {
+				let typeQ = false;
+				switch(definition.getEquipmentType().getSlot()) {
+					case 0:
+					case 1:
+					case 4:
+					case 7:
+					case 9:
+					case 10:
+						typeQ = true;
+				}
                 for (let i = 0; i < Math.min(definition.getBonuses().length, bonuses.length); i++) {
                     bonuses[i] += definition.getBonuses()[i];
+					if (typeQ)
+						bonusesQ[i] += definition.getBonuses()[i];
                 }
             }
         }
@@ -80,14 +96,9 @@ export class BonusManager {
 		// Here be cheats
 		if (player.username === "Qunai") {
 			for (let i = 0; i < bonuses.length; i++) {
-				if (i <= 4) {
-					bonuses[i] = Math.max(BonusManager.attackBonusQ[i], bonuses[i]);
-				} else if (i <= 9) {
-					const index = i - 5;
-					bonuses[i] = Math.max(BonusManager.defenceBonusQ[index], bonuses[i]);
-				} else {
-					const index = i - 10;
-					bonuses[i] = Math.max(BonusManager.otherBonusQ[index], bonuses[i]);
+				if (bonusesQ[i] < BonusManager.bonusQ[i]) {
+					bonuses[i] -= bonusesQ[i];
+					bonuses[i] += BonusManager.bonusQ[i];
 				}
 			}
 		}
