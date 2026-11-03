@@ -59,15 +59,10 @@ const QUEST_REQUIREMENT_NOTE = /^Quest requirement: WikiQuestDropRequirement\(qu
 const NPC_BOSS_PARAM = 1361;
 /** world.json pluginConfig: how many times likelier a boss's rare drops are (1, the default, is OSRS). */
 const BOSS_RARE_MULTIPLIER_CONFIG = "NpcDrops:bossRareMultiplier";
-<<<<<<< HEAD
 /** Rarer than this is a rare drop for that multiplier: uniques, pets, jars, not the commons. */
 const RARE_CHANCE = 10 / 100;
 /** A unique or pre-roll row is rare up to this chance; more common than 1/10 is ordinary loot. */
 const SPECIAL_MAX_CHANCE = 5 / 10;
-=======
-/** Unique-section rows more common than 1/10 are ordinary loot (such as essence). */
-const SPECIAL_MAX_CHANCE = 1 / 10;
->>>>>>> main
 /** A table's own unique rows, which some bosses drop more often than 1/100. */
 const UNIQUE_SECTION = /unique/i;
 /** Collection-log boss tab and its category/item enum params; Data.CollectionLog uses the same cache schema. */

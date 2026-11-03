@@ -231,6 +231,7 @@ function previewStyle({ player, slot }) {
   const index = Math.floor(Number(slot) / COMPONENTS_PER_STYLE);
   if (!state || !Number.isInteger(index) || index < 0 || index >= state.kits.length || state.kits[index] < 0) return false;
   player.getAppearance().setLook(category(state.type).slot, state.kits[index]);
+  player.sendMessage( `slot: ${category(state.type).slot} look: ${state.kits[index]}` );
   player.getPacketSender().sendConfig(ids().styleVarp, index);
   return true;
 }

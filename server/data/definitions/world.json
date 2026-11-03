@@ -7,6 +7,9 @@
     "y": 3222,
     "z": 0
   },
+  "pluginConfig": {
+    "SkillLevelUp:interruptActions": false
+  },
   "zones": [
     { "_description": "Global zone", "tags": ["blast-furnace"] },
     { "minX": 3324, "maxX": 3392, "minY": 3201, "maxY": 3266, "z": 0, "tags": ["duel"] },
