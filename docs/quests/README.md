@@ -5,7 +5,7 @@ Every quest the server registers, with the latest result recorded in its page he
 test a quest is in [server/docs/agents/quest-testing.md](../../server/docs/agents/quest-testing.md);
 how to record the result is in [_template/README.md](_template/README.md).
 
-191 quests · ✅ passed: 29 · ⚠️ passed with issues: 17 · 🔄 in progress: 8 · ❌ failed: 1 · 🔁 needs recheck: 16 · untested: 120
+191 quests · ✅ passed: 27 · ⚠️ passed with issues: 19 · 🔄 in progress: 8 · ❌ failed: 1 · 🔁 needs recheck: 17 · untested: 119
 
 "Needs recheck" means the quest's plugin has changed since the commit its result was proven on.
 
@@ -54,7 +54,7 @@ how to record the result is in [_template/README.md](_template/README.md).
 | Dragon Slayer II | untested |  |  |  |  |
 | Dream Mentor | untested |  |  |  |  |
 | [Druidic Ritual](druidic-ritual/README.md) | ✅ passed | 2026-10-22 | agent |  |  |
-| [Dwarf Cannon](dwarf-cannon/README.md) | 🔁 needs recheck | 2026-10-30 | agent | claude-haiku-5-5 | 3 |
+| [Dwarf Cannon](dwarf-cannon/README.md) | ⚠️ passed with issues | 2026-11-03 | agent | claude-opus-5-5 | 6 |
 | [Eadgar's Ruse](eadgars-ruse/README.md) | untested |  |  |  |  |
 | Eagles' Peak | untested |  |  |  |  |
 | [Elemental Workshop I](elemental-workshop-i/README.md) | ✅ passed | 2026-10-23 | agent |  |  |
@@ -62,7 +62,7 @@ how to record the result is in [_template/README.md](_template/README.md).
 | [Enakhra's Lament](enakhras-lament/README.md) | untested |  |  |  |  |
 | Enlightened Journey | untested |  |  |  |  |
 | Enter the Abyss | untested |  |  |  |  |
-| [Ernest the Chicken](ernest-the-chicken/README.md) | ✅ passed | 2026-10-25 | community |  |  |
+| [Ernest the Chicken](ernest-the-chicken/README.md) | ⚠️ passed with issues | 2026-11-02 | agent | DeepSeek V4.1 Flash | 1 |
 | [Ethically Acquired Antiquities](ethically-acquired-antiquities/README.md) | untested |  |  |  |  |
 | Fairytale I - Growing Pains | untested |  |  |  |  |
 | [Fairytale II - Cure a Queen](fairytale-ii-cure-a-queen/README.md) | untested |  |  |  |  |
@@ -81,7 +81,7 @@ how to record the result is in [_template/README.md](_template/README.md).
 | [Hazeel Cult](hazeel-cult/README.md) | ✅ passed | 2026-10-23 | agent |  |  |
 | Heroes' Quest | untested |  |  |  |  |
 | [His Faithful Servants](his-faithful-servants/README.md) | untested |  |  |  |  |
-| Holy Grail | untested |  |  |  |  |
+| [Holy Grail](holy-grail/README.md) | 🔁 needs recheck | 2026-11-02 | agent | claude-opus-5-5 | 5 |
 | [Horror from the Deep](horror-from-the-deep/README.md) | 🔄 in progress |  | agent |  |  |
 | Icthlarin's Little Helper | untested |  |  |  |  |
 | Imp Catcher | untested |  |  |  |  |
@@ -138,8 +138,8 @@ how to record the result is in [_template/README.md](_template/README.md).
 | Shadow of the Storm | untested |  |  |  |  |
 | Shadows of Custodia | untested |  |  |  |  |
 | [Sheep Herder](sheep-herder/README.md) | untested |  |  |  |  |
-| [Sheep Shearer](sheep-shearer/README.md) | ⚠️ passed with issues | 2026-10-29 | agent | grok-4.7 | 1 |
-| [Shield of Arrav](shield-of-arrav/README.md) | ⚠️ passed with issues | 2026-10-25 | community |  | 1 |
+| [Sheep Shearer](sheep-shearer/README.md) | ⚠️ passed with issues | 2026-11-03 | agent | claude-opus-5-5 | 4 |
+| [Shield of Arrav](shield-of-arrav/README.md) | ⚠️ passed with issues | 2026-11-03 | agent | claude-opus-5-5 | 7 |
 | Shilo Village | untested |  |  |  |  |
 | [Sins of the Father](sins-of-the-father/README.md) | untested |  |  |  |  |
 | [Skippy and the Mogres](skippy-and-the-mogres/README.md) | ✅ passed | 2026-10-31 | agent | deepseek-v4.1-flash | 1 |
@@ -172,7 +172,7 @@ how to record the result is in [_template/README.md](_template/README.md).
 | [The Great Brain Robbery](great-brain-robbery/README.md) | untested |  |  |  |  |
 | [The Hand in the Sand](hand-in-the-sand/README.md) | untested |  |  |  |  |
 | [The Heart of Darkness](the-heart-of-darkness/README.md) | untested |  |  |  |  |
-| [The Ides of Milk](the-ides-of-milk/README.md) | ✅ passed | 2026-10-25 | community |  |  |
+| [The Ides of Milk](the-ides-of-milk/README.md) | ✅ passed | 2026-11-02 | agent | DeepSeek V4.1 Flash |  |
 | [The Knight's Sword](the-knights-sword/README.md) | ⚠️ passed with issues | 2026-10-30 | agent | claude-haiku-5-5 | 6 |
 | The Lost Tribe | untested |  |  |  |  |
 | [The Path of Glouphrie](the-path-of-glouphrie/README.md) | untested |  |  |  |  |
@@ -184,7 +184,7 @@ how to record the result is in [_template/README.md](_template/README.md).
 | [The Tourist Trap](the-tourist-trap/README.md) | untested |  |  |  |  |
 | Throne of Miscellania | untested |  |  |  |  |
 | [Tower of Life](tower-of-life/README.md) | untested |  |  |  |  |
-| [Tree Gnome Village](tree-gnome-village/README.md) | ✅ passed | 2026-10-29 | agent | grok-4.7 | 1 |
+| [Tree Gnome Village](tree-gnome-village/README.md) | 🔁 needs recheck | 2026-10-29 | agent | grok-4.7 | 1 |
 | [Tribal Totem](tribal-totem/README.md) | ✅ passed | 2026-10-25 | agent |  | 1 |
 | Troll Romance | untested |  |  |  |  |
 | [Troll Stronghold](troll-stronghold/README.md) | untested |  |  |  |  |
@@ -192,7 +192,7 @@ how to record the result is in [_template/README.md](_template/README.md).
 | [Twilight's Promise](twilights-promise/README.md) | untested |  |  |  |  |
 | Underground Pass | untested |  |  |  |  |
 | Vale Totems | untested |  |  |  |  |
-| [Vampyre Slayer](vampyre-slayer/README.md) | ⚠️ passed with issues | 2026-10-25 | community |  | 1 |
+| [Vampyre Slayer](vampyre-slayer/README.md) | ⚠️ passed with issues | 2026-11-03 | agent | claude-opus-5-5 | 3 |
 | [Wanted!](wanted/README.md) | untested |  |  |  |  |
 | Watchtower | untested |  |  |  |  |
 | [Waterfall Quest](waterfall-quest/README.md) | 🔁 needs recheck | 2026-10-29 | agent | grok-4.7 | 3 |

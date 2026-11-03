@@ -202,6 +202,7 @@ import type { SkeletalSeqLoader } from "../rs/model/skeletal/SkeletalSeqLoader";
 import { SkillId } from "../rs/skill/skills";
 import { TextureLoader } from "../rs/texture/TextureLoader";
 import { faceAngleRs } from "../rs/utils/rotation";
+import { npcAddedRotation } from "./utils/rotation";
 import { getOsrsInterfaceScalingPercent, setOsrsInterfaceScalingPercent } from "../ui/UiScale";
 import {
     DEVICE_OPTION_SCREEN_BRIGHTNESS,
@@ -1826,6 +1827,9 @@ export class OsrsClient {
             onScriptFinished: (scriptId: number) => {
                 applyWildernessHudLayout(self.widgetManager, self.varManager, scriptId);
                 self.clientPlugins.onScriptFinished(scriptId);
+            },
+            onScriptPre: (scriptId: number) => {
+                self.clientPlugins.onScriptPreFired(scriptId);
             },
             clientRevision: 235,
             // Canvas dimensions as defined by the renderer's current UI layout space.
@@ -7656,6 +7660,10 @@ export class OsrsClient {
                 },
                 { forceImmediateRotation: !!spawn.teleport },
             );
+            // Like a new one, a re-added NPC that never turns is drawn at angle 0 again.
+            if ((this.npcEcs.getRotationSpeed(existingEcs) | 0) === 0) {
+                this.npcEcs.setRotation(existingEcs, 0);
+            }
             this.npcEcs.setLevel(existingEcs, spawn.level | 0);
             this.npcEcs.setOccTile(existingEcs, localTileX, localTileY, spawn.level | 0);
             const nextWorldView = (spawn as any).worldViewId ?? -1;
@@ -7693,6 +7701,8 @@ export class OsrsClient {
         const size = Math.max(1, npcType?.size | 0);
         // A turn speed of 0 never turns (the Inferno's Ancestral Glyph slides side to side).
         const rotSpeed = Math.max(0, npcType?.rotationSpeed | 0);
+        // Such an NPC is drawn at angle 0 (Sir Tiffy's bench is part of his model, built for it).
+        const drawnRot = npcAddedRotation(rotSpeed, spawn.rot | 0);
         const localX = (localTileX * 128 + size * 64) | 0;
         const localY = (localTileY * 128 + size * 64) | 0;
 
@@ -7704,7 +7714,7 @@ export class OsrsClient {
             localX,
             localY,
             spawn.level | 0,
-            spawn.rot | 0,
+            drawnRot,
             localTileX,
             localTileY,
             rotSpeed,
@@ -7715,7 +7725,7 @@ export class OsrsClient {
             this.worldViewManager.addNpcToWorldView((spawn as any).worldViewId, ecsId);
         }
         this.npcEcs.setTargetRot(ecsId, spawn.rot | 0);
-        this.npcEcs.setRotation(ecsId, spawn.rot | 0);
+        this.npcEcs.setRotation(ecsId, drawnRot);
         this.npcEcs.setOccTile(ecsId, localTileX, localTileY, spawn.level | 0);
 
         // Actor world coords include size-based center offset (size * 64).
@@ -8498,9 +8508,10 @@ export class OsrsClient {
             console.warn("[OsrsClient] Renderer clearMaps error:", err);
         }
 
-        // Clear projectiles
+        // Clear projectiles. Through the getter: the WebGPU renderer keeps its manager elsewhere,
+        // and one left holding the old client clock froze every projectile after a relog (#1862).
         try {
-            (this.renderer as any)?.projectileManager?.clear?.();
+            this.renderer?.getProjectileManager()?.clear();
         } catch (err) {
             console.warn("[OsrsClient] ProjectileManager clear error:", err);
         }
