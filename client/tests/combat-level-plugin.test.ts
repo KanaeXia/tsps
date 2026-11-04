@@ -191,7 +191,7 @@ test("next-level tooltip follows the combat label, hides for menus and clips to 
     await plugin.stop();
 });
 
-test("next-level tooltip hides at 126 and returns at 125, including prayer 98", async () => {
+test("next-level tooltip hides at 191 (every combat skill 150) and shows at 126, including prayer 149", async () => {
     const widget: any = { uid: (593 << 16) | 4, text: "Combat Lvl: 126", width: 120, height: 20, _absX: 20, _absY: 30, _absWidth: 120, _absHeight: 20 };
     const client: any = {
         widgetManager: { getWidgetByUid: (uid: number) => uid === widget.uid ? widget : undefined, invalidateWidgetRender: () => {}, isEffectivelyHidden: () => false },
@@ -205,16 +205,16 @@ test("next-level tooltip hides at 126 and returns at 125, including prayer 98", 
         const levels = [values.attack, values.defence, values.strength, values.hitpoints, values.ranged, values.prayer, values.magic];
         ordered.forEach((skill, i) => plugin.onStatChanged(new StatChanged(skill, 0, levels[i], levels[i])));
     };
-    const max = { attack: 99, defence: 99, strength: 99, hitpoints: 99, ranged: 99, prayer: 99, magic: 99 };
+    const max = { attack: 150, defence: 150, strength: 150, hitpoints: 150, ranged: 150, prayer: 150, magic: 150 };
     update(max);
-    assert.equal(plugin.getCombatLevel(max), 126);
-    assert.equal(plugin.widgetOverlay.signature(), "", "all 99s have no attainable next combat level");
-    update({ ...max, prayer: 98 });
-    assert.equal(plugin.getCombatLevel({ ...max, prayer: 98 }), 126, "Prayer 98 still reaches combat 126");
-    assert.equal(plugin.widgetOverlay.signature(), "", "Prayer 98 does not show an impossible next-level tooltip");
-    const level125 = { ...max, defence: 98 };
-    update(level125);
-    assert.equal(plugin.getCombatLevel(level125), 125);
-    assert.notEqual(plugin.widgetOverlay.signature(), "", "a level 125 account still has a next-level tooltip");
+    assert.equal(plugin.getCombatLevel(max), 191);
+    assert.equal(plugin.widgetOverlay.signature(), "", "all 150s have no attainable next combat level");
+    update({ ...max, prayer: 149 });
+    assert.equal(plugin.getCombatLevel({ ...max, prayer: 149 }), 191, "Prayer 149 still reaches combat 191");
+    assert.equal(plugin.widgetOverlay.signature(), "", "Prayer 149 does not show an impossible next-level tooltip");
+    const all99 = { attack: 99, defence: 99, strength: 99, hitpoints: 99, ranged: 99, prayer: 99, magic: 99 };
+    update(all99);
+    assert.equal(plugin.getCombatLevel(all99), 126);
+    assert.notEqual(plugin.widgetOverlay.signature(), "", "combat 126 is no longer the top, so it has a next-level tooltip");
     await plugin.stop();
 });

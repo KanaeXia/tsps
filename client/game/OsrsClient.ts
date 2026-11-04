@@ -3444,12 +3444,14 @@ export class OsrsClient {
                 const range = 0.325 * Math.floor(ranged * 1.5);
                 const mage = 0.325 * Math.floor(magic * 1.5);
                 const combatLevel = Math.floor(base + Math.max(melee, range, mage));
-                const clampedCombat = clamp(combatLevel, 3, 126);
+                // No upper cap: levels go to 150, so the combat level reaches 191.
+                const clampedCombat = Math.max(3, combatLevel);
                 ClientState.localPlayerCombatLevel = clampedCombat;
                 // Set varcint for CS2 scripts (account_summary_update_combatlevel uses this)
                 this.varManager?.setVarcInt(VARC_COMBAT_LEVEL, clampedCombat);
-                // Set varbit for combat styles tab (combat_interface_setup uses this)
-                this.varManager?.setVarbit(VARBIT_COMBATLEVEL_TRANSMIT, clampedCombat);
+                // Set varbit for combat styles tab (combat_interface_setup uses this). Its 7 bits
+                // stop at 127, so the whole value is kept client-side for the script to read.
+                this.varManager?.setWideVarbit(VARBIT_COMBATLEVEL_TRANSMIT, clampedCombat);
             });
         } catch {}
         // Subscribe to run energy updates to sync varp 173 (option_run) and run energy percent

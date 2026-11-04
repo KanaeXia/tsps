@@ -302,7 +302,7 @@ export class SkillManager {
      * own declared stats.
      *
      * @param levels Base levels by skill index.
-     * @return The combat level, clamped to the 3-126 range a player can have.
+     * @return The combat level, at least 3 and uncapped above: 126 at 99s, 191 at 150s.
      */
     public static calculateCombatLevel(levels: number[]): number {
         const attack = levels[Skill.ATTACK.getIndex()];
@@ -316,7 +316,7 @@ export class SkillManager {
         const melee = (attack + strength) * 0.325;
         const ranger = Math.floor(ranged * 1.5) * 0.325;
         const mage = Math.floor(magic * 1.5) * 0.325;
-        return Math.min(126, Math.max(3, Math.floor(base + Math.max(melee, ranger, mage))));
+        return Math.max(3, Math.floor(base + Math.max(melee, ranger, mage)));
     }
 
     private applyMinimumSkill(skill: Skill, minLevel: number, minExperience?: number): boolean {

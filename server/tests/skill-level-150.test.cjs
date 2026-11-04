@@ -43,16 +43,20 @@ test("experience gained past 99 levels up to 150 and caps at 2,147,483,647", () 
   assert.equal(skills.getExperience(Skill.COOKING), 2147483647);
 });
 
-test("the combat level stays within 3-126 with levels above 99", () => {
-  assert.equal(SkillManager.calculateCombatLevel(Array(24).fill(150)), 126);
+test("the combat level is uncapped: 126 at 99s, 191 at 150s", () => {
+  assert.equal(SkillManager.calculateCombatLevel(Array(24).fill(99)), 126);
+  assert.equal(SkillManager.calculateCombatLevel(Array(24).fill(150)), 191);
+  const melee = Array(24).fill(99);
+  melee[0] = melee[2] = 120; // Attack, Strength
+  assert.equal(SkillManager.calculateCombatLevel(melee), 139);
 });
 
 test("the skills packet carries level 150 and the experience cap intact", () => {
-  const packet = encodeSkillsSnapshot([{ id: 7, xp: SkillManager.MAX_EXPERIENCE, baseLevel: 150, virtualLevel: 150, boost: 26, currentLevel: 176 }], 3600, 126);
+  const packet = encodeSkillsSnapshot([{ id: 7, xp: SkillManager.MAX_EXPERIENCE, baseLevel: 150, virtualLevel: 150, boost: 26, currentLevel: 176 }], 3600, 191);
   // The payload's tail: count, then id, xp (int), base, virtual, boost + 128, current; total (u16), combat.
   const body = packet.subarray(packet.length - (1 + 10 + 3));
   assert.equal(body.readInt32BE(2), 2147483647);
   assert.deepEqual([body[6], body[7], body[8] - 128, body[9]], [150, 150, 26, 176]);
   assert.equal(body.readUInt16BE(10), 3600);
-  assert.equal(body[12], 126);
+  assert.equal(body[12], 191, "the highest combat level fits the packet's byte");
 });

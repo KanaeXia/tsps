@@ -134,7 +134,7 @@ export class PlayerEcs {
     private names: (string | undefined)[] = [];
     private nameToIndex: Map<string, number> = new Map();
     private appearances: (PlayerAppearance | undefined)[] = [];
-    private combatLevels!: Uint8Array; // 0..126
+    private combatLevels!: Uint8Array; // 0..255: uncapped, 191 with every combat skill at 150
     private teams!: Uint8Array; // 0 = none
     private hidden!: Uint8Array; // 0/1, from appearance isHidden
 
@@ -1334,7 +1334,7 @@ export class PlayerEcs {
     setCombatLevel(i: number, level: number): void {
         if (!(i >= 0 && i < this.capacity)) return;
         const normalized = Number.isFinite(level) ? level | 0 : 0;
-        this.combatLevels[i] = normalized < 0 ? 0 : normalized > 126 ? 126 : normalized;
+        this.combatLevels[i] = normalized < 0 ? 0 : normalized > 255 ? 255 : normalized;
     }
     getTeam(i: number): number {
         if (!(i >= 0 && i < this.capacity)) return 0;

@@ -48,6 +48,12 @@ export class VarManager {
      */
     customVarbits: Map<number, CustomVarbitDef> = new Map();
 
+    /**
+     * Values wider than their cache varbit's bits, read back whole. The combat level goes past
+     * 127, the most COMBATLEVEL_TRANSMIT's 7 bits hold, and the combat tab's script reads it there.
+     */
+    private readonly wideVarbits = new Map<number, number>();
+
     readonly varpChangeListeners = new Set<(id: number, oldValue: number, value: number) => void>();
     readonly varcIntChangeListeners = new Set<(id: number, oldValue: number, value: number) => void>();
     readonly varcStringChangeListeners = new Set<(id: number, oldValue: string, value: string) => void>();
@@ -292,7 +298,33 @@ export class VarManager {
         return true;
     }
 
+    /**
+     * Sets a client-side varbit to a value its bits may not hold: reads return the whole value.
+     * The varp keeps what fits, and a change fires the varp's listeners as setVarbit does.
+     */
+    setWideVarbit(id: number, value: number): boolean {
+        const varbit = this.getVarbitDef(id);
+        if (!varbit || varbit.baseVar >= this.values.length) return false;
+        value |= 0;
+        const old = this.getVarbit(id);
+        if (old === value) return false;
+        const mask = BIT_MASKS[varbit.endBit - varbit.startBit];
+        this.wideVarbits.delete(id);
+        const fits = value >= 0 && (mask === -1 || value <= mask);
+        const oldVarpValue = this.values[varbit.baseVar];
+        this.setVarbit(id, fits ? value : mask);
+        if (!fits) this.wideVarbits.set(id, value);
+        // setVarbit fired nothing when the stored bits did not change (128 to 129, say).
+        if (this.values[varbit.baseVar] === oldVarpValue) {
+            this.onVarpChange?.(varbit.baseVar, oldVarpValue, oldVarpValue);
+            for (const listener of this.varpChangeListeners) listener(varbit.baseVar, oldVarpValue, oldVarpValue);
+        }
+        return true;
+    }
+
     getVarbit(id: number): number {
+        const wide = this.wideVarbits.get(id);
+        if (wide !== undefined) return wide;
         const varbit = this.getVarbitDef(id);
         if (!varbit) {
             console.warn(`[VarManager] Varbit ${id} not found in loader or custom definitions`);

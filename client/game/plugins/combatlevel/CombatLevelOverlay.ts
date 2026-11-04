@@ -2,7 +2,7 @@ import { boldFont, overlayFont } from "@runelite/client/ui/overlay/OverlayFonts"
 import { drawTextGL } from "../../../widgets/components/TextRenderer";
 import type { WidgetOverlay, WidgetOverlayDrawContext } from "../ClientPluginManager";
 import type { CombatLevelPlugin } from "./CombatLevelPlugin";
-import { combatLevel } from "./CombatLevel";
+import { combatLevel, MAX_COMBAT_LEVEL } from "./CombatLevel";
 
 type Rect = { x: number; y: number; w: number; h: number };
 const BG: [number, number, number, number] = [0.12, 0.1, 0.07, 0.96];
@@ -29,7 +29,7 @@ export class CombatLevelOverlay implements WidgetOverlay {
         const levels = this.plugin.getLevels();
         const mx = Number(client.inputManager?.mouseX), my = Number(client.inputManager?.mouseY);
         if (!manager || !levels || !Number.isFinite(mx) || !Number.isFinite(my) || mx < 0 || my < 0 || client.menuOpen === true) return undefined;
-        if (combatLevel(levels) >= 126) return undefined;
+        if (combatLevel(levels) >= MAX_COMBAT_LEVEL) return undefined;
 
         const widget = manager.getWidgetByUid?.((593 << 16) | 4);
         let target: any;

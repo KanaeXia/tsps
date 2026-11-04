@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { combatLevel, formatPreciseCombatLevel, nextCombatLevels, preciseCombatLevel, wildernessCombatRange } from "../game/plugins/combatlevel/CombatLevel";
+import { combatLevel, formatPreciseCombatLevel, MAX_COMBAT_LEVEL, nextCombatLevels, preciseCombatLevel, wildernessCombatRange } from "../game/plugins/combatlevel/CombatLevel";
 import { CombatLevelPlugin } from "../game/plugins/combatlevel/CombatLevelPlugin";
 
 const all99 = { attack: 99, strength: 99, defence: 99, hitpoints: 99, ranged: 99, prayer: 99, magic: 99 };
@@ -32,7 +32,7 @@ test("level 99 account receives level 99, not virtual levels", () => {
 test("wilderness bounds clamp to valid combat levels", () => {
     assert.deepEqual(wildernessCombatRange(3, 1), { min: 3, max: 4 });
     assert.deepEqual(wildernessCombatRange(60, 0), { min: 60, max: 60 });
-    assert.deepEqual(wildernessCombatRange(126, 60), { min: 66, max: 126 });
+    assert.deepEqual(wildernessCombatRange(126, 60), { min: 66, max: 186 }, "no cap at 126: combat levels go past it");
 });
 
 test("boosted levels do not enter the base-level formula", () => {
@@ -47,7 +47,11 @@ test("precise level preserves fractions and next-level helper gives skill thresh
     assert.equal(combatLevel(novice), 3);
     assert.equal(formatPreciseCombatLevel(preciseCombatLevel(novice)), "3.4");
     assert.deepEqual(nextCombatLevels(novice), { melee: 2, defenceHitpoints: 3, ranged: 2, magic: 2, prayer: 5 });
-    assert.deepEqual(nextCombatLevels(all99), {});
+    assert.equal(Object.keys(nextCombatLevels(all99)).length, 5, "99s are no longer the top: levels go to 150");
+    const all150 = { attack: 150, strength: 150, defence: 150, hitpoints: 150, ranged: 150, prayer: 150, magic: 150 };
+    assert.equal(combatLevel(all150), 191);
+    assert.equal(MAX_COMBAT_LEVEL, 191);
+    assert.deepEqual(nextCombatLevels(all150), {});
 });
 
 test("plugin follows RuneLite's default-enabled configuration", () => {

@@ -1,8 +1,11 @@
+import { MAX_REAL_LEVEL } from "../../../rs/skill/skills";
+
 /** Combat-level calculations adapted from RuneLite's BSD-2-licensed Combat Level plugin. */
 export type CombatLevels = { attack: number; strength: number; defence: number; hitpoints: number; ranged: number; prayer: number; magic: number };
 const keys = ["attack", "strength", "defence", "hitpoints", "ranged", "prayer", "magic"] as const;
 export type NextCombatLevels = Partial<Record<"melee" | "defenceHitpoints" | "ranged" | "magic" | "prayer", number>>;
-function level(value: number): number { return Math.max(1, Math.min(99, Number.isFinite(value) ? Math.floor(value) : 1)); }
+// Levels go to MAX_REAL_LEVEL (150) here, and the combat level has no cap of its own.
+function level(value: number): number { return Math.max(1, Math.min(MAX_REAL_LEVEL, Number.isFinite(value) ? Math.floor(value) : 1)); }
 
 /** Unrounded combat level. Skill inputs must be real, not boosted, levels. */
 export function preciseCombatLevel(skills: CombatLevels): number {
@@ -15,9 +18,13 @@ export function preciseCombatLevel(skills: CombatLevels): number {
 
 export function combatLevel(skills: CombatLevels): number { return Math.max(3, Math.floor(preciseCombatLevel(skills))); }
 
+/** The combat level with every combat skill at MAX_REAL_LEVEL (191 at 150). */
+export const MAX_COMBAT_LEVEL = combatLevel({ attack: MAX_REAL_LEVEL, strength: MAX_REAL_LEVEL, defence: MAX_REAL_LEVEL,
+    hitpoints: MAX_REAL_LEVEL, ranged: MAX_REAL_LEVEL, prayer: MAX_REAL_LEVEL, magic: MAX_REAL_LEVEL });
+
 export function wildernessCombatRange(combat: number, wildernessLevel: number): { min: number; max: number } {
     const w = Math.max(0, Math.floor(Number.isFinite(wildernessLevel) ? wildernessLevel : 0));
-    return { min: Math.max(3, Math.floor(combat) - w), max: Math.min(126, Math.floor(combat) + w) };
+    return { min: Math.max(3, Math.floor(combat) - w), max: Math.floor(combat) + w };
 }
 
 /** RuneLite's grouped skill-level increments for reaching the next combat level. */
@@ -35,11 +42,11 @@ export function nextCombatLevels(skills: CombatLevels): NextCombatLevels {
         prayer: 2 * Math.ceil(-hitpoints - defence + 4 * next - 4 * type) - prayer,
     };
     const result: Partial<Record<keyof typeof until, number>> = {};
-    if (attack + strength < 198) result.melee = until.melee;
-    if (defence + hitpoints < 198) result.defenceHitpoints = until.defenceHitpoints;
-    if (ranged < 99) result.ranged = until.ranged;
-    if (magic < 99) result.magic = until.magic;
-    if (prayer < 99) result.prayer = until.prayer;
+    if (attack + strength < 2 * MAX_REAL_LEVEL) result.melee = until.melee;
+    if (defence + hitpoints < 2 * MAX_REAL_LEVEL) result.defenceHitpoints = until.defenceHitpoints;
+    if (ranged < MAX_REAL_LEVEL) result.ranged = until.ranged;
+    if (magic < MAX_REAL_LEVEL) result.magic = until.magic;
+    if (prayer < MAX_REAL_LEVEL) result.prayer = until.prayer;
     return result;
 }
 
