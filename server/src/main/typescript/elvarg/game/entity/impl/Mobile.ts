@@ -85,6 +85,8 @@ export abstract class Mobile extends Entity {
     public updateFlag = new UpdateFlag();
     public positionToFace: Location;
     public animation: Animation;
+    /** Retained after sync so delayed cleanup can identify the last accepted animation. */
+    private animationGeneration = 0;
     public graphic: Graphic;
     private following: Mobile;
     /**
@@ -383,6 +385,7 @@ export abstract class Mobile extends Entity {
             }
         }
         this.animation = animation;
+        this.animationGeneration++;
         this.getUpdateFlag().flag(Flag.ANIMATION);
     }
 
@@ -529,6 +532,10 @@ export abstract class Mobile extends Entity {
 
     getAnimation(): Animation {
         return this.animation;
+    }
+
+    getAnimationGeneration(): number {
+        return this.animationGeneration;
     }
 
     /**
@@ -746,6 +753,11 @@ export abstract class Mobile extends Entity {
         if (outcome < 0)
             outcome = 0;
         hit.setHealthLost(this.getHitpoints() - outcome);
+        const source = hit.getSource();
+        // Reflections land separately from the attack, sometimes after their source died.
+        if (hit.isReflected() && this.isPlayer() && source?.isPlayer() && source !== this && hit.getHealthLost() > 0) {
+            this.getCombat().addDamage(source, hit.getHealthLost());
+        }
         this.setHitpoints(outcome);
         return hit;
     }

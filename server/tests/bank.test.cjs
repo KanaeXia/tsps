@@ -12,6 +12,7 @@ const { Bank } = require("../dist/game/model/container/impl/Bank");
 const { World } = require("../dist/game/World");
 const { PlayerStatus } = require("../dist/game/model/PlayerStatus");
 const { EquipPacketListener } = require("../dist/net/packet/impl/EquipPacketListener");
+const { PluginManager } = require("../dist/plugins/PluginManager");
 
 const TRIDENT = 11907;
 const LAVA_BATTLESTAFF = 3053;
@@ -19,6 +20,10 @@ const MYSTIC_LAVA_STAFF = 3054;
 // In the cache this note belongs to 3053, not to 3054 (its id minus one).
 const LAVA_BATTLESTAFF_NOTE = 3055;
 const LAVA_BATTLESTAFF_PLACEHOLDER = 90053;
+const FAMILY_CHARGED = 7000;
+const FAMILY_PLACEHOLDER = 7001;
+const FAMILY_EMPTY = 7002;
+const UNRELATED = 7003;
 
 // Item definitions normally come from the cache; stub the few this test uses.
 const DEFINITIONS = {
@@ -28,6 +33,9 @@ const DEFINITIONS = {
   [LAVA_BATTLESTAFF]: { name: "Lava battlestaff", placeholder: LAVA_BATTLESTAFF_PLACEHOLDER },
   [MYSTIC_LAVA_STAFF]: { name: "Mystic lava staff" },
   [LAVA_BATTLESTAFF_NOTE]: { name: "Lava battlestaff", stackable: true, noteOf: LAVA_BATTLESTAFF },
+  [FAMILY_CHARGED]: { name: "Family item", placeholder: FAMILY_PLACEHOLDER },
+  [FAMILY_EMPTY]: { name: "Family item (empty)" },
+  [UNRELATED]: { name: "Unrelated item" },
 };
 ItemDefinition.forId = (id) => {
   const def = DEFINITIONS[id] ?? { name: "null" };
@@ -156,6 +164,65 @@ test("depositing everything banks notes as the item they note", () => {
   assert.equal(player.getBank().getAmount(LAVA_BATTLESTAFF_NOTE), 0);
   assert.equal(player.getInventory().getAmount(LAVA_BATTLESTAFF_NOTE), 0);
 });
+
+for (const [route, deposit] of [
+  ["Deposit-All", (player, amount) => Bank.deposits(player, LAVA_BATTLESTAFF_NOTE, 0, amount)],
+  ["Deposit inventory", (player, amount) => player.getInventory().switchItems(
+    player.getBank(), new Item(LAVA_BATTLESTAFF_NOTE, amount), false, false)],
+]) {
+  for (const [boundary, held, offered] of [
+    ["near cap", 2147483645, 5],
+    ["full stack", 2147483647, 5],
+    ["exact fit", 2147483645, 2],
+  ]) {
+    test(`${route} preserves noted items at ${boundary}`, () => {
+      const player = createPlayer();
+      player.getBank().add(new Item(LAVA_BATTLESTAFF, held), false);
+      player.getInventory().add(new Item(LAVA_BATTLESTAFF_NOTE, offered), false);
+
+      deposit(player, offered);
+
+      const remaining = player.getInventory().getAmount(LAVA_BATTLESTAFF_NOTE);
+      const banked = player.getBank().getAmount(LAVA_BATTLESTAFF);
+      assert.equal(remaining + banked, offered + held, "deposit must preserve the whole item family");
+      assert.ok(remaining >= 0 && remaining <= 2147483647);
+      assert.ok(banked >= 0 && banked <= 2147483647);
+      assert.equal(player.getBank().getAmount(LAVA_BATTLESTAFF_NOTE), 0);
+      if (boundary === "full stack") assert.equal(remaining, offered);
+      if (boundary === "exact fit") assert.equal(remaining, 0);
+    });
+  }
+}
+
+for (const [boundary, held, offered] of [
+  ["near cap", 2147483645, 5],
+  ["full stack", 2147483647, 5],
+  ["exact fit", 2147483645, 2],
+]) {
+  test(`noted withdrawal preserves items at ${boundary}`, t => {
+    const forId = ItemDefinition.forId;
+    t.mock.method(ItemDefinition, "forId", id => {
+      const definition = forId(id);
+      if (id === LAVA_BATTLESTAFF) definition.getNoteId = () => LAVA_BATTLESTAFF_NOTE;
+      return definition;
+    });
+    const player = createPlayer();
+    player.withdrawAsNote = () => true;
+    player.getInventory().add(new Item(LAVA_BATTLESTAFF_NOTE, held), false);
+    player.getBank().add(new Item(LAVA_BATTLESTAFF, offered), false);
+
+    Bank.withdraw(player, LAVA_BATTLESTAFF, 0, -1, 0);
+
+    const carried = player.getInventory().getAmount(LAVA_BATTLESTAFF_NOTE);
+    const remaining = player.getBank().getAmount(LAVA_BATTLESTAFF);
+    assert.equal(carried + remaining, held + offered, "withdrawal must preserve the whole item family");
+    assert.ok(carried >= 0 && carried <= 2147483647);
+    assert.ok(remaining >= 0 && remaining <= 2147483647);
+    assert.equal(player.getInventory().getAmount(LAVA_BATTLESTAFF), 0);
+    if (boundary === "full stack") assert.equal(remaining, offered);
+    if (boundary === "exact fit") assert.equal(remaining, 0);
+  });
+}
 
 function metas(container) {
   return container.getValidItems().map((item) => [item.getAmount(), item.getMeta()]);
@@ -478,6 +545,49 @@ test("an item without a cache placeholder leaves none", () => {
   assert.deepEqual(Bank.layout(player), []);
 });
 
+test("a plugin's placeholder family shares one bank slot across its forms", (t) => {
+  const original = PluginManager.emitCustomEvent;
+  PluginManager.emitCustomEvent = (name, event) => {
+    if (name === "bank:placeholder-identity"
+        && (event.itemId === FAMILY_CHARGED || event.itemId === FAMILY_EMPTY)) {
+      event.placeholderId = FAMILY_CHARGED;
+      event.itemIds = [FAMILY_CHARGED, FAMILY_EMPTY];
+    }
+    return original.call(PluginManager, name, event);
+  };
+  t.after(() => { PluginManager.emitCustomEvent = original; });
+  const player = createPlayer();
+  player.placeholders = true;
+  const bank = player.getBank(0);
+  bank.add(new Item(FAMILY_CHARGED, 1), false);
+
+  Bank.withdraw(player, FAMILY_CHARGED, 0, 1, 0);
+
+  assert.equal(bank.getValidItems().length, 1);
+  assert.equal(bank.getItems()[0].getAmount(), 0);
+  assert.equal(bank.getItems()[0].getId(), FAMILY_CHARGED);
+  assert.equal(Bank.displayItemId(bank.getItems()[0]), FAMILY_PLACEHOLDER);
+
+  player.getInventory().add(new Item(FAMILY_EMPTY, 1), false);
+  Bank.deposits(player, FAMILY_EMPTY, player.getInventory().getSlotForItemId(FAMILY_EMPTY), 1);
+
+  assert.equal(bank.getValidItems().length, 1, "the empty form refills the charged form's placeholder");
+  assert.equal(bank.getItems()[0].getId(), FAMILY_EMPTY);
+  assert.equal(bank.getItems()[0].getAmount(), 1);
+  assert.equal(Bank.displayItemId(bank.getItems()[0]), FAMILY_EMPTY);
+
+  Bank.withdraw(player, FAMILY_EMPTY, 0, 1, 0);
+
+  assert.equal(bank.getValidItems().length, 1);
+  assert.equal(bank.getItems()[0].getAmount(), 0);
+  assert.equal(bank.getItems()[0].getId(), FAMILY_CHARGED, "an empty form leaves the family's cache placeholder");
+  assert.equal(Bank.displayItemId(bank.getItems()[0]), FAMILY_PLACEHOLDER);
+
+  bank.add(new Item(UNRELATED, 1), false);
+  Bank.withdraw(player, UNRELATED, 1, 1, 0);
+  assert.equal(bank.getValidItems().length, 1, "an unrelated item leaves no placeholder");
+});
+
 test("clicking Release on a placeholder removes it; other options leave it", () => {
   const player = createPlayer();
   player.getBank(0).add(new Item(LAVA_BATTLESTAFF, 0), false);
@@ -552,8 +662,15 @@ test("removing placeholders from a tab leaves other tabs' placeholders", () => {
 
 const BANK_ITEMS = (Bank.MAIN_INTERFACE_ID << 16) | Bank.ITEMS_CHILD;
 const BANK_TABS = (Bank.MAIN_INTERFACE_ID << 16) | Bank.TABS_CHILD;
+const BANK_INCINERATOR = (Bank.MAIN_INTERFACE_ID << 16) | Bank.INCINERATOR_CHILD;
 const SIDE_ITEMS = (Bank.SIDE_INTERFACE_ID << 16) | Bank.SIDE_ITEMS_CHILD;
 const A = MYSTIC_LAVA_STAFF, B = LAVA_BATTLESTAFF, C = TRIDENT;
+
+const incinerations = [];
+PluginManager.createApi("bank-incinerator-test").onCustomEvent(
+  Bank.INCINERATE_EVENT,
+  (event) => incinerations.push(event),
+);
 
 function drag(player, sourceWidgetId, sourceSlot, sourceItemId, targetWidgetId, targetSlot) {
   return Bank.handleDrag(player, { sourceWidgetId, sourceSlot, sourceItemId, targetWidgetId, targetSlot });
@@ -656,6 +773,49 @@ test("dragging onto the empty space after a tab's items moves the item to the en
   drag(player, BANK_ITEMS, 2, C, BANK_ITEMS, Bank.TAB_DROP_SLOT_OFFSET + 1);
 
   assert.deepEqual(tabsOf(player), [[1, A, 1], [1, B, 1], [1, C, 1]]);
+});
+
+test("dragging a bank stack onto the incinerator asks to destroy that exact stack", () => {
+  const player = createPlayer();
+  player.getBank().add(new Item(A, 4), false);
+  player.getBank().add(new Item(B, 2), false);
+  incinerations.length = 0;
+
+  assert.equal(drag(player, BANK_ITEMS, 1, B, BANK_INCINERATOR, -1), true);
+
+  assert.deepEqual(tabsOf(player), [[0, A, 4], [0, B, 2]], "the drag does not move the stack");
+  assert.equal(incinerations.length, 1);
+  const [event] = incinerations;
+  assert.equal(event.tab, 0);
+  assert.equal(event.slot, 1);
+  assert.equal(event.item.getId(), B);
+  assert.equal(event.item.getAmount(), 2, "the whole stack is offered, never a client amount");
+});
+
+test("an inventory item dropped on the incinerator is neither deposited nor destroyed", () => {
+  const player = createPlayer();
+  bankOf(player, [A]);
+  player.getInventory().add(new Item(B, 1), false);
+  incinerations.length = 0;
+
+  assert.equal(drag(player, SIDE_ITEMS, 0, B, BANK_INCINERATOR, -1), true);
+
+  assert.equal(player.getInventory().getAmount(B), 1);
+  assert.deepEqual(tabsOf(player), [[0, A, 1]]);
+  assert.deepEqual(incinerations, []);
+});
+
+test("a placeholder or a mismatched item id dropped on the incinerator is ignored", () => {
+  const player = createPlayer();
+  player.getBank().add(new Item(A, 0), false);
+  incinerations.length = 0;
+
+  drag(player, BANK_ITEMS, 0, A, BANK_INCINERATOR, -1);
+  assert.deepEqual(incinerations, [], "placeholders have nothing to destroy");
+
+  player.getBank().setItem(0, new Item(A, 2));
+  drag(player, BANK_ITEMS, 0, B, BANK_INCINERATOR, -1);
+  assert.deepEqual(incinerations, [], "a stale client item id cannot destroy the stack now in that slot");
 });
 
 /** A player whose packet sender records client scripts. */
