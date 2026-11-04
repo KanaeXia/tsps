@@ -103,6 +103,7 @@ import {
   PluginAttackTimingEvent,
   PluginAnimationStallEvent,
   PluginAttackSpeedEvent,
+  PluginAttackTraitsEvent,
   PluginCombatHitResolvedEvent,
   PluginCombatAttackDistanceEvent,
   PluginCanUnequipEvent,
@@ -333,6 +334,7 @@ export class PluginManager {
   private static attackTimingHooks: PluginHook<PluginAttackTimingEvent>[] = [];
   private static animationStallHooks: PluginHook<PluginAnimationStallEvent>[] = [];
   private static attackSpeedHooks: PluginHook<PluginAttackSpeedEvent>[] = [];
+  private static attackTraitsHooks: PluginHook<PluginAttackTraitsEvent>[] = [];
   private static combatHitResolvedHooks: PluginHook<PluginCombatHitResolvedEvent>[] = [];
   private static combatAttackDistanceHooks: PluginHook<PluginCombatAttackDistanceEvent>[] = [];
   private static spellDisabledHooks: PluginHook<PluginSpellDisabledEvent>[] = [];
@@ -1694,6 +1696,16 @@ export class PluginManager {
       PluginManager.executeHook(hook, event, "attack_speed", "attack_speed");
     }
     return Number.isFinite(event.speed) ? Math.max(1, event.speed | 0) : speed;
+  }
+
+  public static emitAttackTraits(attacker: any, target: any, combatType: any): PluginAttackTraitsEvent["traits"] {
+    if (PluginManager.attackTraitsHooks.length === 0 || !attacker || !target) return null;
+    const event: PluginAttackTraitsEvent = { attacker, target, combatType, traits: null };
+    for (const hook of PluginManager.attackTraitsHooks) {
+      PluginManager.executeHook(hook, event, "attack_traits", "attack_traits");
+      if (event.traits) break;
+    }
+    return event.traits ?? null;
   }
 
   public static emitCombatHitRoll(event: PluginCombatHitRollEvent): void {
@@ -3670,6 +3682,10 @@ export class PluginManager {
       onAttackSpeed: (handler) => {
         if (typeof handler !== "function") return;
         PluginManager.attackSpeedHooks.push({ ...hookProfile(handler), handler });
+      },
+      onAttackTraits: (handler) => {
+        if (typeof handler !== "function") return;
+        PluginManager.attackTraitsHooks.push({ ...hookProfile(handler), handler });
       },
       onAnimationStall: (handler) => {
         if (typeof handler !== "function") return;

@@ -571,6 +571,18 @@ export interface PluginAttackSpeedEvent {
   speed: number;
 }
 
+/**
+ * Asked when an attack that no armed special shapes is rolled; a handler may set `traits` to give
+ * the weapon's own attack extra hits, a split maximum or hit delays (multi-hit weapons). The first
+ * handler to set it wins.
+ */
+export interface PluginAttackTraitsEvent {
+  attacker: any;
+  target: any;
+  combatType: any;
+  traits: import("../game/content/combat/WeaponSpecialTraits").WeaponSpecialTraits | null;
+}
+
 export interface PluginCombatHitRollEvent {
   attacker: any;
   target: any;
@@ -1095,6 +1107,8 @@ export interface PluginApi {
   onAnimationStall(handler: (event: PluginAnimationStallEvent) => void): void;
   /** Lets a plugin change the ticks until the next attack (see PluginAttackSpeedEvent). */
   onAttackSpeed(handler: (event: PluginAttackSpeedEvent) => void): void;
+  /** Lets a plugin shape a weapon's ordinary attack, e.g. two hits (see PluginAttackTraitsEvent). */
+  onAttackTraits(handler: (event: PluginAttackTraitsEvent) => void): void;
   onCombatHitResolved(handler: (event: PluginCombatHitResolvedEvent) => void): void;
   onCombatAttackDistance(handler: (event: PluginCombatAttackDistanceEvent) => void): void;
   onSpellDisabled(handler: (event: PluginSpellDisabledEvent) => void): void;

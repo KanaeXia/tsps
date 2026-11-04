@@ -4,7 +4,8 @@ import { World } from "../../../World";
 import { HitDamage } from "./HitDamage";
 import { PendingHit } from "./PendingHit";
 
-type ScheduledHit = { hit: PendingHit; revealCycle: number };
+/** `sameCycle`: may land on its reveal tick even after the owner's turn (landsOnAttackTick). */
+type ScheduledHit = { hit: PendingHit; revealCycle: number; sameCycle?: boolean };
 
 /** Schedules combat impacts against an absolute world tick. */
 export class HitQueue {
@@ -33,6 +34,7 @@ export class HitQueue {
      */
     process(currentCycle: number): void {
         if (this.lastProcessedCycle === currentCycle) {
+            this.processSameCycleHits(currentCycle);
             return;
         }
         this.lastProcessedCycle = currentCycle;
@@ -98,6 +100,33 @@ export class HitQueue {
         if (!this.hasPendingWork()) HitQueue.active.delete(this);
     }
 
+    /**
+     * A hit queued after the owner's turn normally waits for the next one. A hit that lands on its
+     * attack's tick (landsOnAttackTick) is applied by the end-of-tick sweep instead, with only the
+     * damage it produced; anything else queued this tick keeps waiting for the owner's turn.
+     */
+    private processSameCycleHits(currentCycle: number): void {
+        const character = this.character;
+        if (!character.isRegistered() || character.getHitpoints() <= 0) return;
+        if (character.isPlayer() && character.getCombat().getIncomingHitCycle() > currentCycle) return;
+        const due = this.pendingHits.filter(({ sameCycle, revealCycle }) => sameCycle && revealCycle <= currentCycle);
+        if (due.length === 0) return;
+        for (const scheduled of due) this.pendingHits.splice(this.pendingHits.indexOf(scheduled), 1);
+        const before = this.pendingDamage.length;
+        for (const { hit } of due) {
+            if (
+                hit.getTarget() === character &&
+                hit.getAttacker()?.isRegistered() &&
+                hit.getAttacker()?.getHitpoints() > 0 &&
+                !character.isUntargetable()
+            ) {
+                CombatFactory.executeHit(hit);
+            }
+        }
+        for (const damage of this.pendingDamage.splice(before)) character.addTickHit(this.applyDamage(damage));
+        if (!this.hasPendingWork()) HitQueue.active.delete(this);
+    }
+
     /** Damage another combatant landed on the owner, not damage the owner took on itself. */
     private static incomingFromOther(damage: HitDamage, owner: Mobile): boolean {
         const source = damage.getSource();
@@ -119,8 +148,8 @@ export class HitQueue {
     }
 
     /** Queues a hit for the cycle it comes due on; process() is what decides whether it waits. */
-    addPendingHit(hit: PendingHit, revealCycle: number): void {
-        const scheduled = { hit, revealCycle: Math.max(0, revealCycle | 0) };
+    addPendingHit(hit: PendingHit, revealCycle: number, sameCycle = false): void {
+        const scheduled: ScheduledHit = { hit, revealCycle: Math.max(0, revealCycle | 0), sameCycle };
         let index = this.pendingHits.length;
         while (index > 0 && this.pendingHits[index - 1].revealCycle > scheduled.revealCycle) index--;
         this.pendingHits.splice(index, 0, scheduled);

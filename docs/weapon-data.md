@@ -125,6 +125,8 @@ The captures also confirm, unchanged: the Abyssal whip, the two-handed swords' s
   - Dinh's bulwarks: `human_dinhs_bulwark_*`;
   - Colossal blade: `human_weapon_giant01_ready` / `_walk` / `_run` (9460/9461/9459), added among the Giants' Foundry animations it was released with. It had been on the two-handed swords' stance (#461). Its attacks stay the two-handed sword's: the giant set has no attack or block of its own.
 
+  - Crimson kisten: `human_weapons_crimson_kisten_ready01` / `_walk_f` / `_run_f` / `_def` (14251/14252/14254/14257). Its attacks follow the [Wiki](https://oldschool.runescape.wiki/w/Crimson_kisten)'s 8 July 2026 change: the crush styles use `_attack` (14253, the special's frames) and Spike (stab) keeps the original `_attack_alt` (566).
+
   Turn and side-step animations without their own name use the walk.
 - **Dinh's bulwark's Pummel:** `human_dinhs_bulwark_crush` 7507 (Pummel is a crush attack; `_bash` is its special).
 

@@ -904,9 +904,11 @@ export class CombatFactory {
         }
 
         // Add this hit to the target's hitQueue.
+        const onAttackTick = qHit.landsOnAttackTick();
         target.getCombat().getHitQueue().addPendingHit(
             qHit,
-            World.getProcessCycle() + qHit.getDelay() + CombatFactory.hitProcessingDelay(qHit),
+            World.getProcessCycle() + qHit.getDelay() + (onAttackTick ? 0 : CombatFactory.hitProcessingDelay(qHit)),
+            onAttackTick,
         );
     }
 

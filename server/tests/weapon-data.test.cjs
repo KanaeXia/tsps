@@ -115,6 +115,22 @@ test("a weapon's own attack animation beats its type's", () => {
   assert.equal(WeaponProfiles.attackAnimation(wielding(28338, WeaponInterfaces.BATTLEAXE, FightType.BATTLEAXE_SMASH), 401), 10172);
 });
 
+test("the Crimson kisten moves, blocks and attacks with its own animations", () => {
+  // human_weapons_crimson_kisten_ready01 / _walk_f / _run_f / _def (14251/14252/14254/14257).
+  const kisten = ItemDefinition.forId(33631);
+  const gait = ["blockAnim", "standAnim", "walkAnim", "runAnim"].map((field) => kisten[field]);
+  assert.deepEqual(gait, [14257, 14251, 14252, 14254]);
+  // Wiki (8 July 2026): the crush styles use the new attack, the old one stays on the stab style.
+  const { FightType } = require("../dist/game/content/combat/FightType");
+  for (const style of [FightType.MACE_POUND, FightType.MACE_PUMMEL, FightType.MACE_BLOCK]) {
+    assert.equal(WeaponProfiles.attackAnimation(wielding(33631, WeaponInterfaces.MACE, style), 401), 14253, "_attack");
+  }
+  assert.equal(WeaponProfiles.attackAnimation(wielding(33631, WeaponInterfaces.MACE, FightType.MACE_SPIKE), 401), 566, "_attack_alt");
+  // 33632 and 33633 are its note and bank placeholder, never wielded.
+  assert.equal(CacheDefinitions.getItem(33632).noteTemplate !== -1, true);
+  assert.equal(CacheDefinitions.getItem(33633).placeholderTemplate !== -1, true);
+});
+
 test("crossbows, ballistas and chinchompas use the cache's separate animation against NPCs", () => {
   const { FightType } = require("../dist/game/content/combat/FightType");
   const rune = wielding(9185, WeaponInterfaces.CROSSBOW, FightType.CROSSBOW_RAPID);

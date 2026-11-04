@@ -88,6 +88,13 @@ export interface WeaponSpecialTraits {
     readonly accuracyRollCount?: number;
     /** Reuses the first hitsplat's accuracy outcome for every later hitsplat. */
     readonly sharedAccuracyRollAcrossHits?: boolean;
+    /** A later hitsplat rolls accuracy only if the one before it was accurate; otherwise it misses. */
+    readonly sequentialAccuracy?: boolean;
+    /**
+     * The first hitsplat lands on the tick of the attack, not after the target's next turn (an
+     * NPC target normally takes it a tick later). Later hitsplats keep their hitDelayTicks.
+     */
+    readonly landsOnAttackTick?: boolean;
     /** Guarantees every accuracy roll for this attack. */
     readonly guaranteedHit?: boolean;
     /** Guarantees only the first accuracy roll of the first hitsplat. */

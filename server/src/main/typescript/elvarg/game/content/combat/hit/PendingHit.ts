@@ -63,6 +63,8 @@ export class PendingHit {
     private ordinary = false;
     /** Optional per-hitsplat extra reveal delays (from `hitDelayTicks`). */
     private hitDelays?: number[];
+    /** The first hitsplat lands on the attack's own tick (from `landsOnAttackTick`). */
+    private onAttackTick = false;
     /** Spell selected when this hit was launched; the caster may clear it before impact. */
     private spell: CombatSpell | null = null;
     /** A roll hook (Verac's set) let this hit through protection prayers. */
@@ -264,6 +266,11 @@ export class PendingHit {
         return this.handleAfterHitEffects;
     }
 
+    /** Whether the first hitsplat lands on the tick of the attack (WeaponSpecialTraits.landsOnAttackTick). */
+    public landsOnAttackTick(): boolean {
+        return this.onAttackTick;
+    }
+
     /** Per-hitsplat extra reveal delays, or undefined when all land together. */
     public getHitDelays(): readonly number[] | undefined {
         return this.hitDelays;
@@ -285,7 +292,11 @@ export class PendingHit {
 
         // Utility-only specials (e.g. stat boosts that resolve outside the hit
         // pipeline) declare skipAttack and produce no hitsplat.
-        const traits = fixedDamage === undefined && !this.ordinary ? CombatSpecial.activeTraitsFor(this.attacker) : null;
+        const specialTraits = fixedDamage === undefined && !this.ordinary ? CombatSpecial.activeTraitsFor(this.attacker) : null;
+        // An attack no special shapes may still be shaped by its weapon (multi-hit weapons).
+        const traits = specialTraits ?? (fixedDamage === undefined && !this.attacker.isSpecialActivated?.()
+            ? PluginManager.emitAttackTraits(this.attacker, this.target, this.combatType)
+            : null);
         if (traits?.skipAttack === true) {
             this.totalDamage = 0;
             return [];
@@ -298,6 +309,7 @@ export class PendingHit {
         if (traits?.hitDelayTicks) {
             this.hitDelays = [...traits.hitDelayTicks].map((tick) => Math.max(0, Math.trunc(tick)));
         }
+        this.onAttackTick = traits?.landsOnAttackTick === true;
 
         // Which overhead is checked when the blow lands. A special that changes the
         // damage type (Favour, magic specials) must keep that type after it is disarmed.
@@ -391,6 +403,8 @@ export class PendingHit {
             let resolved: { accurate: boolean; bounds?: SpecialDamageBounds };
             if (i > 0 && traits?.sharedAccuracyRollAcrossHits === true) {
                 resolved = { accurate: firstAccurate === true, bounds: firstBounds };
+            } else if (i > 0 && traits?.sequentialAccuracy === true && !this.accurate) {
+                resolved = { accurate: false };
             } else {
                 resolved = PendingHit.withForcedMax(this.rollSpecialTraits(traits, roll.forceAccurate, rollAccuracy, i, projectedDefence), roll.forceMaxHit);
                 if (i === 0) {
