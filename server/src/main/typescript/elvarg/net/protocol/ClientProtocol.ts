@@ -2799,6 +2799,14 @@ export function createNpcSyncState(): NpcSyncState {
   };
 }
 
+/**
+ * Appearance slot offsets, as in RuneLite's PlayerComposition: KIT_OFFSET..ITEM_OFFSET-1 is an
+ * identity kit, ITEM_OFFSET and up a worn item. Current caches have kits past 255 (the female jaws
+ * are 292-306), so the old 512 item offset turned those kits into items.
+ */
+export const APPEARANCE_KIT_OFFSET = 256;
+export const APPEARANCE_ITEM_OFFSET = 2048;
+
 export function encodePlayerAppearance(
   appearance: PlayerAppearance,
   name: string,
@@ -2826,10 +2834,10 @@ export function encodePlayerAppearance(
   const equipmentSlot = (wireSlot: number): number => {
     const itemSlot = itemSlots[wireSlot];
     const itemId = itemSlot === undefined ? -1 : appearance.equip[itemSlot] ?? -1;
-    if (itemId >= 0) return itemId + 512;
+    if (itemId >= 0) return itemId + APPEARANCE_ITEM_OFFSET;
     const kitSlot = kitSlots[wireSlot];
     const kitId = kitSlot === undefined ? -1 : appearance.kits[kitSlot] ?? -1;
-    return kitId >= 0 ? kitId + 256 : 0;
+    return kitId >= 0 && kitId < APPEARANCE_ITEM_OFFSET - APPEARANCE_KIT_OFFSET ? kitId + APPEARANCE_KIT_OFFSET : 0;
   };
 
   byte(appearance.gender);

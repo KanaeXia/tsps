@@ -576,7 +576,9 @@ export class PlayerSave {
             const candidate = PlayerSave.toFiniteInt(raw[lookIndex], defaults[lookIndex]);
             // -1 is "no kit": the jaw is optional (clean-shaven, and females have no beard kit).
             const noJaw = lookIndex === Appearance.BEARD && candidate === -1;
-            sanitized[lookIndex] = noJaw || candidate;
+            sanitized[lookIndex] = noJaw || PlayerSave.isSelectableKit(candidate, idx + (gender === 1 ? 7 : 0))
+                ? candidate
+                : candidate;
         });
 
         const colorIndices = [

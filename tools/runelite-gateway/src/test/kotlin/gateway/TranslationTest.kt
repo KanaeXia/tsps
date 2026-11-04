@@ -112,7 +112,7 @@ class TranslationTest {
   assertEquals(203,nativeAction(If1Button(CombinedId((182 shl 16) or 8)))!!.opcode)
  }
  @Test fun equipmentReadsAmmoQuiverAndNpcTransformationWithoutLosingAlignment(){
-  val normal=equipmentFromAppearance(hex("00ffff0000001237011400011e013201000128013c010a0000001237011400011e013201000128013c010a0102030405032803370333033403350336033843757274000300000000000000000000002710000003e3000004d2"))
+  val normal=equipmentFromAppearance(hex("00ffff0000001837011400011e013201000128013c010a0000001837011400011e013201000128013c010a0102030405032803370333033403350336033843757274000300000000000000000000002710000003e3000004d2"))
   assertEquals(94,normal.inventoryId);assertEquals(4151,InventoryObject.getId(normal.getObject(3)))
   assertEquals(995,InventoryObject.getId(normal.getObject(13)));assertEquals(10000,InventoryObject.getCount(normal.getObject(13)))
   assertEquals(1234,InventoryObject.getId(normal.getObject(12)));normal.returnInventory()

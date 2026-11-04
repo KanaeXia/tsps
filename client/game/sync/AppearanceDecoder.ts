@@ -143,13 +143,18 @@ class AppearanceReader {
 /**
  * Decode equipment slot value.
  *
- * OSRS format:
+ * Server format (RuneLite PlayerComposition offsets, matching encodePlayerAppearance):
  * - 0: empty slot
- * - 256-511: kit definition (body part)
- * - >= 512: item definition (itemId = value - 512)
+ * - 256-2047: kit definition (kitId = value - 256); current caches have kits past 255
+ * - >= 2048: item definition (itemId = value - 2048)
+ * - 65535 in the first slot: NPC transformation follows
  */
+const APPEARANCE_KIT_OFFSET = 256;
+const APPEARANCE_ITEM_OFFSET = 2048;
+const APPEARANCE_NPC_TRANSFORM = 65535;
+
 function decodeEquipmentSlot(reader: AppearanceReader): {
-    type: "empty" | "kit" | "item";
+    type: "empty" | "kit" | "item" | "transform";
     value: number;
 } {
     const high = reader.readUnsignedByte();
@@ -159,10 +164,12 @@ function decodeEquipmentSlot(reader: AppearanceReader): {
     const low = reader.readUnsignedByte();
     const value = (high << 8) | low;
 
-    if (value >= 512) {
-        return { type: "item", value: value - 512 };
-    } else if (value >= 256) {
-        return { type: "kit", value: value - 256 };
+    if (value === APPEARANCE_NPC_TRANSFORM) {
+        return { type: "transform", value };
+    } else if (value >= APPEARANCE_ITEM_OFFSET) {
+        return { type: "item", value: value - APPEARANCE_ITEM_OFFSET };
+    } else if (value >= APPEARANCE_KIT_OFFSET) {
+        return { type: "kit", value: value - APPEARANCE_KIT_OFFSET };
     }
     return { type: "empty", value: -1 };
 }
@@ -204,7 +211,7 @@ export function decodeAppearanceBinary(buffer: Uint8Array): DecodedAppearance | 
             const result = decodeEquipmentSlot(reader);
 
             // Special case: NPC transform (slot 0 == 65535)
-            if (slot === 0 && result.type === "item" && result.value === 65535 - 512) {
+            if (slot === 0 && result.type === "transform") {
                 npcTransformationId = reader.readUnsignedShort();
                 break;
             }

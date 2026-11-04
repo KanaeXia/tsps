@@ -21,6 +21,9 @@ import net.rsprot.protocol.game.incoming.misc.user.SetChatFilterSettings
 import net.rsprot.protocol.game.outgoing.logout.Logout
 import net.rsprot.protocol.message.OutgoingGameMessage
 fun DataInputStream.text():String {val b=ByteArrayOutputStream();while(true){val c=readUnsignedByte();if(c==0)break;b.write(c)};return b.toString("ISO-8859-1")}
+/** Server appearance slots, as RuneLite PlayerComposition: kits from KIT_OFFSET, items from ITEM_OFFSET. */
+private const val KIT_OFFSET=256
+private const val ITEM_OFFSET=2048
 private fun DataInputStream.appearanceSlots():Pair<IntArray,Int> {
  val slots=IntArray(12)
  for(copy in 0..1)for(slot in 0..11){
@@ -34,7 +37,7 @@ fun appearance(e:PlayerAvatarExtendedInfo,b:ByteArray) {
  val d=DataInputStream(ByteArrayInputStream(b));e.setBodyType(d.readUnsignedByte());e.setSkullIcon(d.readByte().toInt());e.setOverheadIcon(d.readByte().toInt())
  val kitSlots=mapOf(4 to 2,6 to 3,7 to 5,8 to 0,9 to 4,10 to 6,11 to 1)
  val(slots,transform)=d.appearanceSlots();e.setTransmogrification(transform)
- if(transform<0)for(slot in slots.indices){val v=slots[slot];if(v>=512)e.setWornObj(slot,v-512,-1,-1) else {e.setWornObj(slot,-1,-1,-1);kitSlots[slot]?.let{e.setIdentKit(it,if(v>=256)v-256 else -1)}}}
+ if(transform<0)for(slot in slots.indices){val v=slots[slot];if(v>=ITEM_OFFSET)e.setWornObj(slot,v-ITEM_OFFSET,-1,-1) else {e.setWornObj(slot,-1,-1,-1);kitSlots[slot]?.let{e.setIdentKit(it,if(v>=KIT_OFFSET)v-KIT_OFFSET else -1)}}}
  repeat(5){e.setColour(it,d.readUnsignedByte())}
  val anim=IntArray(7){d.readUnsignedShort().let{if(it==65535)-1 else it}}
  e.setBaseAnimationSet(anim[0],anim[1],anim[2],anim[3],anim[4],anim[5],anim[6]);e.setName(d.text());e.setCombatLevel(d.readUnsignedByte());e.setSkillLevel(d.readUnsignedShort());e.setHidden(d.readUnsignedByte()!=0)
@@ -43,7 +46,7 @@ fun appearance(e:PlayerAvatarExtendedInfo,b:ByteArray) {
 fun equipmentFromAppearance(bytes:ByteArray):UpdateInvFull {
  val d=DataInputStream(ByteArrayInputStream(bytes));d.skipBytes(3);val(slots,transform)=d.appearanceSlots()
  val items=mutableListOf<Long>()
- if(transform<0)for(slot in listOf(0,1,2,3,4,5,7,9,10))if(slots[slot]>=512)items.add(InventoryObject.pack(slot,slots[slot]-512,1))
+ if(transform<0)for(slot in listOf(0,1,2,3,4,5,7,9,10))if(slots[slot]>=ITEM_OFFSET)items.add(InventoryObject.pack(slot,slots[slot]-ITEM_OFFSET,1))
  d.skipBytes(19);d.text();d.skipBytes(4);d.readUnsignedShort();repeat(3){d.text()};d.readUnsignedByte()
  val ammoCount=d.readInt();val ammo=d.readInt();val quiver=d.readInt()
  if(ammo>=0)items.add(InventoryObject.pack(13,ammo,ammoCount))
