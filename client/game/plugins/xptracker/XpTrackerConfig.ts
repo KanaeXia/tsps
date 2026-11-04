@@ -37,7 +37,7 @@ export const XpTrackerConfig = ConfigGroup(
         }),
         hideMaxed: ConfigItem({
             name: "Hide maxed skills",
-            description: "XP tracker will no longer track level 99 skills.",
+            description: "XP tracker will no longer track level 150 (maxed) skills.",
             position: 0,
             default: false,
         }),

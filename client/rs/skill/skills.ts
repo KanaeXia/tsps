@@ -85,9 +85,13 @@ export const SKILL_NAME: Record<SkillId, string> = {
     [SkillId.Sailing]: "Sailing",
 };
 
-export const MAX_REAL_LEVEL = 99;
-export const MAX_VIRTUAL_LEVEL = 126;
-export const MAX_XP = 200_000_000;
+// This server's levels go to 150 (SkillManager.MAX_LEVEL), and experience to the largest value
+// the skills packet's signed 32-bit field carries. There are no virtual levels past the real ones.
+export const MAX_REAL_LEVEL = 150;
+export const MAX_VIRTUAL_LEVEL = MAX_REAL_LEVEL;
+export const MAX_XP = 2_147_483_647;
+/** How the XP tracker labels the experience cap as a goal. */
+export const MAX_XP_LABEL = "2.1B";
 
 export const XP_TABLE: ReadonlyArray<number> = buildXpTable();
 

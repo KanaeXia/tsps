@@ -27,7 +27,8 @@ export class Emotes {
                     if (cape < Skillcape.QUEST_POINT) {
                         // Check if player is maxed in skill
                         const skill: Skill = Object.values(Skill)[cape.getDelay()];
-                        const level: number = SkillManager.getMaxAchievingLevel(skill);
+                        // A skillcape's emote needs the cape's level, 99, not the experience cap's.
+                        const level: number = SkillManager.SKILLCAPE_LEVEL;
                         if (player.getSkillManager().getMaxLevel(skill) < level) {
                             player.sendMessage(
                                 `You need ${Misc.anOrA(skill.toString())} ${Misc.formatPlayerName(

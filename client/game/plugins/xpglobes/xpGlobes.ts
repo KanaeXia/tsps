@@ -75,7 +75,7 @@ export function skillProgress(startXp: number, currentXp: number, goalXp: number
     return ((currentXp - startXp) / (goalXp - startXp)) * 100;
 }
 
-/** The goal range without the XP Tracker: this level to the next (200M past the last). */
+/** The goal range without the XP Tracker: this level to the next (the experience cap past the last). */
 export function levelGoals(currentXp: number): { start: number; end: number } {
     const level = getLevelForXp(currentXp);
     return {

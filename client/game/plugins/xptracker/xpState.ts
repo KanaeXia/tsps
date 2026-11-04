@@ -80,7 +80,7 @@ export class XpStateSingle {
 
     /**
      * The goal range: the in-game XP-drop goal when it is set and not yet passed, else the
-     * current level to the next (200M past the last virtual level).
+     * current level to the next (the experience cap past the last level).
      */
     updateGoals(currentXp: number, goalStartXp: number, goalEndXp: number): void {
         const passed = currentXp > goalEndXp;

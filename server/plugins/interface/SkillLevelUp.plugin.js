@@ -25,7 +25,8 @@ const INTERRUPT_ACTIONS_CONFIG = "SkillLevelUp:interruptActions";
 const LEVELUP_ANIM = 199;
 const LEVELUP_99_ANIM = 1388;
 const GRAPHIC_HEIGHT = 124;
-const MAX_LEVEL = 99;
+// 99, the skillcape's level, keeps its own fanfare below the highest level (SkillManager.MAX_LEVEL).
+const MILESTONE_LEVEL = 99;
 // Two area sounds at the player, the second 25 client cycles later.
 const LEVEL_UP_SOUNDS = [{ soundId: 2396, delay: 0 }, { soundId: 2384, delay: 25 }];
 const SOUND_RADIUS = 1;
@@ -127,9 +128,13 @@ function trackCombatLevel({ player }) {
 function showLevelUp({ player, skill, oldLevel, newLevel }) {
   const skills = player.getSkillManager();
   const name = skill.getName();
-  if (newLevel >= MAX_LEVEL) {
-    celebrate(player, `Congratulations, you've reached the highest possible ${name} level of ${MAX_LEVEL}.`, LEVELUP_99_ANIM);
+  const maxLevel = pluginApi.core.SkillManager.MAX_LEVEL;
+  if (newLevel >= maxLevel) {
+    celebrate(player, `Congratulations, you've reached the highest possible ${name} level of ${maxLevel}.`, LEVELUP_99_ANIM);
     pluginApi.core.World.sendMessage(`<shad=15536940>News: ${player.getDisplayName()} has just achieved the highest possible level in ${name}!`);
+  } else if (oldLevel < MILESTONE_LEVEL && newLevel >= MILESTONE_LEVEL) {
+    celebrate(player, `Congratulations, you've just advanced your ${name} level. You are now level ${newLevel}.`, LEVELUP_99_ANIM);
+    pluginApi.core.World.sendMessage(`<shad=15536940>News: ${player.getDisplayName()} has just achieved level ${MILESTONE_LEVEL} in ${name}!`);
   } else {
     celebrate(player, `Congratulations, you've just advanced your ${name} level. You are now level ${newLevel}.`, LEVELUP_ANIM);
   }

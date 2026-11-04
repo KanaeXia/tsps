@@ -34,13 +34,13 @@ export const XpGlobesConfig = ConfigGroup("xpglobes", {
     }),
     hideMaxed: ConfigItem({
         name: "Hide maxed skills",
-        description: "Stop globes from showing up for level 99 skills.",
+        description: "Stop globes from showing up for level 150 (maxed) skills.",
         position: 14,
         default: false,
     }),
     showVirtualLevel: ConfigItem({
         name: "Show virtual level",
-        description: "Shows virtual level if over 99 in a skill and 'Hide maxed skills' is not checked.",
+        description: "Shows virtual level if over 150 in a skill and 'Hide maxed skills' is not checked.",
         position: 15,
         default: false,
     }),

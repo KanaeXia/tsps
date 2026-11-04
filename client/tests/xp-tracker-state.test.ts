@@ -62,7 +62,7 @@ assert.equal(s.secondsTillLevel, -1);
 s.tick(10_000);
 assert.equal(s.skillTime, 0, "no time accrues without a gain since the reset");
 
-// Goals: the XP-drop goal when set and not passed; 200M past the last virtual level.
+// Goals: the XP-drop goal when set and not passed; the experience cap past the last level.
 const g = new XpStateSingle(5000);
 g.updateGoals(5000, 4000, 9000);
 assert.deepEqual([g.startLevelExp, g.endLevelExp], [4000, 9000]);

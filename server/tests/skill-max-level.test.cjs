@@ -842,7 +842,7 @@ test("a level-up mid-fight keeps the attack animation", () => {
   assert.deepEqual(p.graphics, [199]);
 });
 
-test("as captured: every 25 total levels, and level 99, have their own message", () => {
+test("as captured: every 25 total levels, level 99 and level 150 have their own message", () => {
   const { PluginManager } = require("../dist/plugins/PluginManager");
   const core = PluginManager.getCoreApi();
   const hooks = registerFeedbackPlugin("interface/SkillLevelUp", core);
@@ -859,9 +859,19 @@ test("as captured: every 25 total levels, and level 99, have their own message",
   assert.equal(between.messages.length, 1);
   const maxed = levelledPlayer(core);
   maxed.getPacketSender().sendVarbit(POPUP_DISABLED, 1);
+  // Levels go to 150 here: 99, the skillcape's level, keeps the 99 fanfare with the usual message.
   hooks.onPlayerLevelUp({ player: maxed, skill: Skill.ATTACK, oldLevel: 98, newLevel: 99 });
-  assert.deepEqual(maxed.messages, ["Congratulations, you've reached the highest possible Attack level of 99."]);
+  assert.deepEqual(maxed.messages, ["Congratulations, you've just advanced your Attack level. You are now level 99."]);
   assert.deepEqual(maxed.graphics, [1388]);
+  const highest = levelledPlayer(core);
+  highest.getPacketSender().sendVarbit(POPUP_DISABLED, 1);
+  hooks.onPlayerLevelUp({ player: highest, skill: Skill.ATTACK, oldLevel: 149, newLevel: 150 });
+  assert.deepEqual(highest.messages, ["Congratulations, you've reached the highest possible Attack level of 150."]);
+  assert.deepEqual(highest.graphics, [1388]);
+  const past99 = levelledPlayer(core);
+  past99.getPacketSender().sendVarbit(POPUP_DISABLED, 1);
+  hooks.onPlayerLevelUp({ player: past99, skill: Skill.ATTACK, oldLevel: 99, newLevel: 100 });
+  assert.deepEqual(past99.graphics, [199], "levels between 99 and 150 are ordinary level-ups");
 });
 
 test("as captured: a combat level gained waits behind the skill's pop-up", () => {

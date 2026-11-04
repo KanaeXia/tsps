@@ -151,5 +151,43 @@
       "1000007": "exalted-spring/drop.dat",
       "1000008": "exalted-spring/equip.dat"
     }
+  },
+  {
+    "id": 50004,
+    "baseItemId": 4587,
+    "objType": {
+      "name": "Dusty Satchel",
+      "examine": "Perhaps it belonged to a desert mailman or something.",
+      "model": 1000009,
+      "maleModel": 1000010,
+      "femaleModel": 1000010,
+      "maleModel1": -1,
+      "maleModel2": -1,
+      "femaleModel1": -1,
+      "femaleModel2": -1,
+      "zoom2d": 1800,
+      "xan2d": 512,
+      "yan2d": 0,
+      "zan2d": 0,
+      "offsetX2d": 0,
+      "offsetY2d": 0,
+      "recolorFrom": [],
+      "recolorTo": [],
+      "retextureFrom": [],
+      "retextureTo": [],
+      "inventoryActions": ["Wear", null, null, null, "Drop"],
+      "isTradable": false,
+      "note": -1,
+      "noteTemplate": -1,
+      "unnotedId": -1,
+      "notedId": -1,
+      "placeholder": -1,
+      "placeholderTemplate": -1
+    },
+    "itemDef": { "tradeable": false,"equipmentType":"CAPE","doubleHanded":false,"stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":84,"highAlch":12,"lowAlch":8,"dropValue":2,"blockAnim":424,"weight":0,"bonuses":[0,0,0,0,0,0,1,1,0,2,0,0,0,0],"equipSound":2238 },
+    "models": {
+      "1000009": "dusty-satchel/drop.dat",
+      "1000010": "dusty-satchel/equip.dat"
+    }
   }
 ]

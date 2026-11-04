@@ -1,6 +1,6 @@
 import { OverlayPosition } from "@runelite/client/ui/overlay/OverlayPosition";
 import { skillIconSprite } from "../../../rs/skill/skillIcons";
-import { MAX_XP, SKILL_NAME, type SkillId } from "../../../rs/skill/skills";
+import { MAX_XP, MAX_XP_LABEL, SKILL_NAME, type SkillId } from "../../../rs/skill/skills";
 import { FONT_PLAIN_11 } from "../../../ui/fonts";
 import { drawTextGL } from "../../../widgets/components/TextRenderer";
 import type { WidgetOverlay, WidgetOverlayDrawContext } from "../ClientPluginManager";
@@ -61,7 +61,7 @@ export class XpInfoBoxOverlay implements WidgetOverlay {
         const ratio = snapshot.skillProgressToGoal / 100;
         return {
             left: String(snapshot.startLevel),
-            right: snapshot.endGoalXp === MAX_XP ? "200M" : String(snapshot.endLevel),
+            right: snapshot.endGoalXp === MAX_XP ? MAX_XP_LABEL : String(snapshot.endLevel),
             // ProgressBarComponent's PERCENTAGE label: "0.0%".
             center: `${(ratio * 100).toFixed(1)}%`,
             ratio,

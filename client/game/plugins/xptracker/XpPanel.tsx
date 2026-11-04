@@ -3,7 +3,7 @@ import { NavigationButton } from "@runelite/client/ui/NavigationButton";
 import { imageIcon, runeliteImage } from "@runelite/client/ui/runeliteImages";
 import { IndexType } from "../../../rs/cache/IndexType";
 import { OVERALL_ICON_SPRITE, skillIconSprite } from "../../../rs/skill/skillIcons";
-import { MAX_XP, SKILL_NAME, getXpForLevel, type SkillId } from "../../../rs/skill/skills";
+import { MAX_XP, MAX_XP_LABEL, SKILL_NAME, getXpForLevel, type SkillId } from "../../../rs/skill/skills";
 import { SpriteLoader } from "../../../rs/sprite/SpriteLoader";
 import { spriteToCanvas } from "../../../ui/item/ItemIcon";
 import type { OsrsClient } from "../../OsrsClient";
@@ -110,7 +110,7 @@ function ProgressBar({ plugin, view }: { plugin: XpTrackerPlugin; view: XpSkillV
     const center = paused
         ? "Paused"
         : progressBarLabelValue(config.progressBarLabel() as XpProgressBarLabel, snapshot);
-    const right = snapshot.endGoalXp === MAX_XP ? "200M" : `Lvl. ${snapshot.endLevel}`;
+    const right = snapshot.endGoalXp === MAX_XP ? MAX_XP_LABEL : `Lvl. ${snapshot.endLevel}`;
     const tooltipLabel = config.progressBarTooltipLabel() as XpProgressBarLabel;
     const tooltipValue = progressBarLabelValue(tooltipLabel, snapshot);
     const suffix = tooltipLabel === "PERCENTAGE" ? "of goal" : "till goal lvl";

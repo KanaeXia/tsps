@@ -2,6 +2,7 @@ const { Skill } = require("../../src/main/typescript/elvarg/game/model/Skill");
 const { CombatFactory } = require("../../src/main/typescript/elvarg/game/content/combat/CombatFactory");
 const { Wilderness } = require("../../src/main/typescript/elvarg/game/content/wilderness/Wilderness");
 const { PlayerRights } = require("../../src/main/typescript/elvarg/game/model/rights/PlayerRights");
+const { SkillManager } = require("../../src/main/typescript/elvarg/game/content/skill/SkillManager");
 const Presets = require("../modes/pvp/Presets.PvpMode");
 
 // Skills keyed by their component in the Skills tab (interface 320).
@@ -61,14 +62,15 @@ function promptForLevel(player, skill) {
         return;
       }
       const level = Number(amount);
-      if (!Number.isInteger(level) || level < minimum || level > 99) {
-        player.sendMessage(`Invalid level. Please enter a level from ${minimum} to 99.`);
+      const maximum = SkillManager.MAX_LEVEL;
+      if (!Number.isInteger(level) || level < minimum || level > maximum) {
+        player.sendMessage(`Invalid level. Please enter a level from ${minimum} to ${maximum}.`);
         return;
       }
       player.getSkillManager().setLevel(skill, level);
     },
   });
-  player.getPacketSender().sendEnterAmountPrompt(`Set ${skill.getName()} Level (${minimum}-99)`);
+  player.getPacketSender().sendEnterAmountPrompt(`Set ${skill.getName()} Level (${minimum}-${SkillManager.MAX_LEVEL})`);
 }
 
 /**

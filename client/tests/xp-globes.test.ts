@@ -44,14 +44,18 @@ assert.ok(g.globes.every((x) => x.time >= 20 + SkillId.Strength), "older than th
 g.reset();
 assert.deepEqual(g.globes, []);
 
-// Maxed skills: hidden, or the virtual level.
+// Maxed skills are level 150 (this server's cap): hidden, or shown at 150. Level 99 is not maxed.
 const maxed = new XpGlobes();
-maxed.onStatChanged(SkillId.Cooking, 14_000_000, 99, 0, { hideMaxed: true, showVirtualLevel: false });
-maxed.onStatChanged(SkillId.Cooking, 14_000_100, 99, 1, { hideMaxed: true, showVirtualLevel: false });
+maxed.onStatChanged(SkillId.Cooking, 2_040_000_000, 150, 0, { hideMaxed: true, showVirtualLevel: false });
+maxed.onStatChanged(SkillId.Cooking, 2_040_000_100, 150, 1, { hideMaxed: true, showVirtualLevel: false });
 assert.deepEqual(maxed.globes, []);
-maxed.onStatChanged(SkillId.Cooking, 14_500_000, 99, 0, { hideMaxed: false, showVirtualLevel: true });
-maxed.onStatChanged(SkillId.Cooking, 14_500_100, 99, 1, { hideMaxed: false, showVirtualLevel: true });
-assert.equal(maxed.globes[0].currentLevel, 100, "virtual level 100 at 14.5M");
+maxed.onStatChanged(SkillId.Cooking, 2_040_000_000, 150, 0, { hideMaxed: false, showVirtualLevel: true });
+maxed.onStatChanged(SkillId.Cooking, 2_040_000_100, 150, 1, { hideMaxed: false, showVirtualLevel: true });
+assert.equal(maxed.globes[0].currentLevel, 150, "no virtual levels past 150");
+const ninetyNine = new XpGlobes();
+ninetyNine.onStatChanged(SkillId.Cooking, 13_100_000, 99, 0, { hideMaxed: true, showVirtualLevel: false });
+ninetyNine.onStatChanged(SkillId.Cooking, 13_100_100, 99, 1, { hideMaxed: true, showVirtualLevel: false });
+assert.equal(ninetyNine.globes[0].currentLevel, 99, "level 99 is not hidden as maxed");
 
 // Progress, arc, goals, numbers.
 assert.equal(skillProgress(100, 150, 200), 50);

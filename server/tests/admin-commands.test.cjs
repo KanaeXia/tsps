@@ -209,9 +209,9 @@ test("::setlevel sets another player's level and experience, or your own", () =>
 test("::setlevel refuses levels a skill can't have, and skill names it can't tell apart", () => {
   const owner = login("Owner", Rights.OWNER);
   type(owner, "setlevel hitpoints 9");
-  assert.equal(owner.messages.at(-1), "Hitpoints can be set from 10 to 99.");
-  type(owner, "setlevel attack 100");
-  assert.equal(owner.messages.at(-1), "Attack can be set from 1 to 99.");
+  assert.equal(owner.messages.at(-1), "Hitpoints can be set from 10 to 150.");
+  type(owner, "setlevel attack 151");
+  assert.equal(owner.messages.at(-1), "Attack can be set from 1 to 150.");
   type(owner, "setlevel m 50"); // Magic or Mining
   assert.equal(owner.messages.at(-1), "Usage: ::setlevel skill level [player]");
   type(owner, "setlevel attack 50 nobody");
