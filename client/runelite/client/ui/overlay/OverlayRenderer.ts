@@ -34,8 +34,12 @@ import {
  * Positions are saved like RuneLite's, under `<overlay>_preferredLocation` /
  * `_preferredPosition` in the `runelite` config group.
  *
- * Not ported: resizing, drag targets (dropping one overlay onto another) and a configurable
- * drag hotkey.
+ * A resizable overlay is resized by Alt-dragging its border (within RuneLite's 5 pixel
+ * tolerance); its size is saved as RuneLite saves a Dimension, `<overlay>_preferredSize` =
+ * "WxH" in layout units. The edges not grabbed stay put, so a resized overlay leaves its snap
+ * corner and keeps its new place, as if it had been dragged there.
+ *
+ * Not ported: drag targets (dropping one overlay onto another) and a configurable drag hotkey.
  */
 
 type Rgba = [number, number, number, number];
@@ -51,6 +55,9 @@ const PREFERRED_LOCATION = "_preferredLocation";
 const PREFERRED_POSITION = "_preferredPosition";
 const ORIGIN_X = "_originX";
 const ORIGIN_Y = "_originY";
+const PREFERRED_SIZE = "_preferredSize";
+/** RuneLite's OverlayRenderer.OVERLAY_RESIZE_TOLERANCE: how near the border a resize grabs. */
+const RESIZE_TOLERANCE = 5;
 
 const uid = (group: number, child: number) => (group << 16) | child;
 
@@ -81,11 +88,36 @@ type Saved = {
     location?: { x: number; y: number };
     originX?: OriginX;
     originY?: OriginY;
+    /** A resizable overlay's size, layout units. */
+    size?: { width: number; height: number };
 };
 
-type Placed = { overlay: WidgetOverlay; bounds: Rect };
+type Placed = { overlay: WidgetOverlay; bounds: Rect; scaleX: number; scaleY: number };
 
 type Drag = { overlay: WidgetOverlay; offsetX: number; offsetY: number; x: number; y: number; w: number; h: number };
+
+type Edges = { left: boolean; right: boolean; top: boolean; bottom: boolean };
+
+/** A border being dragged: the overlay's bounds when it began, and where it is now (device pixels). */
+type Resize = {
+    overlay: WidgetOverlay;
+    edges: Edges;
+    startX: number;
+    startY: number;
+    start: Rect;
+    scaleX: number;
+    scaleY: number;
+    minimum: number;
+    bounds: Rect;
+};
+
+/** The CSS cursor RuneLite shows over each border. */
+function resizeCursor({ left, right, top, bottom }: Edges): string {
+    if ((left && top) || (right && bottom)) return "nwse-resize";
+    if ((right && top) || (left && bottom)) return "nesw-resize";
+    if (left || right) return "ew-resize";
+    return "ns-resize";
+}
 
 export class OverlayRenderer implements ClientPlugin {
     private readonly corners = createSnapCorners();
@@ -98,6 +130,8 @@ export class OverlayRenderer implements ClientPlugin {
     private drawn: Placed[] = [];
     private managing = false;
     private drag?: Drag;
+    private resize?: Resize;
+    private cursor = "";
     private mouseX = -1;
     private mouseY = -1;
     private revision = 0;
@@ -107,7 +141,8 @@ export class OverlayRenderer implements ClientPlugin {
         signature: () => {
             const drag = this.drag;
             const hover = drag ? this.cornerAt(this.mouseX, this.mouseY)?.position ?? "" : "";
-            return `${this.managing ? 1 : 0},${this.revision},${drag ? `${drag.x},${drag.y},${hover}` : ""}`;
+            const r = this.resize?.bounds;
+            return `${this.managing ? 1 : 0},${this.revision},${drag ? `${drag.x},${drag.y},${hover}` : ""},${r ? `${r.x},${r.y},${r.w},${r.h}` : ""}`;
         },
         draw: (context) => this.draw(context),
     };
@@ -126,7 +161,22 @@ export class OverlayRenderer implements ClientPlugin {
         this.removeInputFilter?.();
         this.removeInputFilter = undefined;
         this.endDrag();
+        this.setCursor("");
         if (typeof window !== "undefined") window.removeEventListener("blur", this.onBlur);
+    }
+
+    /** The size the player gave a resizable overlay, layout units; live while its border is dragged. */
+    overlayPreferredSize(overlay: WidgetOverlay): { width: number; height: number } | undefined {
+        const movable = overlay.movable;
+        if (!movable || !overlay.resizable) return undefined;
+        const resize = this.resize;
+        if (resize?.overlay === overlay) {
+            return {
+                width: Math.round(resize.bounds.w / resize.scaleX),
+                height: Math.round(resize.bounds.h / resize.scaleY),
+            };
+        }
+        return this.load(movable.name).size;
     }
 
     /** Where a movable overlay of this size (layout units) draws this frame. */
@@ -148,6 +198,9 @@ export class OverlayRenderer implements ClientPlugin {
         if (this.drag?.overlay === overlay) {
             x = this.drag.x;
             y = this.drag.y;
+        } else if (this.resize?.overlay === overlay) {
+            x = this.resize.bounds.x;
+            y = this.resize.bounds.y;
         } else if (saved.location) {
             [x, y] = fromOrigin(saved.location, saved.originX ?? "LEFT", saved.originY ?? "TOP", frame);
         } else {
@@ -165,7 +218,7 @@ export class OverlayRenderer implements ClientPlugin {
 
         const bounds = { x, y, w, h };
         corner?.shift(bounds, PADDING * frame.scaleY);
-        this.placed.push({ overlay, bounds });
+        this.placed.push({ overlay, bounds, scaleX, scaleY });
         return { x, y, scaleX, scaleY };
     }
 
@@ -221,7 +274,8 @@ export class OverlayRenderer implements ClientPlugin {
         const sx = Math.max(1, Math.round(frame?.scaleX ?? 1));
         const sy = Math.max(1, Math.round(frame?.scaleY ?? 1));
         for (const { overlay, bounds: r } of this.drawn) {
-            const color = this.drag?.overlay === overlay ? MOVING_OVERLAY_ACTIVE_COLOR : MOVING_OVERLAY_COLOR;
+            const active = this.drag?.overlay === overlay || this.resize?.overlay === overlay;
+            const color = active ? MOVING_OVERLAY_ACTIVE_COLOR : MOVING_OVERLAY_COLOR;
             glr.drawRect(r.x, r.y, r.w, sy, color);
             glr.drawRect(r.x, r.y + r.h - sy, r.w, sy, color);
             glr.drawRect(r.x, r.y + sy, sx, r.h - 2 * sy, color);
@@ -242,22 +296,29 @@ export class OverlayRenderer implements ClientPlugin {
         // Alt can be let go outside the window; the mouse says whether it is still held.
         if (mouse.altKey !== this.managing) this.setManaging(mouse.altKey);
 
-        if (this.drag) return true;
-        if (type !== "mousePressed" || !this.managing) return false;
-        const hit = this.overlayAt(this.mouseX, this.mouseY);
-        if (!hit) return false;
+        if (this.drag || this.resize) return true;
+        const hit = this.managing ? this.overlayAt(this.mouseX, this.mouseY) : undefined;
+        const edges = hit && this.edgesAt(hit, this.mouseX, this.mouseY);
+        this.setCursor(edges ? resizeCursor(edges) : "");
+        if (type !== "mousePressed" || !hit) return false;
         if (mouse.button === 2) {
             this.reset(hit.overlay);
             return true;
         }
         if (mouse.button !== 0) return false;
-        this.startDrag(hit);
+        if (edges) this.startResize(hit, edges);
+        else this.startDrag(hit);
         return true;
     };
 
     private readonly onBlur = () => this.setManaging(false);
 
     private readonly onDragMove = (event: MouseEvent) => {
+        if (this.resize) {
+            this.trackMouse(event);
+            this.resizeTo(this.resize);
+            return;
+        }
         const drag = this.drag;
         if (!drag) return;
         this.trackMouse(event);
@@ -268,7 +329,7 @@ export class OverlayRenderer implements ClientPlugin {
     };
 
     private readonly onDragEnd = (event: MouseEvent) => {
-        if (!this.drag) return;
+        if (!this.drag && !this.resize) return;
         this.onDragMove(event);
         this.finishDrag();
     };
@@ -282,7 +343,31 @@ export class OverlayRenderer implements ClientPlugin {
     private setManaging(managing: boolean): void {
         if (managing === this.managing) return;
         this.managing = managing;
-        if (!managing && this.drag) this.finishDrag();
+        if (!managing && (this.drag || this.resize)) this.finishDrag();
+        if (!managing) this.setCursor("");
+    }
+
+    private setCursor(cursor: string): void {
+        if (cursor === this.cursor) return;
+        this.cursor = cursor;
+        const style = (this.client.inputManager.element as HTMLElement | undefined)?.style;
+        if (style) style.cursor = cursor;
+    }
+
+    /** Which borders of a resizable overlay the point is on, within the tolerance. */
+    private edgesAt({ overlay, bounds: r }: Placed, x: number, y: number): Edges | undefined {
+        if (!overlay.resizable) return undefined;
+        const t = RESIZE_TOLERANCE;
+        const edges = {
+            left: x < r.x + t,
+            right: x >= r.x + r.w - t,
+            top: y < r.y + t,
+            bottom: y >= r.y + r.h - t,
+        };
+        // A box smaller than both tolerances is all border: grab its bottom right.
+        if (edges.left && edges.right) edges.left = false;
+        if (edges.top && edges.bottom) edges.top = false;
+        return edges.left || edges.right || edges.top || edges.bottom ? edges : undefined;
     }
 
     /**
@@ -330,7 +415,56 @@ export class OverlayRenderer implements ClientPlugin {
             w: bounds.w,
             h: bounds.h,
         };
-        // Follow the mouse off the canvas too, as the game's own drags do.
+        this.followMouse();
+    }
+
+    private startResize({ overlay, bounds, scaleX, scaleY }: Placed, edges: Edges): void {
+        this.resize = {
+            overlay,
+            edges,
+            startX: this.mouseX,
+            startY: this.mouseY,
+            start: { ...bounds },
+            scaleX,
+            scaleY,
+            minimum: overlay.resizable!.minimumSize,
+            bounds: { ...bounds },
+        };
+        this.followMouse();
+    }
+
+    /** The grabbed borders follow the mouse; the others stay where they were. */
+    private resizeTo(resize: Resize): void {
+        const { edges, start } = resize;
+        const dx = this.mouseX - resize.startX;
+        const dy = this.mouseY - resize.startY;
+        const minW = resize.minimum * resize.scaleX;
+        const minH = resize.minimum * resize.scaleY;
+        const canvas = this.frame?.canvas ?? { w: Infinity, h: Infinity };
+        let { x, w } = start;
+        if (edges.right) w = Math.min(Math.max(minW, start.w + dx), canvas.w - start.x);
+        else if (edges.left) {
+            w = Math.min(Math.max(minW, start.w - dx), start.x + start.w);
+            x = start.x + start.w - w;
+        }
+        let { y, h } = start;
+        if (edges.bottom) h = Math.min(Math.max(minH, start.h + dy), canvas.h - start.y);
+        else if (edges.top) {
+            h = Math.min(Math.max(minH, start.h - dy), start.y + start.h);
+            y = start.y + start.h - h;
+        }
+        // Whole layout units, so the box drawn is the size saved.
+        const width = Math.max(resize.minimum, Math.round(w / resize.scaleX));
+        const height = Math.max(resize.minimum, Math.round(h / resize.scaleY));
+        w = width * resize.scaleX;
+        h = height * resize.scaleY;
+        if (edges.left) x = start.x + start.w - w;
+        if (edges.top) y = start.y + start.h - h;
+        resize.bounds = { x: Math.round(x), y: Math.round(y), w, h };
+    }
+
+    /** Follow the mouse off the canvas too, as the game's own drags do. */
+    private followMouse(): void {
         if (typeof window === "undefined") return;
         window.addEventListener("mousemove", this.onDragMove);
         window.addEventListener("mouseup", this.onDragEnd);
@@ -339,6 +473,7 @@ export class OverlayRenderer implements ClientPlugin {
     private endDrag(): Drag | undefined {
         const drag = this.drag;
         this.drag = undefined;
+        this.resize = undefined;
         if (typeof window !== "undefined") {
             window.removeEventListener("mousemove", this.onDragMove);
             window.removeEventListener("mouseup", this.onDragEnd);
@@ -348,18 +483,34 @@ export class OverlayRenderer implements ClientPlugin {
 
     /** Dropped on a snap corner it locks there (its own default corner clears it); anywhere else it stays put. */
     private finishDrag(): void {
+        const resize = this.resize;
         const drag = this.endDrag();
         const frame = this.frame;
+        if (resize) {
+            const movable = resize.overlay.movable;
+            if (!frame || !movable) return;
+            const r = resize.bounds;
+            const { originX, originY } = computeOrigins(r, frame.canvas);
+            this.save(movable.name, {
+                location: toOrigin(r.x, r.y, originX, originY, frame),
+                originX,
+                originY,
+                size: { width: Math.round(r.w / resize.scaleX), height: Math.round(r.h / resize.scaleY) },
+            });
+            return;
+        }
         const movable = drag?.overlay.movable;
         if (!drag || !frame || !movable) return;
+        // Moving keeps the size it was given.
+        const size = this.load(movable.name).size;
         const corner = this.cornerAt(this.mouseX, this.mouseY);
         if (corner) {
             const isDefault = corner.position === correctedPosition(movable.position, frame.resized);
-            this.save(movable.name, isDefault ? {} : { position: corner.position });
+            this.save(movable.name, isDefault ? { size } : { position: corner.position, size });
         } else {
             const bounds = { x: drag.x, y: drag.y, w: drag.w, h: drag.h };
             const { originX, originY } = computeOrigins(bounds, frame.canvas);
-            this.save(movable.name, { location: toOrigin(drag.x, drag.y, originX, originY, frame), originX, originY });
+            this.save(movable.name, { location: toOrigin(drag.x, drag.y, originX, originY, frame), originX, originY, size });
         }
     }
 
@@ -380,6 +531,10 @@ export class OverlayRenderer implements ClientPlugin {
             saved.originX = (get(ORIGIN_X) as OriginX | undefined) ?? "LEFT";
             saved.originY = (get(ORIGIN_Y) as OriginY | undefined) ?? "TOP";
         }
+        const size = get(PREFERRED_SIZE)?.split("x").map(Number);
+        if (size?.length === 2 && size.every((n) => Number.isInteger(n) && n > 0)) {
+            saved.size = { width: size[0], height: size[1] };
+        }
         this.saved.set(name, saved);
         return saved;
     }
@@ -394,6 +549,7 @@ export class OverlayRenderer implements ClientPlugin {
         set(PREFERRED_LOCATION, saved.location && `${saved.location.x}:${saved.location.y}`);
         set(ORIGIN_X, saved.location && saved.originX);
         set(ORIGIN_Y, saved.location && saved.originY);
+        set(PREFERRED_SIZE, saved.size && `${saved.size.width}x${saved.size.height}`);
         this.revision++;
     }
 }

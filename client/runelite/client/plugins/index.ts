@@ -54,6 +54,7 @@ import { TimersPlugin } from "../../../game/plugins/statustimer/TimersPlugin";
 import { LegacyTileMarkersConfig } from "../../../game/plugins/tilemarkers/migrateTileMarkers";
 import { TileMarkersPlugin } from "../../../game/plugins/tilemarkers/TileMarkersPlugin";
 import { TilePacksPlugin } from "../../../game/plugins/tilepacks/TilePacksPlugin";
+import { VisualMetronomePlugin } from "../../../game/plugins/visualmetronome/VisualMetronomePlugin";
 import { LowEndDevicePlugin } from "../../../game/plugins/lowenddevice/LowEndDevicePlugin";
 import { XpTrackerPlugin } from "../../../game/plugins/xptracker/XpTrackerPlugin";
 import { XpGlobesPlugin } from "../../../game/plugins/xpglobes/XpGlobesPlugin";
@@ -83,6 +84,7 @@ export const CORE_PLUGINS: ReadonlyArray<PluginClass> = [
     MultiLinesPlugin,
     TileMarkersPlugin,
     TilePacksPlugin,
+    VisualMetronomePlugin,
     MenuSwapperPlugin,
     // After Menu Swapper: its "Inventory tag" submenu joins the swapped menu.
     InventoryTagsPlugin,

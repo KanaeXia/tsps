@@ -41,7 +41,7 @@
     "id": 50001,
     "baseItemId": 4587,
     "objType": {
-      "name": "Elven Tassets",
+      "name": "Elven tassets",
       "examine": "A reinforced elven skirt.",
       "model": 1000002,
       "maleModel": 1000003,
@@ -50,7 +50,7 @@
       "maleModel2": -1,
       "femaleModel1": -1,
       "femaleModel2": -1,
-      "zoom2d": 900,
+      "zoom2d": 800,
       "xan2d": 512,
       "yan2d": 0,
       "zan2d": 0,
@@ -79,7 +79,7 @@
     "id": 50002,
     "baseItemId": 4587,
     "objType": {
-      "name": "Desert Shawl",
+      "name": "Desert shawl",
       "examine": "Protects you from dust.",
       "model": 1000004,
       "maleModel": 1000005,
@@ -88,7 +88,7 @@
       "maleModel2": -1,
       "femaleModel1": -1,
       "femaleModel2": -1,
-      "zoom2d": 900,
+      "zoom2d": 750,
       "xan2d": 512,
       "yan2d": 0,
       "zan2d": 0,
@@ -107,7 +107,7 @@
       "placeholder": -1,
       "placeholderTemplate": -1
     },
-    "itemDef": { "tradeable": false,"equipmentType":"COIF","doubleHanded":false,"stackable":false,"dropable":true,"sellable":true,"value":10461398,"highAlch":30240,"lowAlch":20160,"dropValue":50400,"blockAnim":424,"standAnim":808,"walkAnim":819,"runAnim":824,"standTurnAnim":823,"turn180Anim":820,"turn90CWAnim":821,"turn90CCWAnim":821,"weight":0,"bonuses":[0,0,0,8,0,0,0,0,8,0,0,0,0,0],"requirements":[0,30,0,0,0,0,65,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] },
+    "itemDef": { "tradeable": false,"equipmentType":"COIF","doubleHanded":false,"stackable":false,"dropable":true,"sellable":true,"value":10461398,"highAlch":30240,"lowAlch":20160,"dropValue":50400,"blockAnim":424,"standAnim":808,"walkAnim":819,"runAnim":824,"standTurnAnim":823,"turn180Anim":820,"turn90CWAnim":821,"turn90CCWAnim":821,"weight":0,"bonuses":[0,0,0,8,0,0,0,0,8,0,0,0,0,0] },
     "models": {
       "1000004": "desert-shawl/drop.dat",
       "1000005": "desert-shawl/equip.dat",
@@ -156,7 +156,7 @@
     "id": 50004,
     "baseItemId": 4587,
     "objType": {
-      "name": "Dusty Satchel",
+      "name": "Dusty satchel",
       "examine": "Perhaps it belonged to a desert mailman or something.",
       "model": 1000009,
       "maleModel": 1000010,
@@ -165,7 +165,7 @@
       "maleModel2": -1,
       "femaleModel1": -1,
       "femaleModel2": -1,
-      "zoom2d": 1800,
+      "zoom2d": 800,
       "xan2d": 512,
       "yan2d": 0,
       "zan2d": 0,

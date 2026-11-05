@@ -160,6 +160,12 @@ export interface WidgetOverlay {
      * snap corner. It draws where `context.place` says.
      */
     movable?: { name: string; position: OverlayPosition };
+    /**
+     * A movable overlay the player can resize (RuneLite's setResizable): Alt-drag its border. The
+     * size it was given is `ClientPluginManager.overlayPreferredSize`, in layout units, no smaller
+     * than `minimumSize` on either side; Alt + right-click clears it with the position.
+     */
+    resizable?: { minimumSize: number };
 }
 
 export type CameraInputContext = {
@@ -279,6 +285,8 @@ export interface ClientPlugin {
         height: number,
         canvas: { w: number; h: number },
     ): OverlayPlacement | undefined;
+    /** A resizable overlay's size the player gave it (layout units), while it has one. */
+    overlayPreferredSize?(overlay: WidgetOverlay): { width: number; height: number } | undefined;
     /** Handle a client-side `::command`; return true to consume it (no server round trip). */
     handleClientCommand?(command: string): boolean;
     /** Handle a widget action locally; return true to consume it before CS2 or network dispatch. */
@@ -524,6 +532,13 @@ export class ClientPluginManager {
     ): OverlayPlacement | undefined {
         for (const plugin of this.implementing("placeOverlay")) {
             return plugin.placeOverlay!(overlay, width, height, canvas);
+        }
+        return undefined;
+    }
+
+    overlayPreferredSize(overlay: WidgetOverlay): { width: number; height: number } | undefined {
+        for (const plugin of this.implementing("overlayPreferredSize")) {
+            return plugin.overlayPreferredSize!(overlay);
         }
         return undefined;
     }
