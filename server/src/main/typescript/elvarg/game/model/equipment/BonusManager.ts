@@ -36,13 +36,13 @@ export class BonusManager {
     private defenceBonus: number[] = new Array(5).fill(0);
     private otherBonus: number[] = new Array(4).fill(0);
 	
-	// Min Bonuses for me - Slots 0, 1, 4, 7, 9 and 10
+	// Min Bonuses for me - Slots 0, 1, 2, 4, 7, 9 and 10
     //private static readonly attackBonusQ: number[] = [0, 0, 0, 0, 0];
     //private static readonly defenceBonusQ: number[] = [0, 0, 0, 0, 0];
     //private static readonly otherBonusQ: number[] = [0, 0, 0, 10];
-    private static readonly bonusQ: number[] = [7, 7, 38, 3, 7,
-												128, 95, 141, 10, 69,
-												12, 0, 0, 10];
+    private static readonly bonusQ: number[] = [17, 17, 55, 58, 56,
+												171, 139, 186, 96, 96,
+												30, 0, 0, 15+10];
 
     public static update(player: Player) {
         const bonuses = new Array(BonusManager.BONUS_COUNT).fill(0);
@@ -57,6 +57,7 @@ export class BonusManager {
 				switch(definition.getEquipmentType().getSlot()) {
 					case 0:
 					case 1:
+					case 2:
 					case 4:
 					case 7:
 					case 9:

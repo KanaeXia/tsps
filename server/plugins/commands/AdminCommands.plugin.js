@@ -446,6 +446,23 @@ function keepRunEnergyFull({ player }) {
   }
 }
 
+/**
+ * ::heal - every skill's current level back to its base (boosts and drains alike, hitpoints and
+ * prayer included), poison and venom cured, and full run and special energy.
+ */
+function healCommand({ player }) {
+  const skills = player.getSkillManager();
+  for (const skill of Skill.values()) skills.setCurrentLevels(skill, skills.getMaxLevel(skill));
+  player.setPoisonDamage(0);
+  player.setVenomed(false);
+  player.setRunEnergy(FULL_RUN_ENERGY);
+  player.getPacketSender().sendRunEnergy();
+  player.setSpecialPercentage(100);
+  CombatSpecial.updateBar(player);
+  player.sendMessage("You have been healed.");
+  return true;
+}
+
 /** ::give id [amount] player - puts items in an online player's inventory, as ::item does in yours. */
 function giveItemCommand(core, { player, parts }) {
   const id = parseIntArg(parts[1]);
@@ -1234,6 +1251,8 @@ module.exports = {
       player.sendMessage("Sent config");
       return true;
     }, PlayerRights.OWNER, "Send config");
+
+    api.registerCommand("heal", healCommand, PlayerRights.OWNER, "Restore your levels, run and special energy; cure poison and venom");
 
     api.registerCommand("spec", ({ player, parts }) => {
       const amount = parts.length > 1 ? parseIntArg(parts[1]) : 100;
