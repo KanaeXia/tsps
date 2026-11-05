@@ -3,13 +3,14 @@ import { ObjType } from "../../rs/config/objtype/ObjType";
 import type { ObjTypeLoader } from "../../rs/config/objtype/ObjTypeLoader";
 import { CustomItemRegistry } from "./CustomItemRegistry";
 import type { CustomObjTypeProps } from "./CustomItemTypes";
+import { ItemNameOverrides } from "./ItemNameOverrides";
 
 /**
  * Wrapping ObjTypeLoader that injects custom items.
  *
  * Priority:
  * 1. Custom items (for IDs registered in CustomItemRegistry)
- * 2. Base loader (original cache items)
+ * 2. Base loader (original cache items), renamed when the server sent a name (ItemNameOverrides)
  *
  * Custom items can use `baseItemId` to copy all properties from
  * an existing cache item before applying customizations.
@@ -24,9 +25,11 @@ export class CustomObjTypeLoader implements ObjTypeLoader {
     ) {}
 
     load(id: number): ObjType {
-        if (this.revision !== CustomItemRegistry.revision) {
+        // Either registry changing invalidates what was built from it (revisions only grow).
+        const revision = CustomItemRegistry.revision + ItemNameOverrides.revision;
+        if (this.revision !== revision) {
             this.customCache.clear();
-            this.revision = CustomItemRegistry.revision;
+            this.revision = revision;
         }
         // Check custom cache first
         const cached = this.customCache.get(id);
@@ -44,8 +47,19 @@ export class CustomObjTypeLoader implements ObjTypeLoader {
             return objType;
         }
 
+        // A cache item the server renamed: a copy with its name, leaving the cache's own untouched.
+        const base = this.base.load(id);
+        const name = ItemNameOverrides.get(id);
+        if (name !== undefined && base.name !== name) {
+            // Every field as the cache has it (a shallow copy), only the name changed.
+            const renamed: ObjType = Object.assign(Object.create(Object.getPrototypeOf(base)), base);
+            renamed.name = name;
+            this.customCache.set(id, renamed);
+            return renamed;
+        }
+
         // Fall back to base loader
-        return this.base.load(id);
+        return base;
     }
 
     private createCustomObjType(

@@ -49,12 +49,51 @@ test("invalid fields and unknown items are skipped, not fatal", () => {
   const value = bones.getValue();
   const speed = bones.getAttackSpeed();
   const loaded = ItemDefinitionLoader._test.applyItemOverrides({
-    [BONES]: { value: -1, attackSpeed: 99, bonuses: [1, 2], name: "Not allowed" },
+    [BONES]: { value: -1, attackSpeed: 99, bonuses: [1, 2], name: "<col=ff0000>Red" },
     99999999: { value: 1 },
     nonsense: { value: 1 },
   });
   assert.equal(loaded, 1);
   assert.equal(bones.getValue(), value);
   assert.equal(bones.getAttackSpeed(), speed);
-  assert.equal(bones.getName(), "Bones", "names stay the client's");
+  assert.equal(bones.getName(), "Bones", "markup isn't a name");
+  for (const name of ["", "   ", "x".repeat(65), 7]) {
+    ItemDefinitionLoader._test.applyItemOverrides({ [BONES]: { name } });
+    assert.equal(bones.getName(), "Bones", JSON.stringify(name));
+  }
+  assert.deepEqual(ItemDefinitionLoader._test.nameOverrides(), []);
+});
+
+test("a name override renames the item, its note and its placeholder, and is sent at login", () => {
+  const whip = ItemDefinition.forId(WHIP);
+  const noted = ItemDefinition.forId(whip.getNoteId());
+  const placeholder = ItemDefinition.forId(whip.getPlaceholderId());
+  assert.equal(noted.isNoted(), true);
+  ItemDefinitionLoader._test.applyItemOverrides({ [WHIP]: { name: "Tentacle-less whip" } });
+  assert.equal(whip.getName(), "Tentacle-less whip");
+  assert.equal(noted.getName(), "Tentacle-less whip", "the noted whip");
+  assert.equal(placeholder.getName(), "Tentacle-less whip", "the bank placeholder");
+  assert.equal(require("../dist/game/cache/CacheDefinitions").CacheDefinitions.getItem(WHIP).name, "Abyssal whip",
+    "the cache's own name is untouched, for content that matches names");
+
+  // Its own override wins over the item's.
+  ItemDefinitionLoader._test.applyItemOverrides({
+    [WHIP]: { name: "Whip" },
+    [whip.getNoteId()]: { name: "Whip bundle" },
+  });
+  assert.equal(noted.getName(), "Whip bundle");
+  const rows = ItemDefinitionLoader._test.nameOverrides();
+  assert.deepEqual(
+    [...rows].sort((a, b) => a.id - b.id),
+    [{ id: WHIP, name: "Whip" }, { id: whip.getNoteId(), name: "Whip bundle" }, { id: whip.getPlaceholderId(), name: "Whip" }]
+      .sort((a, b) => a.id - b.id),
+  );
+
+  // At login the client is sent the names, after the custom items.
+  const sent = [];
+  const player = { getPacketSender: () => ({ sendContentData: (_source, datasets) => sent.push(...datasets) }) };
+  ItemDefinitionLoader._test.sendCustomItems({ player });
+  const last = sent.at(-1);
+  assert.equal(last.key, "itemNameOverrides");
+  assert.deepEqual(last.rows, rows);
 });

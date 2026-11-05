@@ -233,7 +233,7 @@ test("server-owned items inherit gameplay and deliver external models before def
     },
   }) } });
   assert.deepEqual(delivered.map((payload) => payload.datasets[0].key),
-    ["customModels", "customModels", "customModels", "customItems"]);
+    ["customModels", "customModels", "customModels", "customItems", "itemNameOverrides"]);
   assert.deepEqual(delivered[0].datasets[0].rows, []);
   for (const payload of delivered.slice(1, 3)) {
     const model = payload.datasets[0].rows[0];

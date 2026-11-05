@@ -268,6 +268,11 @@ export function loadFromPayload(payload: {
                     console.log("[GamemodeContentStore] failed to register custom items", err);
                 }
                 break;
+            case "itemNameOverrides": {
+                const { ItemNameOverrides } = require("../../custom/items/ItemNameOverrides");
+                ItemNameOverrides.replace(Array.isArray(dataset.rows) ? dataset.rows : []);
+                break;
+            }
             case "customModels": {
                 const { CustomModelRegistry } = require("../../custom/items/CustomModelRegistry");
                 if (dataset.rows.length === 0) CustomModelRegistry.clear();
