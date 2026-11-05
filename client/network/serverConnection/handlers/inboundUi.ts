@@ -18,7 +18,6 @@ import { emitPlayerSync, emitSkills } from "../domain/skills";
 import { handleTradePayload } from "../domain/trade";
 import { markChatTransmit, markItemDefinitionsChanged, markMiscTransmit } from "../../../game/TransmitCycles";
 import { CustomItemRegistry } from "../../../custom/items/CustomItemRegistry";
-import { ItemNameOverrides } from "../../../custom/items/ItemNameOverrides";
 import { getDefinitionArchiveKey } from "../../../custom/archives/ArchivedDefinitionStore";
 import { getClientCycle } from "../timing";
 import { cloneRunEnergyState, state } from "../state";
@@ -286,7 +285,7 @@ export function handleInboundUi(msg: any): boolean {
         }
         try {
             const { loadFromPayload } = require("../../../common/gamemode/GamemodeContentStore");
-            const itemRevision = CustomItemRegistry.revision + ItemNameOverrides.revision;
+            const itemRevision = CustomItemRegistry.revision;
             const archiveKey = getDefinitionArchiveKey();
             loadFromPayload(msg.payload);
             const g: any = (typeof window !== "undefined" ? window : globalThis) as any;
@@ -305,7 +304,7 @@ export function handleInboundUi(msg: any): boolean {
                 mv?.workerPool?.runAll((worker: any) => worker.setCustomContent(msg.payload))
                     .catch((error: unknown) => console.error("Custom worker content failed", error));
             }
-            if (CustomItemRegistry.revision + ItemNameOverrides.revision !== itemRevision || getDefinitionArchiveKey() !== archiveKey) {
+            if (CustomItemRegistry.revision !== itemRevision || getDefinitionArchiveKey() !== archiveKey) {
                 markItemDefinitionsChanged();
             }
             if (mv && typeof mv.refreshGamemodeWorldLocs === "function") {

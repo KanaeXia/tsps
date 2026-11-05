@@ -150,18 +150,8 @@ function loadItemAlch() {
 }
 
 const amount = (value) => Number.isSafeInteger(value) && value >= 0;
-/** The longest item name an override may give (the cache's longest are under 50). */
-const MAX_NAME_LENGTH = 64;
-/** The renamed items as the client is sent them: [{ id, name }], notes and placeholders included. */
-let nameOverrides = [];
-/**
- * Fields a world may change on an existing item. All but `name` are read only on the server;
- * a name is also sent to the client at login (`itemNameOverrides`), which shows it everywhere
- * the item's name appears.
- */
+/** Fields a world may change on an existing item; all are read on the server, so the client needs nothing. */
 const OVERRIDE_FIELDS = {
-  name: (value) => typeof value === "string" && value.trim() !== "" && value.length <= MAX_NAME_LENGTH
-    && !/[<>]/.test(value),
   value: amount, grandExchangeValue: amount, highAlch: amount, lowAlch: amount, dropValue: amount,
   tradeable: (value) => typeof value === "boolean",
   sellable: (value) => typeof value === "boolean",
@@ -179,7 +169,6 @@ const OVERRIDE_FIELDS = {
 function applyItemOverrides(overrides) {
   const ItemDefinition = getItemDefinition();
   let loaded = 0;
-  const names = new Map();
   for (const [key, fields] of Object.entries(overrides ?? {})) {
     const id = Number(key);
     const definition = Number.isInteger(id) && id >= 0 ? ItemDefinition.forId(id) : ItemDefinition.DEFAULT;
@@ -192,47 +181,15 @@ function applyItemOverrides(overrides) {
         console.warn(`[item-overrides] skipped invalid ${field} for item ${key}`);
         continue;
       }
-      if (field === "name") {
-        names.set(id, value);
-        continue;
-      }
       definition[field] = Array.isArray(value) ? [...value] : value;
     }
     loaded += 1;
   }
-  nameOverrides = applyNameOverrides(names);
   return loaded;
-}
-
-/**
- * A noted item and a bank placeholder are named after their item in the cache, so a renamed item's
- * note and placeholder take its new name too, unless they have an override of their own.
- */
-function applyNameOverrides(names) {
-  const ItemDefinition = getItemDefinition();
-  const all = new Map(names);
-  for (const [id, name] of names) {
-    const definition = ItemDefinition.forId(id);
-    if (definition.isNoted()) continue;
-    for (const linked of [definition.getNoteId(), definition.getPlaceholderId()]) {
-      if (linked >= 0 && !names.has(linked) && ItemDefinition.forId(linked) !== ItemDefinition.DEFAULT) all.set(linked, name);
-    }
-  }
-  const rows = [];
-  for (const [id, name] of all) {
-    ItemDefinition.forId(id).name = name;
-    rows.push({ id, name });
-  }
-  if (encodeContentData("server", [{ key: "itemNameOverrides", rows }]).length > 0xffff) {
-    console.warn("[item-overrides] too many renamed items to send to the client; names change on the server only");
-    return [];
-  }
-  return rows;
 }
 
 function loadItemOverrides() {
   const filePath = path.resolve(process.cwd(), getGameConstants().DEFINITIONS_DIRECTORY, "item-overrides.json");
-  nameOverrides = [];
   if (!fs.existsSync(filePath)) return { filePath, loaded: 0 };
   return { filePath, loaded: applyItemOverrides(JSON.parse(fs.readFileSync(filePath, "utf8"))) };
 }
@@ -392,13 +349,11 @@ function sendCustomItems({ player }) {
     sender.sendContentData("server", [{ key: "customModels", rows: [model] }]);
   }
   sender.sendContentData("server", [{ key: "customItems", rows: CacheDefinitions.getCustomItems() }]);
-  // Always sent, empty or not, so a client keeps no name from an earlier world.
-  sender.sendContentData("server", [{ key: "itemNameOverrides", rows: nameOverrides }]);
 }
 
 module.exports = {
   name: "ItemDefinitionLoader",
-  _test: { loadItemPrices, loadItemAlch, applyItemOverrides, sendCustomItems, nameOverrides: () => nameOverrides },
+  _test: { loadItemPrices, loadItemAlch, applyItemOverrides },
   register(api) {
     const startedAt = Date.now();
     const result = loadItemDefinitions();

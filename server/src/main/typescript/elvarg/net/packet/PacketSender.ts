@@ -96,7 +96,6 @@ import {
   WORLD_MAP_TARGET_UID,
 } from "../protocol/WorldMapProtocol";
 import { CacheDefinitions } from "../../game/cache/CacheDefinitions";
-import { ItemDefinition } from "../../game/definition/ItemDefinition";
 import { applyRunEnergyStatusModifiers } from "../../game/content/combat/EquipmentEffects";
 const CHATBOX_MODAL_TARGET_UID = (162 << 16) | 568;
 const MAIN_MODAL_TARGET_UID = (161 << 16) | 16;
@@ -1262,8 +1261,7 @@ export class PacketSender {
     this.player.setCreationMenu?.(menu);
     const options = menu.getOptions?.() ?? {};
     const names = items.map((id: number, index: number) => options.labels?.[index]
-      // The definition's name, so an item-overrides.json rename shows here too.
-      ?? (CacheDefinitions.hasItem(id) ? ItemDefinition.forId(id).getName() : "null"));
+      ?? (CacheDefinitions.hasItem(id) ? CacheDefinitions.getItem(id).name : "null"));
     const maxAmount = Number.isInteger(options.maxAmount)
       ? Math.max(0, Math.min(options.maxAmount, CREATION_MENU_MAX_QUANTITY))
       : CREATION_MENU_MAX_QUANTITY;

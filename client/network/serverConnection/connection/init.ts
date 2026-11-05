@@ -16,7 +16,6 @@ import type { GameSocket } from "./GameSocket";
 import { send } from "./send";
 import { WebRtcGameSocket } from "./WebRtcGameSocket";
 import { CustomItemRegistry } from "../../../custom/items/CustomItemRegistry";
-import { ItemNameOverrides } from "../../../custom/items/ItemNameOverrides";
 import { CustomModelRegistry } from "../../../custom/items/CustomModelRegistry";
 import { replaceDefinitionArchives } from "../../../custom/archives/ArchivedDefinitionStore";
 import { clearWorldOverlays } from "../../../common/gamemode/GamemodeContentStore";
@@ -48,7 +47,6 @@ export function initServerConnection(url: string = DEFAULT_URL): void {
 
     try {
         CustomItemRegistry.clear();
-        ItemNameOverrides.clear();
         CustomModelRegistry.clear();
         replaceDefinitionArchives([]);
         clearWorldOverlays();

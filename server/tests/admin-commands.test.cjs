@@ -1,5 +1,5 @@
 // Run after `yarn build`: node --test tests/admin-commands.test.cjs
-// ::infrun, ::give and ::setlevel (issue #593), typed the way the chatbox sends them.
+// ::infrun, ::give, ::setlevel (issue #593) and ::heal, typed the way the chatbox sends them.
 const assert = require("node:assert/strict");
 const path = require("node:path");
 const { test, before, beforeEach } = require("node:test");
@@ -217,4 +217,39 @@ test("::setlevel refuses levels a skill can't have, and skill names it can't tel
   type(owner, "setlevel attack 50 nobody");
   assert.equal(owner.messages.at(-1), "Player nobody is not online.");
   assert.equal(owner.getSkillManager().getMaxLevel(Skill.ATTACK), 1, "nothing changed");
+});
+
+test("::heal restores every level to base, cures poison and venom, and fills run and special energy", () => {
+  const owner = login("Owner", Rights.OWNER);
+  const skills = owner.getSkillManager();
+  skills.setMaxLevel(Skill.STRENGTH, 120).setExperience(Skill.STRENGTH, SkillManager.getExperienceForLevel(120));
+  skills.setCurrentLevels(Skill.STRENGTH, 139); // boosted
+  skills.setMaxLevel(Skill.PRAYER, 70).setExperience(Skill.PRAYER, SkillManager.getExperienceForLevel(70));
+  skills.setCurrentLevels(Skill.PRAYER, 3); // drained
+  skills.setCurrentLevels(Skill.HITPOINTS, 4); // hurt
+  owner.setPoisonDamage(12);
+  owner.setVenomed(true);
+  owner.setRunEnergy(15);
+  owner.setSpecialPercentage(25);
+
+  type(owner, "heal");
+
+  assert.equal(skills.getCurrentLevel(Skill.STRENGTH), 120, "a boost comes back down to base");
+  assert.equal(skills.getCurrentLevel(Skill.PRAYER), 70, "a drain comes back up to base");
+  assert.equal(skills.getCurrentLevel(Skill.HITPOINTS), skills.getMaxLevel(Skill.HITPOINTS));
+  for (const skill of Skill.values()) assert.equal(skills.getCurrentLevel(skill), skills.getMaxLevel(skill), skill.getName());
+  assert.equal(owner.getPoisonDamage(), 0);
+  assert.equal(owner.isVenomed(), false);
+  assert.equal(owner.getRunEnergy(), 100);
+  assert.equal(owner.orb.at(-1), 100, "the run orb is sent the full energy");
+  assert.equal(owner.getSpecialPercentage(), 100);
+  assert.equal(owner.messages.at(-1), "You have been healed.");
+});
+
+test("::heal is for owners only", () => {
+  const player = login("Player");
+  player.setRunEnergy(15);
+  type(player, "heal");
+  assert.equal(player.messages.at(-1), NO_PERMISSION);
+  assert.equal(player.getRunEnergy(), 15);
 });
