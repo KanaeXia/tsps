@@ -67,7 +67,7 @@ function registerAtlatlProfile(api) {
     new Ammunition(I.ATLATL_DART, null, 2795, 0),
     new Ammunition(I.ATLATL_DART_3, null, 2795, 0),
   ];
-  new RangedWeapon([I.ECLIPSE_ATLATL, I.ECLIPSE_ATLATL_4], darts, type);
+  new RangedWeapon([I.ECLIPSE_ATLATL, I.ECLIPSE_ATLATL_4, 50005], darts, type);
   api.registerWeaponProfile({
     itemIds: [...atlatlIds],
     attackAnimation: 11057, // human_atlatl_attack_ranged_01
