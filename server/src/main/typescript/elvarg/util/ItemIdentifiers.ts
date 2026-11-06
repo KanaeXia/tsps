@@ -32253,4 +32253,7 @@ export class ItemIdentifiers {
     public static ZORYAS_TOME_UNCHARGED__2 = 34728; // Zorya's tome (uncharged)
     public static ALLIANCE_LOG = 34729; // Alliance log
     public static LEFTOVERS = 34730; // Leftovers
+	
+	public static EXALTED_SPRING = 50003;
+	public static DUSTY_SATCHEL = 50004;
 }

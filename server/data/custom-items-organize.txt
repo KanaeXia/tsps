@@ -1,0 +1,19 @@
+50000-50999 weapons
+51000-51999 weapon placeholders
+52000-52099 armor, stray pieces
+521x0-529x9 armor, x-separate by set
+53000-53999 armor placeholders
+
+50000 : Dragonic Katana
+50001 : Exalted Spring
+50002 : Sanguine Atlatl
+
+52000 : Elven Tassets
+52001 : Void cape
+
+52100 : Desert Shawl
+52101 : Dusty Satchel
+52102 : Desert Woven Top
+52103 : Desert Sarong
+52104 : Desert Shinguard
+52105 : Desert Wristguards
