@@ -39,7 +39,7 @@
   },
   {
     "id": 50001,
-    "baseItemId": 4587,
+    "baseItemId": 11834,
     "objType": {
       "name": "Elven tassets",
       "examine": "A reinforced elven skirt.",
@@ -77,7 +77,7 @@
   },
   {
     "id": 50002,
-    "baseItemId": 4587,
+    "baseItemId": 25593,
     "objType": {
       "name": "Desert shawl",
       "examine": "Protects you from dust.",
@@ -107,7 +107,7 @@
       "placeholder": 51002,
       "placeholderTemplate": -1
     },
-    "itemDef": { "tradeable": false,"equipmentType":"COIF","doubleHanded":false,"stackable":false,"dropable":true,"sellable":true,"value":10461398,"highAlch":30240,"lowAlch":20160,"dropValue":50400,"blockAnim":424,"standAnim":808,"walkAnim":819,"runAnim":824,"standTurnAnim":823,"turn180Anim":820,"turn90CWAnim":821,"turn90CCWAnim":821,"weight":0,"bonuses":[0,0,0,8,0,0,0,0,8,0,0,0,0,0] },
+    "itemDef": { "tradeable": false,"equipmentType":"COIF","doubleHanded":false,"stackable":false,"dropable":true,"sellable":true,"value":10461398,"highAlch":30240,"lowAlch":20160,"dropValue":50400,"blockAnim":424,"standAnim":808,"walkAnim":819,"runAnim":824,"standTurnAnim":823,"turn180Anim":820,"turn90CWAnim":821,"turn90CCWAnim":821,"weight":0,"bonuses":[0,0,0,8,8,0,0,0,10,0,0,0,0,4] },
     "models": {
       "1000004": "desert-shawl/drop.dat",
       "1000005": "desert-shawl/equip.dat",
@@ -116,7 +116,7 @@
   },
   {
     "id": 50003,
-    "baseItemId": 4587,
+    "baseItemId": 33631,
     "objType": {
       "name": "Exalted Spring",
       "examine": "The legendary nine-ring blade of Xia.",
@@ -154,7 +154,7 @@
   },
   {
     "id": 50004,
-    "baseItemId": 4587,
+    "baseItemId": 30361,
     "objType": {
       "name": "Dusty satchel",
       "examine": "Perhaps it belonged to a desert mailman or something.",
@@ -192,7 +192,7 @@
   },
   {
     "id": 50005,
-    "baseItemId": 4587,
+    "baseItemId": 29000,
     "objType": {
       "name": "Sanguine atlatl",
       "examine": "A powerful thrown weapon forged from a bloodmoon.",
@@ -203,7 +203,7 @@
       "maleModel2": -1,
       "femaleModel1": -1,
       "femaleModel2": -1,
-      "zoom2d": 800,
+      "zoom2d": 1500,
       "xan2d": 512,
       "yan2d": 0,
       "zan2d": 0,
@@ -230,8 +230,199 @@
     }
   },
   {
+    "id": 50006,
+    "baseItemId": 1115,
+    "objType": {
+      "name": "Desert woven top",
+      "examine": "Protects you from dust.",
+      "model": 1000014,
+      "maleModel": 1000015,
+      "femaleModel": 1000015,
+      "maleModel1": -1,
+      "maleModel2": -1,
+      "femaleModel1": -1,
+      "femaleModel2": -1,
+      "zoom2d": 750,
+      "xan2d": 512,
+      "yan2d": 0,
+      "zan2d": 0,
+      "offsetX2d": 0,
+      "offsetY2d": 0,
+      "recolorFrom": [],
+      "recolorTo": [],
+      "retextureFrom": [],
+      "retextureTo": [],
+      "inventoryActions": ["Wear", null, null, null, "Drop"],
+      "isTradable": false,
+      "note": -1,
+      "noteTemplate": -1,
+      "unnotedId": -1,
+      "notedId": -1,
+      "placeholder": 51006,
+      "placeholderTemplate": -1
+    },
+    "itemDef": { "tradeable": false,"equipmentType":"PLATEBODY","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,8,8,0,0,0,10,0,0,0,0,4] },
+    "models": {
+      "1000014": "desert-woven-top/drop.dat",
+      "1000015": "desert-woven-top/equip.dat",
+      "1000016": "desert-woven-top/equip1.dat"
+    }
+  },
+  {
+    "id": 50007,
+    "baseItemId": 1067,
+    "objType": {
+      "name": "Desert sarong",
+      "examine": "Protects you from dust.",
+      "model": 1000017,
+      "maleModel": 1000018,
+      "femaleModel": 1000018,
+      "maleModel1": -1,
+      "maleModel2": -1,
+      "femaleModel1": -1,
+      "femaleModel2": -1,
+      "zoom2d": 750,
+      "xan2d": 512,
+      "yan2d": 0,
+      "zan2d": 0,
+      "offsetX2d": 0,
+      "offsetY2d": 0,
+      "recolorFrom": [],
+      "recolorTo": [],
+      "retextureFrom": [],
+      "retextureTo": [],
+      "inventoryActions": ["Wear", null, null, null, "Drop"],
+      "isTradable": false,
+      "note": -1,
+      "noteTemplate": -1,
+      "unnotedId": -1,
+      "notedId": -1,
+      "placeholder": 51007,
+      "placeholderTemplate": -1
+    },
+    "itemDef": { "tradeable": false,"equipmentType":"LEGS","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,8,8,0,0,0,10,0,0,0,0,4] },
+    "models": {
+      "1000017": "desert-sarong/drop.dat",
+      "1000018": "desert-sarong/equip.dat"
+    }
+  },
+  {
+    "id": 50008,
+    "baseItemId": 1837,
+    "objType": {
+      "name": "Desert shinguards",
+      "examine": "Protects you from dust.",
+      "model": 1000019,
+      "maleModel": 1000020,
+      "femaleModel": 1000020,
+      "maleModel1": -1,
+      "maleModel2": -1,
+      "femaleModel1": -1,
+      "femaleModel2": -1,
+      "zoom2d": 750,
+      "xan2d": 512,
+      "yan2d": 0,
+      "zan2d": 0,
+      "offsetX2d": 0,
+      "offsetY2d": 0,
+      "recolorFrom": [],
+      "recolorTo": [],
+      "retextureFrom": [],
+      "retextureTo": [],
+      "inventoryActions": ["Wear", null, null, null, "Drop"],
+      "isTradable": false,
+      "note": -1,
+      "noteTemplate": -1,
+      "unnotedId": -1,
+      "notedId": -1,
+      "placeholder": 51008,
+      "placeholderTemplate": -1
+    },
+    "itemDef": { "tradeable": false,"equipmentType":"BOOTS","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,8,8,0,0,0,10,0,0,0,0,4] },
+    "models": {
+      "1000019": "desert-shinguards/drop.dat",
+      "1000020": "desert-shinguards/equip.dat"
+    }
+  },
+  {
+    "id": 50009,
+    "baseItemId": 7455,
+    "objType": {
+      "name": "Desert wristguards",
+      "examine": "Protects you from dust.",
+      "model": 1000021,
+      "maleModel": 1000022,
+      "femaleModel": 1000022,
+      "maleModel1": -1,
+      "maleModel2": -1,
+      "femaleModel1": -1,
+      "femaleModel2": -1,
+      "zoom2d": 750,
+      "xan2d": 512,
+      "yan2d": 0,
+      "zan2d": 0,
+      "offsetX2d": 0,
+      "offsetY2d": 0,
+      "recolorFrom": [],
+      "recolorTo": [],
+      "retextureFrom": [],
+      "retextureTo": [],
+      "inventoryActions": ["Wear", null, null, null, "Drop"],
+      "isTradable": false,
+      "note": -1,
+      "noteTemplate": -1,
+      "unnotedId": -1,
+      "notedId": -1,
+      "placeholder": 51009,
+      "placeholderTemplate": -1
+    },
+    "itemDef": { "tradeable": false,"equipmentType":"GLOVES","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,8,8,0,0,0,10,0,0,0,0,4] },
+    "models": {
+      "1000021": "desert-wristbands/drop.dat",
+      "1000022": "desert-wristbands/equip.dat"
+    }
+  },
+  {
+    "id": 50010,
+    "baseItemId": 2412,
+    "objType": {
+      "name": "Void skill cape",
+      "examine": "What skill is this even?",
+      "model": 1000023,
+      "maleModel": 1000024,
+      "femaleModel": 1000024,
+      "maleModel1": -1,
+      "maleModel2": -1,
+      "femaleModel1": -1,
+      "femaleModel2": -1,
+      "zoom2d": 1900,
+      "xan2d": 512,
+      "yan2d": 0,
+      "zan2d": 0,
+      "offsetX2d": 0,
+      "offsetY2d": 0,
+      "recolorFrom": [],
+      "recolorTo": [],
+      "retextureFrom": [],
+      "retextureTo": [],
+      "inventoryActions": ["Wear", null, null, null, "Drop"],
+      "isTradable": false,
+      "note": -1,
+      "noteTemplate": -1,
+      "unnotedId": -1,
+      "notedId": -1,
+      "placeholder": 51010,
+      "placeholderTemplate": -1
+    },
+    "itemDef": { "tradeable": false,"equipmentType":"CAPE","doubleHanded":false,"stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":84,"highAlch":12,"lowAlch":8,"dropValue":2,"blockAnim":424,"weight":0,"bonuses":[0,0,0,0,0,9,9,9,9,9,0,0,0,4],"equipSound":2238 },
+    "models": {
+      "1000023": "blank-skillcape/drop.dat",
+      "1000024": "blank-skillcape/equip.dat"
+    }
+  },
+  {
     "id": 51001,
-    "baseItemId": 4587,
+    "baseItemId": 1,
     "objType": {
       "name": "Elven tassets",
       "examine": "A reinforced elven skirt.",
@@ -269,7 +460,7 @@
   },
   {
     "id": 51002,
-    "baseItemId": 4587,
+    "baseItemId": 1,
     "objType": {
       "name": "Desert shawl",
       "examine": "Protects you from dust.",
@@ -307,7 +498,7 @@
   },
   {
     "id": 51003,
-    "baseItemId": 4587,
+    "baseItemId": 1,
     "objType": {
       "name": "Exalted Spring",
       "examine": "The legendary nine-ring blade of Xia.",
@@ -345,7 +536,7 @@
   },
   {
     "id": 51004,
-    "baseItemId": 4587,
+    "baseItemId": 1,
     "objType": {
       "name": "Dusty satchel",
       "examine": "Perhaps it belonged to a desert mailman or something.",
@@ -383,7 +574,7 @@
   },
   {
     "id": 51005,
-    "baseItemId": 4587,
+    "baseItemId": 1,
     "objType": {
       "name": "Sanguine atlatl",
       "examine": "A powerful thrown weapon forged from a bloodmoon.",
@@ -394,7 +585,7 @@
       "maleModel2": -1,
       "femaleModel1": -1,
       "femaleModel2": -1,
-      "zoom2d": 800,
+      "zoom2d": 1500,
       "xan2d": 512,
       "yan2d": 0,
       "zan2d": 0,
@@ -418,6 +609,197 @@
       "1100011": "sanguine-atlatl/drop.dat",
       "1100012": "sanguine-atlatl/equip.dat",
       "1100013": "sanguine-atlatl/equip-female.dat"
+    }
+  },
+  {
+    "id": 51006,
+    "baseItemId": 1,
+    "objType": {
+      "name": "Desert woven top",
+      "examine": "Protects you from dust.",
+      "model": 1100014,
+      "maleModel": 1100015,
+      "femaleModel": 1100015,
+      "maleModel1": 1100016,
+      "maleModel2": -1,
+      "femaleModel1": 1100016,
+      "femaleModel2": -1,
+      "zoom2d": 750,
+      "xan2d": 512,
+      "yan2d": 0,
+      "zan2d": 0,
+      "offsetX2d": 0,
+      "offsetY2d": 0,
+      "recolorFrom": [],
+      "recolorTo": [],
+      "retextureFrom": [],
+      "retextureTo": [],
+      "inventoryActions": ["Wear", null, null, null, "Drop"],
+      "isTradable": false,
+      "note": -1,
+      "noteTemplate": -1,
+      "unnotedId": -1,
+      "notedId": -1,
+      "placeholder": 50006,
+      "placeholderTemplate": 14401
+    },
+    "itemDef": { "tradeable": false,"equipmentType":"PLATEBODY","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,0,0,0,0,0,0,0,0,0,0,4] },
+    "models": {
+      "1100014": "desert-woven-top/drop.dat",
+      "1100015": "desert-woven-top/equip.dat",
+      "1100016": "desert-woven-top/equip1.dat"
+    }
+  },
+  {
+    "id": 51007,
+    "baseItemId": 1,
+    "objType": {
+      "name": "Desert sarong",
+      "examine": "Protects you from dust.",
+      "model": 1100017,
+      "maleModel": 1100018,
+      "femaleModel": 1100018,
+      "maleModel1": -1,
+      "maleModel2": -1,
+      "femaleModel1": -1,
+      "femaleModel2": -1,
+      "zoom2d": 750,
+      "xan2d": 512,
+      "yan2d": 0,
+      "zan2d": 0,
+      "offsetX2d": 0,
+      "offsetY2d": 0,
+      "recolorFrom": [],
+      "recolorTo": [],
+      "retextureFrom": [],
+      "retextureTo": [],
+      "inventoryActions": ["Wear", null, null, null, "Drop"],
+      "isTradable": false,
+      "note": -1,
+      "noteTemplate": -1,
+      "unnotedId": -1,
+      "notedId": -1,
+      "placeholder": 50007,
+      "placeholderTemplate": 14401
+    },
+    "itemDef": { "tradeable": false,"equipmentType":"LEGS","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,0,0,0,0,0,0,0,0,0,0,4] },
+    "models": {
+      "1100017": "desert-sarong/drop.dat",
+      "1100018": "desert-sarong/equip.dat"
+    }
+  },
+  {
+    "id": 51008,
+    "baseItemId": 1,
+    "objType": {
+      "name": "Desert shinguards",
+      "examine": "Protects you from dust.",
+      "model": 1100019,
+      "maleModel": 1100020,
+      "femaleModel": 1100020,
+      "maleModel1": -1,
+      "maleModel2": -1,
+      "femaleModel1": -1,
+      "femaleModel2": -1,
+      "zoom2d": 750,
+      "xan2d": 512,
+      "yan2d": 0,
+      "zan2d": 0,
+      "offsetX2d": 0,
+      "offsetY2d": 0,
+      "recolorFrom": [],
+      "recolorTo": [],
+      "retextureFrom": [],
+      "retextureTo": [],
+      "inventoryActions": ["Wear", null, null, null, "Drop"],
+      "isTradable": false,
+      "note": -1,
+      "noteTemplate": -1,
+      "unnotedId": -1,
+      "notedId": -1,
+      "placeholder": 50008,
+      "placeholderTemplate": 14401
+    },
+    "itemDef": { "tradeable": false,"equipmentType":"BOOTS","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,0,0,0,0,0,0,0,0,0,0,4] },
+    "models": {
+      "1100019": "desert-shinguards/drop.dat",
+      "1100020": "desert-shinguards/equip.dat"
+    }
+  },
+  {
+    "id": 51009,
+    "baseItemId": 1,
+    "objType": {
+      "name": "Desert wristguards",
+      "examine": "Protects you from dust.",
+      "model": 1100021,
+      "maleModel": 1100022,
+      "femaleModel": 1100022,
+      "maleModel1": -1,
+      "maleModel2": -1,
+      "femaleModel1": -1,
+      "femaleModel2": -1,
+      "zoom2d": 750,
+      "xan2d": 512,
+      "yan2d": 0,
+      "zan2d": 0,
+      "offsetX2d": 0,
+      "offsetY2d": 0,
+      "recolorFrom": [],
+      "recolorTo": [],
+      "retextureFrom": [],
+      "retextureTo": [],
+      "inventoryActions": ["Wear", null, null, null, "Drop"],
+      "isTradable": false,
+      "note": -1,
+      "noteTemplate": -1,
+      "unnotedId": -1,
+      "notedId": -1,
+      "placeholder": 50009,
+      "placeholderTemplate": 14401
+    },
+    "itemDef": { "tradeable": false,"equipmentType":"GLOVES","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,8,8,0,0,0,10,0,0,0,0,4] },
+    "models": {
+      "1100021": "desert-wristbands/drop.dat",
+      "1100022": "desert-wristbands/equip.dat"
+    }
+  },
+  {
+    "id": 51010,
+    "baseItemId": 1,
+    "objType": {
+      "name": "Void skill cape",
+      "examine": "What skill is this even?",
+      "model": 1100023,
+      "maleModel": 1100024,
+      "femaleModel": 1100024,
+      "maleModel1": -1,
+      "maleModel2": -1,
+      "femaleModel1": -1,
+      "femaleModel2": -1,
+      "zoom2d": 1900,
+      "xan2d": 512,
+      "yan2d": 0,
+      "zan2d": 0,
+      "offsetX2d": 0,
+      "offsetY2d": 0,
+      "recolorFrom": [],
+      "recolorTo": [],
+      "retextureFrom": [],
+      "retextureTo": [],
+      "inventoryActions": ["Wear", null, null, null, "Drop"],
+      "isTradable": false,
+      "note": -1,
+      "noteTemplate": -1,
+      "unnotedId": -1,
+      "notedId": -1,
+      "placeholder": 50010,
+      "placeholderTemplate": 14401
+    },
+    "itemDef": { "tradeable": false,"equipmentType":"CAPE","doubleHanded":false,"stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":84,"highAlch":12,"lowAlch":8,"dropValue":2,"blockAnim":424,"weight":0,"bonuses":[0,0,0,0,0,9,9,9,9,9,0,0,0,4],"equipSound":2238 },
+    "models": {
+      "1100023": "blank-skillcape/drop.dat",
+      "1100024": "blank-skillcape/equip.dat"
     }
   }
 ]
