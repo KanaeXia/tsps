@@ -156,22 +156,22 @@ const APPEARANCE_NPC_TRANSFORM = 65535;
 function decodeEquipmentSlot(reader: AppearanceReader): {
     type: "empty" | "kit" | "item" | "transform";
     value: number;
+    raw: number;
 } {
     const high = reader.readUnsignedByte();
     if (high === 0) {
-        return { type: "empty", value: -1 };
+        return { type: "empty", value: -1, raw: 0 };
     }
     const low = reader.readUnsignedByte();
     const value = (high << 8) | low;
 
-    if (value === APPEARANCE_NPC_TRANSFORM) {
         return { type: "transform", value };
     } else if (value >= APPEARANCE_ITEM_OFFSET) {
         return { type: "item", value: value - APPEARANCE_ITEM_OFFSET };
     } else if (value >= APPEARANCE_KIT_OFFSET) {
         return { type: "kit", value: value - APPEARANCE_KIT_OFFSET };
     }
-    return { type: "empty", value: -1 };
+    return { type: "empty", value: -1, raw: value };
 }
 
 /**
@@ -210,7 +210,6 @@ export function decodeAppearanceBinary(buffer: Uint8Array): DecodedAppearance | 
         for (let slot = 0; slot < EQUIPMENT_SLOTS; slot++) {
             const result = decodeEquipmentSlot(reader);
 
-            // Special case: NPC transform (slot 0 == 65535)
             if (slot === 0 && result.type === "transform") {
                 npcTransformationId = reader.readUnsignedShort();
                 break;

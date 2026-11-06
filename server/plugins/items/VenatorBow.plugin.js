@@ -325,7 +325,13 @@ function configureCharges(player, bow, wanted) {
   if (target > current) {
     player.getBank(Bank.getTabForItem(player, essenceId)).delete(essenceId, target - current);
   } else {
-    player.getBank(Bank.getTabForItem(player, essenceId)).add(new Item(essenceId, current - target), false);
+    const bank = player.getBank(Bank.getTabForItem(player, essenceId));
+    const refund = new Item(essenceId, current - target);
+    if (bank.getAddableAmount(refund) < refund.getAmount()) {
+      bank.full();
+      return;
+    }
+    bank.add(refund, false);
   }
   setCharges(bow, target);
   refreshBank(player);
@@ -346,7 +352,11 @@ function bankItemOp(event) {
     // 0 uncharges the bow.
     acceptsZero: true,
     execute(amount) {
-      if (core.Bank.isOpen(player)) configureCharges(player, item, amount);
+      const { Bank } = core;
+      if (!Bank.isOpen(player) || !isBow(item.getId()) || item.getAmount() !== 1) return;
+      const stillBanked = player.getBanks().some((bank, tab) =>
+        tab !== Bank.BANK_SEARCH_TAB_INDEX && bank?.getItems().includes(item));
+      if (stillBanked) configureCharges(player, item, amount);
     },
   });
   player.getPacketSender().sendEnterAmountPrompt(`How many charges do you want your venator bow to have? (0 - ${format(most)})`);
