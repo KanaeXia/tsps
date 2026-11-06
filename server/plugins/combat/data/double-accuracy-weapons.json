@@ -1,0 +1,21 @@
+{
+  "weapons": [
+    {
+      "name": "Osmumten's fang",
+      "items": [26219, 27246],
+      "combatType": "MELEE",
+      "attackTypes": ["STAB"],
+      "rerollDefenceInTombsOfAmascut": true
+    },
+    {
+      "name": "Exalted Spring",
+      "items": [50003],
+      "combatType": "MELEE"
+    },
+    {
+      "name": "Sanguine atlatl",
+      "items": [50005],
+      "combatType": "RANGED"
+    }
+  ]
+}

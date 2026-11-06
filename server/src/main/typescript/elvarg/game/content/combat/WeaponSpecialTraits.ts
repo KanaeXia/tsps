@@ -129,6 +129,11 @@ export interface WeaponSpecialTraits {
     /** Flat damage added after percentage-based minimum/maximum calculations. */
     readonly minimumDamageBonus?: number;
     readonly maximumDamageBonus?: number;
+    /**
+     * Takes floor(max hit x this) off the top of the damage roll, after the multipliers above
+     * (Osmumten's fang: a 0.15 minimum and 0.15 here roll 9..51 from a max hit of 60).
+     */
+    readonly maximumDamageReductionMultiplier?: number;
     /** Flat max-hit reduction when every internal accuracy roll succeeds. */
     readonly maximumHitReductionOnFullAccuracyRolls?: number;
     /** Damage ranges indexed by the number of successful internal accuracy rolls. */

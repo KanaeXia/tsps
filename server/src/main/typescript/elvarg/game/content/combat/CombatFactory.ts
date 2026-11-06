@@ -71,6 +71,8 @@ export type SpecialDamageBounds = {
     maximumBonus?: number;
     cap?: number;
     reduction?: number;
+    /** Share of the max hit taken off the top (WeaponSpecialTraits.maximumDamageReductionMultiplier). */
+    maximumReductionMultiplier?: number;
 };
 
 const getPlayerCombatSpecial = (player: Player): CombatSpecial | null => {
@@ -465,6 +467,12 @@ export class CombatFactory {
         );
         minimum += Math.trunc(boundsOverride?.minimumBonus ?? traits?.minimumDamageBonus ?? 0);
         maximum += Math.trunc(boundsOverride?.maximumBonus ?? traits?.maximumDamageBonus ?? 0);
+        const topReduction = boundsOverride?.maximumReductionMultiplier ?? traits?.maximumDamageReductionMultiplier ?? 0;
+        if (topReduction > 0) {
+            // A forced max hit (minimum raised to the max) lands on the reduced top, not above it.
+            maximum = Math.max(0, maximum - Math.floor(maxHit * topReduction));
+            minimum = Math.min(minimum, maximum);
+        }
         const cap = boundsOverride?.cap ?? traits?.maximumDamageCap;
         if (cap !== undefined) {
             maximum = Math.min(maximum, Math.trunc(cap));
