@@ -3,7 +3,7 @@
 //   (Stab, Lunge, Block) a hit makes two attack rolls against the target's one defence roll and lands if
 //   either beats it. Inside the Tombs of Amascut the whole check is repeated instead, defence roll and all.
 //   Its special attack, Eviscerate, keeps the passive.
-// - Exalted Spring (50003) and Sanguine atlatl (50005): custom items (data/definitions/custom-items.json)
+// - Exalted Spring (50001) and Sanguine atlatl (50002): custom items (data/definitions/custom-items.json)
 //   given the fang's passive outside the Tombs, with every attack style of their combat type.
 //   A server design, not OSRS.
 // Each entry: `items` (item ids), `combatType` (MELEE, RANGED or MAGIC: other attacks while it is

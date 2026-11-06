@@ -3,7 +3,7 @@
 //   the first half rounded down and the second taking the remainder (45 -> 22 + 23).
 // - Dual macuahuitl: the same split, but the second hit lands a tick later against NPCs, and its
 //   accuracy is only rolled if the first hit was accurate (both miss otherwise).
-// - Exalted Spring (custom item 50003, data/definitions/custom-items.json): two independently rolled
+// - Exalted Spring (custom item 50001, data/definitions/custom-items.json): two independently rolled
 //   hits, each up to the full max hit. The first lands on the tick of the attack and the second a
 //   tick later, against any target. A server design, not an OSRS weapon.
 // Special attacks keep their own traits: these only shape an attack no special is armed for.
@@ -11,7 +11,7 @@ let core;
 let traitsByWeapon;
 
 /** Custom item from data/definitions/custom-items.json; not in the cache's ItemIdentifiers. */
-const EXALTED_SPRING = 50003;
+const EXALTED_SPRING = 50001;
 
 const SPLIT_TWO_HITS = Object.freeze({ hitCount: 2, maximumHitSplitCount: 2 });
 const MACUAHUITL_HITS = Object.freeze({ ...SPLIT_TWO_HITS, sequentialAccuracy: true });

@@ -5,9 +5,9 @@
     "objType": {
       "name": "Dragonic katana",
       "examine": "A custom katana forged in the shape of a dragon.",
-      "model": 500000,
-      "maleModel": 500001,
-      "femaleModel": 500001,
+      "model": 1500000,
+      "maleModel": 1500001,
+      "femaleModel": 1500001,
       "maleModel1": -1,
       "maleModel2": -1,
       "femaleModel1": -1,
@@ -33,8 +33,8 @@
     },
     "itemDef": { "tradeable": false },
     "models": {
-      "500000": "dragonic-katana/drop.dat",
-      "500001": "dragonic-katana/equip.dat"
+      "1500000": "dragonic-katana/drop.dat",
+      "1500001": "dragonic-katana/equip.dat"
     }
   },
   {
@@ -43,9 +43,9 @@
     "objType": {
       "name": "Exalted Spring",
       "examine": "The legendary nine-ring blade of Xia.",
-      "model": 500010,
-      "maleModel": 500011,
-      "femaleModel": 500011,
+      "model": 1500010,
+      "maleModel": 1500011,
+      "femaleModel": 1500011,
       "maleModel1": -1,
       "maleModel2": -1,
       "femaleModel1": -1,
@@ -71,8 +71,8 @@
     },
     "itemDef": { "tradeable": false,"weaponInterface":"EXASPR","equipmentType":"WEAPON","doubleHanded":false,"stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":9645142,"bloodMoneyValue":8000,"highAlch":750000,"lowAlch":500000,"dropValue":1250000,"blockAnim":14257,"standAnim":14251,"walkAnim":14252,"runAnim":14254,"standTurnAnim":14252,"turn180Anim":14252,"turn90CWAnim":14252,"turn90CCWAnim":14252,"attackAnim":14255,"weight":10,"bonuses":[37,162,146,20,0,-5,20,31,40,0,81,0,0,15],"requirements":[75,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] },
     "models": {
-      "500010": "exalted-spring/drop.dat",
-      "500011": "exalted-spring/equip.dat"
+      "1500010": "exalted-spring/drop.dat",
+      "1500011": "exalted-spring/equip.dat"
     }
   },
   {
@@ -81,7 +81,7 @@
     "objType": {
       "name": "Exalted Spring",
       "examine": "The legendary nine-ring blade of Xia.",
-      "model": 510010,
+      "model": 1510010,
       "maleModel": -1,
       "femaleModel": -1,
       "maleModel1": -1,
@@ -109,7 +109,7 @@
     },
     "itemDef": { "tradeable": false },
     "models": {
-      "510010": "exalted-spring/drop.dat"
+      "1510010": "exalted-spring/drop.dat"
     }
   },
   {
@@ -118,9 +118,9 @@
     "objType": {
       "name": "Sanguine atlatl",
       "examine": "A powerful thrown weapon forged from a bloodmoon.",
-      "model": 500020,
-      "maleModel": 500021,
-      "femaleModel": 500022,
+      "model": 1500020,
+      "maleModel": 1500021,
+      "femaleModel": 1500022,
       "maleModel1": -1,
       "maleModel2": -1,
       "femaleModel1": -1,
@@ -146,9 +146,9 @@
     },
     "itemDef": { "tradeable": false,"equipmentType":"WEAPON","weaponInterface":"SHORTBOW","doubleHanded":false,"bonuses":[0,0,0,0,127,0,0,0,0,0,78,0,0,0],"requirements":[70,0,70,0,85,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"blockAnim":424,"standAnim":813,"walkAnim":1205,"runAnim":1210,"standTurnAnim":823,"turn180Anim":820,"turn90CWAnim":821,"turn90CCWAnim":821 },
     "models": {
-      "500020": "sanguine-atlatl/drop.dat",
-      "500021": "sanguine-atlatl/equip.dat",
-      "500022": "sanguine-atlatl/equip-female.dat"
+      "1500020": "sanguine-atlatl/drop.dat",
+      "1500021": "sanguine-atlatl/equip.dat",
+      "1500022": "sanguine-atlatl/equip-female.dat"
     }
   },
   {
@@ -157,7 +157,7 @@
     "objType": {
       "name": "Sanguine atlatl",
       "examine": "A powerful thrown weapon forged from a bloodmoon.",
-      "model": 510020,
+      "model": 1510020,
       "maleModel": -1,
       "femaleModel": -1,
       "maleModel1": -1,
@@ -185,7 +185,7 @@
     },
     "itemDef": { "tradeable": false },
     "models": {
-      "510020": "sanguine-atlatl/drop.dat"
+      "1510020": "sanguine-atlatl/drop.dat"
     }
   },
   {
@@ -194,9 +194,9 @@
     "objType": {
       "name": "Elven tassets",
       "examine": "A reinforced elven skirt.",
-      "model": 520000,
-      "maleModel": 520001,
-      "femaleModel": 520001,
+      "model": 1520000,
+      "maleModel": 1520001,
+      "femaleModel": 1520001,
       "maleModel1": -1,
       "maleModel2": -1,
       "femaleModel1": -1,
@@ -222,8 +222,8 @@
     },
     "itemDef": { "tradeable": false,"equipmentType":"LEGS","doubleHanded":false,"stackable":false,"dropable":true,"sellable":true,"value":23639088,"bloodMoneyValue":11000,"highAlch":173946,"lowAlch":115964,"dropValue":289910,"blockAnim":424,"standAnim":808,"walkAnim":819,"runAnim":824,"standTurnAnim":823,"turn180Anim":820,"turn90CWAnim":821,"turn90CCWAnim":821,"weight":8,"bonuses":[0,0,0,-21,-7,71,63,66,-4,93,2,0,0,1],"requirements":[0,65,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"equipSound":2242 },
     "models": {
-      "520000": "elven-tassets/drop.dat",
-      "520001": "elven-tassets/equip-female.dat"
+      "1520000": "elven-tassets/drop.dat",
+      "1520001": "elven-tassets/equip-female.dat"
     }
   },
   {
@@ -232,7 +232,7 @@
     "objType": {
       "name": "Elven tassets",
       "examine": "A reinforced elven skirt.",
-      "model": 530000,
+      "model": 1530000,
       "maleModel": -1,
       "femaleModel": -1,
       "maleModel1": -1,
@@ -260,18 +260,18 @@
     },
     "itemDef": { "tradeable": false },
     "models": {
-      "530000": "elven-tassets/drop.dat"
+      "1530000": "elven-tassets/drop.dat"
     }
-  }
+  },
   {
     "id": 52001,
     "baseItemId": 2412,
     "objType": {
       "name": "Void cape",
       "examine": "What skill is this even?",
-      "model": 520010,
-      "maleModel": 520011,
-      "femaleModel": 520011,
+      "model": 1520010,
+      "maleModel": 1520011,
+      "femaleModel": 1520011,
       "maleModel1": -1,
       "maleModel2": -1,
       "femaleModel1": -1,
@@ -297,8 +297,8 @@
     },
     "itemDef": { "tradeable": false,"equipmentType":"CAPE","doubleHanded":false,"stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":84,"highAlch":12,"lowAlch":8,"dropValue":2,"blockAnim":424,"weight":0,"bonuses":[0,0,0,0,0,9,9,9,9,9,0,0,0,4],"equipSound":2238 },
     "models": {
-      "520010": "blank-skillcape/drop.dat",
-      "520011": "blank-skillcape/equip.dat"
+      "1520010": "blank-skillcape/drop.dat",
+      "1520011": "blank-skillcape/equip.dat"
     }
   },
   {
@@ -307,7 +307,7 @@
     "objType": {
       "name": "Void cape",
       "examine": "What skill is this even?",
-      "model": 530010,
+      "model": 1530010,
       "maleModel": -1,
       "femaleModel": -1,
       "maleModel1": -1,
@@ -335,7 +335,7 @@
     },
     "itemDef": { "tradeable": false,"equipmentType":"CAPE","doubleHanded":false,"stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":84,"highAlch":12,"lowAlch":8,"dropValue":2,"blockAnim":424,"weight":0,"bonuses":[0,0,0,0,0,9,9,9,9,9,0,0,0,4],"equipSound":2238 },
     "models": {
-      "530010": "blank-skillcape/drop.dat"
+      "1530010": "blank-skillcape/drop.dat"
     }
   },
   {
@@ -344,9 +344,9 @@
     "objType": {
       "name": "Desert shawl",
       "examine": "Protects you from dust.",
-      "model": 521000,
-      "maleModel": 521001,
-      "femaleModel": 521002,
+      "model": 1521000,
+      "maleModel": 1521001,
+      "femaleModel": 1521001,
       "maleModel1": -1,
       "maleModel2": -1,
       "femaleModel1": -1,
@@ -372,9 +372,9 @@
     },
     "itemDef": { "tradeable": false,"equipmentType":"COIF","doubleHanded":false,"stackable":false,"dropable":true,"sellable":true,"value":10461398,"highAlch":30240,"lowAlch":20160,"dropValue":50400,"blockAnim":424,"standAnim":808,"walkAnim":819,"runAnim":824,"standTurnAnim":823,"turn180Anim":820,"turn90CWAnim":821,"turn90CCWAnim":821,"weight":0,"bonuses":[0,0,0,8,8,0,0,0,10,0,0,0,0,4] },
     "models": {
-      "521000": "desert-shawl/drop.dat",
-      "521001": "desert-shawl/equip.dat",
-      "521002": "desert-shawl/chathead.dat"
+      "1521000": "desert-shawl/drop.dat",
+      "1521001": "desert-shawl/equip.dat",
+      "1521002": "desert-shawl/chathead.dat"
     }
   },
   {
@@ -383,7 +383,7 @@
     "objType": {
       "name": "Desert shawl",
       "examine": "Protects you from dust.",
-      "model": 531000,
+      "model": 1531000,
       "maleModel": -1,
       "femaleModel": -1,
       "maleModel1": -1,
@@ -411,7 +411,7 @@
     },
     "itemDef": { "tradeable": false },
     "models": {
-      "531000": "desert-shawl/drop.dat"
+      "1531000": "desert-shawl/drop.dat"
     }
   },
   {
@@ -420,9 +420,9 @@
     "objType": {
       "name": "Dusty satchel",
       "examine": "Perhaps it belonged to a desert mailman or something.",
-      "model": 521010,
-      "maleModel": 521011,
-      "femaleModel": 521011,
+      "model": 1521010,
+      "maleModel": 1521011,
+      "femaleModel": 1521011,
       "maleModel1": -1,
       "maleModel2": -1,
       "femaleModel1": -1,
@@ -448,8 +448,8 @@
     },
     "itemDef": { "tradeable": false,"equipmentType":"CAPE","doubleHanded":false,"stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":84,"highAlch":12,"lowAlch":8,"dropValue":2,"blockAnim":424,"weight":0,"bonuses":[0,0,0,0,0,0,1,1,0,2,0,0,0,0],"equipSound":2238 },
     "models": {
-      "521010": "dusty-satchel/drop.dat",
-      "521011": "dusty-satchel/equip.dat"
+      "1521010": "dusty-satchel/drop.dat",
+      "1521011": "dusty-satchel/equip.dat"
     }
   },
   {
@@ -458,7 +458,7 @@
     "objType": {
       "name": "Dusty satchel",
       "examine": "Perhaps it belonged to a desert mailman or something.",
-      "model": 531010,
+      "model": 1531010,
       "maleModel": -1,
       "femaleModel": -1,
       "maleModel1": -1,
@@ -486,7 +486,7 @@
     },
     "itemDef": { "tradeable": false },
     "models": {
-      "531010": "dusty-satchel/drop.dat"
+      "1531010": "dusty-satchel/drop.dat"
     }
   },
   {
@@ -495,9 +495,9 @@
     "objType": {
       "name": "Desert woven top",
       "examine": "Protects you from dust.",
-      "model": 521020,
-      "maleModel": 521021,
-      "femaleModel": 521021,
+      "model": 1521020,
+      "maleModel": 1521021,
+      "femaleModel": 1521021,
       "maleModel1": -1,
       "maleModel2": -1,
       "femaleModel1": -1,
@@ -523,8 +523,8 @@
     },
     "itemDef": { "tradeable": false,"equipmentType":"PLATEBODY","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,8,8,0,0,0,10,0,0,0,0,4] },
     "models": {
-      "521020": "desert-woven-top/drop.dat",
-      "521021": "desert-woven-top/equip.dat"
+      "1521020": "desert-woven-top/drop.dat",
+      "1521021": "desert-woven-top/equip.dat"
     }
   },
   {
@@ -533,7 +533,7 @@
     "objType": {
       "name": "Desert woven top",
       "examine": "Protects you from dust.",
-      "model": 531020,
+      "model": 1531020,
       "maleModel": -1,
       "femaleModel": -1,
       "maleModel1": -1,
@@ -561,7 +561,7 @@
     },
     "itemDef": { "tradeable": false,"equipmentType":"PLATEBODY","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,0,0,0,0,0,0,0,0,0,0,4] },
     "models": {
-      "531020": "desert-woven-top/drop.dat"
+      "1531020": "desert-woven-top/drop.dat"
     }
   },
   {
@@ -570,9 +570,9 @@
     "objType": {
       "name": "Desert sarong",
       "examine": "Protects you from dust.",
-      "model": 521030,
-      "maleModel": 521031,
-      "femaleModel": 521031,
+      "model": 1521030,
+      "maleModel": 1521031,
+      "femaleModel": 1521031,
       "maleModel1": -1,
       "maleModel2": -1,
       "femaleModel1": -1,
@@ -598,8 +598,8 @@
     },
     "itemDef": { "tradeable": false,"equipmentType":"LEGS","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,8,8,0,0,0,10,0,0,0,0,4] },
     "models": {
-      "521030": "desert-sarong/drop.dat",
-      "521031": "desert-sarong/equip.dat"
+      "1521030": "desert-sarong/drop.dat",
+      "1521031": "desert-sarong/equip.dat"
     }
   },
   {
@@ -608,7 +608,7 @@
     "objType": {
       "name": "Desert sarong",
       "examine": "Protects you from dust.",
-      "model": 531030,
+      "model": 1531030,
       "maleModel": -1,
       "femaleModel": -1,
       "maleModel1": -1,
@@ -636,7 +636,7 @@
     },
     "itemDef": { "tradeable": false,"equipmentType":"LEGS","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,0,0,0,0,0,0,0,0,0,0,4] },
     "models": {
-      "531030": "desert-sarong/drop.dat"
+      "1531030": "desert-sarong/drop.dat"
     }
   },
   {
@@ -645,9 +645,9 @@
     "objType": {
       "name": "Desert shinguards",
       "examine": "Protects you from dust.",
-      "model": 521040,
-      "maleModel": 521041,
-      "femaleModel": 521041,
+      "model": 1521040,
+      "maleModel": 1521041,
+      "femaleModel": 1521041,
       "maleModel1": -1,
       "maleModel2": -1,
       "femaleModel1": -1,
@@ -673,8 +673,8 @@
     },
     "itemDef": { "tradeable": false,"equipmentType":"BOOTS","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,8,8,0,0,0,10,0,0,0,0,4] },
     "models": {
-      "521040": "desert-shinguards/drop.dat",
-      "521041": "desert-shinguards/equip.dat"
+      "1521040": "desert-shinguards/drop.dat",
+      "1521041": "desert-shinguards/equip.dat"
     }
   },
   {
@@ -683,7 +683,7 @@
     "objType": {
       "name": "Desert shinguards",
       "examine": "Protects you from dust.",
-      "model": 531040,
+      "model": 1531040,
       "maleModel": -1,
       "femaleModel": -1,
       "maleModel1": -1,
@@ -711,7 +711,7 @@
     },
     "itemDef": { "tradeable": false,"equipmentType":"BOOTS","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,0,0,0,0,0,0,0,0,0,0,4] },
     "models": {
-      "531040": "desert-shinguards/drop.dat"
+      "1531040": "desert-shinguards/drop.dat"
     }
   },
   {
@@ -720,9 +720,9 @@
     "objType": {
       "name": "Desert wristguards",
       "examine": "Protects you from dust.",
-      "model": 521050,
-      "maleModel": 521051,
-      "femaleModel": 521051,
+      "model": 1521050,
+      "maleModel": 1521051,
+      "femaleModel": 1521051,
       "maleModel1": -1,
       "maleModel2": -1,
       "femaleModel1": -1,
@@ -748,8 +748,8 @@
     },
     "itemDef": { "tradeable": false,"equipmentType":"GLOVES","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,8,8,0,0,0,10,0,0,0,0,4] },
     "models": {
-      "521050": "desert-wristbands/drop.dat",
-      "521051": "desert-wristbands/equip.dat"
+      "1521050": "desert-wristbands/drop.dat",
+      "1521051": "desert-wristbands/equip.dat"
     }
   },
   {
@@ -758,7 +758,7 @@
     "objType": {
       "name": "Desert wristguards",
       "examine": "Protects you from dust.",
-      "model": 531050,
+      "model": 1531050,
       "maleModel": -1,
       "femaleModel": -1,
       "maleModel1": -1,
@@ -786,7 +786,7 @@
     },
     "itemDef": { "tradeable": false,"equipmentType":"GLOVES","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,8,8,0,0,0,10,0,0,0,0,4] },
     "models": {
-      "531050": "desert-wristbands/drop.dat"
+      "1531050": "desert-wristbands/drop.dat"
     }
   }
 ]

@@ -13,6 +13,9 @@
 
 const INTERFERENCE = require("./data/avas-metallic-interference.json");
 
+/** Custom item from data/definitions/custom-items.json (cape slot); not in the cache's ItemIdentifiers. */
+const DUSTY_SATCHEL = 52101;
+
 let Equipment;
 let pluginApi;
 let attractors;
@@ -66,6 +69,7 @@ module.exports = {
       "AVAS_ACCUMULATOR", "AVAS_ACCUMULATOR_2", "AVAS_ACCUMULATOR_3", "AVAS_ACCUMULATOR_4",
       "ACCUMULATOR_MAX_CAPE", "ACCUMULATOR_MAX_CAPE_2",
     ]);
+    accumulators.add(DUSTY_SATCHEL);
     assemblers = ids(ItemIdentifiers, [
       "AVAS_ASSEMBLER", "AVAS_ASSEMBLER_2", "AVAS_ASSEMBLER_L_",
       "MASORI_ASSEMBLER", "MASORI_ASSEMBLER_2", "MASORI_ASSEMBLER_L_",

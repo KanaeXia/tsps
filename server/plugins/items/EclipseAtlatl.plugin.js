@@ -60,14 +60,14 @@ function registerAtlatlProfile(api) {
   core = api.core;
   pluginApi = api;
   const { Ammunition, FightType, ItemIdentifiers: I, RangedWeapon, RangedWeaponType, Sound } = core;
-  atlatlIds = new Set([I.ECLIPSE_ATLATL, I.ECLIPSE_ATLATL_4, 50005]);
+  atlatlIds = new Set([I.ECLIPSE_ATLATL, I.ECLIPSE_ATLATL_4, 50002]);
   const type = new RangedWeaponType(6, 8, FightType.SHORTBOW_LONGRANGE);
   // Both atlatls fire both darts: the normal one (28991) and the LMS one (29852).
   const darts = [
     new Ammunition(I.ATLATL_DART, null, 2795, 0),
     new Ammunition(I.ATLATL_DART_3, null, 2795, 0),
   ];
-  new RangedWeapon([I.ECLIPSE_ATLATL, I.ECLIPSE_ATLATL_4, 50005], darts, type);
+  new RangedWeapon([I.ECLIPSE_ATLATL, I.ECLIPSE_ATLATL_4, 50002], darts, type);
   api.registerWeaponProfile({
     itemIds: [...atlatlIds],
     attackAnimation: 11057, // human_atlatl_attack_ranged_01
