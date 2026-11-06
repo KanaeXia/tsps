@@ -164,7 +164,7 @@ function decodeEquipmentSlot(reader: AppearanceReader): {
     }
     const low = reader.readUnsignedByte();
     const value = (high << 8) | low;
-
+	if (value >= APPEARANCE_NPC_TRANSFORM) {
         return { type: "transform", value };
     } else if (value >= APPEARANCE_ITEM_OFFSET) {
         return { type: "item", value: value - APPEARANCE_ITEM_OFFSET };
