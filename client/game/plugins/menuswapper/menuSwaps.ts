@@ -1,6 +1,7 @@
 import { MenuTargetType } from "../../../rs/MenuEntry";
 import type { SimpleMenuEntry } from "../../../ui/menu/MenuEngine";
 import type { MenuTransformContext } from "../../../ui/menu/menuTransforms";
+import { BANKMAIN, BANKSIDE } from "../../../runelite/api/gameval/InterfaceID";
 import type { MenuSwapKind, MenuSwapperPluginConfig, MenuSwapperPresets } from "./types";
 
 export type SwapContext = MenuTransformContext & { isShiftHeld: boolean };
@@ -177,4 +178,31 @@ export function applyMenuSwaps(
         out.splice(after + 1, 0, ...submenus);
     }
     return out;
+}
+
+/** The bank's own item grid and its inventory side: where the bank Shift/Ctrl preset applies. */
+const BANK_ITEM_GROUPS = new Set([BANKMAIN, BANKSIDE]);
+
+/**
+ * The bank Shift/Ctrl preset: on an item in the open bank (or its inventory side), Shift pins
+ * "Withdraw-All"/"Deposit-All" as the left-click and Ctrl pins "Withdraw-1"/"Deposit-1"; with
+ * both held, Shift wins. Other widgets, items without that option (placeholders) and no key
+ * held leave the menu as it is.
+ */
+export function applyBankModifierSwap(
+    entries: SimpleMenuEntry[],
+    context: MenuTransformContext,
+    keys: { isShiftHeld: boolean; isCtrlHeld: boolean },
+): SimpleMenuEntry[] {
+    if (context.surface !== "widget" || !(context.itemId > 0)) return entries;
+    if (!BANK_ITEM_GROUPS.has(context.widgetId >>> 16)) return entries;
+    const suffix = keys.isShiftHeld ? "all" : keys.isCtrlHeld ? "1" : undefined;
+    if (!suffix) return entries;
+    const wanted = new Set([`withdraw-${suffix}`, `deposit-${suffix}`]);
+    const at = entries.findIndex((e) =>
+        wanted.has(plainTargetName(String(e.option ?? "")).toLowerCase()),
+    );
+    if (at < 0) return entries;
+    const chosen = { ...entries[at], deprioritized: false, swapPinned: true };
+    return [chosen, ...entries.slice(0, at), ...entries.slice(at + 1)];
 }

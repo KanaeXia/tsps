@@ -7,7 +7,7 @@ import { ClientState } from "../../ClientState";
 import type { SimpleMenuEntry } from "../../../ui/menu/MenuEngine";
 import type { MenuTransformContext } from "../../../ui/menu/menuTransforms";
 import { createBrowserMenuSwapperPluginPersistence } from "./BrowserMenuSwapperPersistence";
-import { applyMenuSwaps } from "./menuSwaps";
+import { applyBankModifierSwap, applyMenuSwaps } from "./menuSwaps";
 import type {
     MenuSwapKind,
     MenuSwapperPluginConfig,
@@ -19,7 +19,7 @@ type MenuSwapperPluginListener = () => void;
 
 const DEFAULT_CONFIG: MenuSwapperPluginConfig = Object.freeze({
     enabled: true,
-    presets: { bank: false, trade: false, pickpocket: false, shiftDrop: false },
+    presets: { bank: false, trade: false, pickpocket: false, shiftDrop: false, bankModifiers: false },
     swaps: {},
     shiftSwaps: {},
 });
@@ -110,8 +110,15 @@ export class MenuSwapperPlugin extends Plugin {
         context: MenuTransformContext,
     ): SimpleMenuEntry[] {
         // Swaps are keyed per world target and inventory item; other interfaces' item menus
-        // (worn equipment, bank side...) keep their own order.
-        if (context.surface === "widget") return entries;
+        // (worn equipment, bank side...) keep their own order, except the bank's Shift/Ctrl
+        // preset.
+        if (context.surface === "widget") {
+            if (!this.isEnabled() || !this.config.presets.bankModifiers) return entries;
+            return applyBankModifierSwap(entries, context, {
+                isShiftHeld: ClientState.isShiftPressed(),
+                isCtrlHeld: ClientState.isCtrlPressed(),
+            });
+        }
         return applyMenuSwaps(
             entries,
             { ...context, isShiftHeld: ClientState.isShiftPressed() },

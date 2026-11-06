@@ -7,6 +7,9 @@ export interface MenuSwapperPresets {
     pickpocket: boolean;
     /** Every inventory item: "Drop" as the shift-click. */
     shiftDrop: boolean;
+    /** Bank items while the bank is open: Shift makes "Withdraw-All"/"Deposit-All" the
+     * left-click, Ctrl makes "Withdraw-1"/"Deposit-1" the left-click. */
+    bankModifiers: boolean;
 }
 
 /** A saved swap: the option, and the target's name as it was when saved (for the panel). */

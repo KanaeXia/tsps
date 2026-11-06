@@ -1,6 +1,6 @@
 import type { MenuTargetType } from "../../rs/MenuEntry";
 import type { SimpleMenuEntry } from "./MenuEngine";
-import { BANKMAIN, CA_TASKS, STATS } from "../../runelite/api/gameval/InterfaceID";
+import { BANKMAIN, BANKSIDE, CA_TASKS, STATS } from "../../runelite/api/gameval/InterfaceID";
 import { buildPluginMenu, preparePluginMenu } from "./menuEvents";
 
 /**
@@ -43,12 +43,15 @@ export function setManagedMenus(next: MenuTransform | undefined): void {
  * interface (worn equipment, the bank's inventory side, a shop's inventory side...), as
  * RuneLite's MenuOpened does, and the opened menu of a skill on the stats tab, a combat
  * achievement task or anything in the bank (RuneLite's MenuEntryAdded, which Bank Tags uses for
- * the deposit buttons and its tag tabs, and Wiki for its skill and task options). Other widget
+ * the deposit buttons and its tag tabs, and Wiki for its skill and task options), and a bank
+ * item's left-click (Menu Entry Swapper's bank Shift/Ctrl preset). Other widget
  * menus, and their left-click/hover order, stay with the widget layer.
  */
 function reachesPlugins(context: MenuTransformContext): boolean {
     if (context.surface !== "widget") return true;
     const group = context.widgetId >>> 16;
+    // A bank item's left-click and hover order too (Menu Entry Swapper's Shift/Ctrl preset).
+    if (context.itemId > 0 && (group === BANKMAIN || group === BANKSIDE)) return true;
     return context.menu && (context.itemId > 0 || group === STATS || group === CA_TASKS || group === BANKMAIN);
 }
 

@@ -399,7 +399,7 @@ const TAB_SWITCH_SCRIPT = 914;
 /** Server-set widget properties held while their cache interface is not loaded. */
 const HELD_WIDGET_ACTIONS: ReadonlySet<string> = new Set([
     "set_text", "set_hidden", "set_model", "set_angle", "set_colour", "set_position", "set_item",
-    "set_npc_head", "set_animation", "set_player_head",
+    "set_npc_head", "set_animation", "set_player_head", "set_rotate_speed",
 ]);
 const DEFAULT_ROOT_INTERFACE = 161;
 const DEFAULT_DISPLAY_ENUM = 1130;
@@ -2885,6 +2885,13 @@ export class OsrsClient {
                     w.modelZoom = Number(payload.zoom) | 0;
                     this.widgetManager.invalidateWidgetRender(w, "server-set-angle");
                 }
+            } else if (payload?.action === "set_rotate_speed") {
+                // IF_SETROTATESPEED: yaw speed in the high short, x speed in the low, per cycle.
+                const w = this.widgetManager?.getWidgetByUid(Number(payload.uid) | 0);
+                if (w) {
+                    w.modelRotationSpeed = ((Number(payload.speedY) | 0) & 0xffff) << 16 | ((Number(payload.speedX) | 0) & 0xffff);
+                    this.widgetManager.invalidateWidgetRender(w, "server-set-rotate-speed");
+                }
             } else if (payload?.action === "set_colour") {
                 // IF_SETCOLOUR: as the cs2 op, the colour of text and rectangles alike.
                 const w = this.widgetManager?.getWidgetByUid(Number(payload.uid) | 0);
@@ -2969,6 +2976,7 @@ export class OsrsClient {
                     (w as any).isNpcChathead = npcId >= 0;
                     (w as any).npcTypeId = npcId >= 0 ? npcId : undefined;
                     (w as any).isPlayerChathead = false;
+                    (w as any).isPlayerModel = false;
                     (w as any).playerAppearance = undefined;
                     this.widgetManager.invalidateWidgetRender(w);
                 }
@@ -2994,9 +3002,11 @@ export class OsrsClient {
                     (w as any).isNpcChathead = false;
                     (w as any).npcTypeId = undefined;
                     (w as any).isPlayerChathead = true;
+                    (w as any).isPlayerModel = false;
                     (w as any).playerAppearance = appearance
                         ? {
                               gender: appearance.gender,
+                              npcTransformationId: appearance.npcTransformationId,
                               colors: Array.from(appearance.colors ?? []),
                               kits: Array.from(appearance.kits ?? []),
                               equip: Array.from(appearance.equip ?? []),

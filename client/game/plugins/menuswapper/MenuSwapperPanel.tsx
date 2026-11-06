@@ -10,6 +10,7 @@ const PRESET_LABELS: ReadonlyArray<[keyof MenuSwapperPresets, string]> = [
     ["trade", "Trade: shopkeepers"],
     ["pickpocket", "Pickpocket"],
     ["shiftDrop", "Shift-click drop, every item"],
+    ["bankModifiers", "Bank: Shift withdraws/deposits All, Ctrl withdraws/deposits 1"],
 ];
 
 type SwapRow = { kind: MenuSwapKind; key: string; swap: MenuSwap };

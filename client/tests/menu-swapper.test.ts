@@ -6,6 +6,7 @@ import { MenuSwapperPlugin } from "../game/plugins/menuswapper/MenuSwapperPlugin
 import {
     SWAP_LEFT_CLICK,
     SWAP_SHIFT_CLICK,
+    applyBankModifierSwap,
     applyMenuSwaps,
     plainTargetName,
     type SaveSwap,
@@ -36,7 +37,7 @@ const worldMenu = (): SimpleMenuEntry[] => [
 
 const config = (overrides: Partial<MenuSwapperPluginConfig> = {}): MenuSwapperPluginConfig => ({
     enabled: true,
-    presets: { bank: false, trade: false, pickpocket: false, shiftDrop: false },
+    presets: { bank: false, trade: false, pickpocket: false, shiftDrop: false, bankModifiers: false },
     swaps: {},
     shiftSwaps: {},
     ...overrides,
@@ -203,5 +204,50 @@ assert.deepEqual(persisted?.swaps, {});
 plugin.setSwap("shift", "item:4151", "Use", "Abyssal whip");
 plugin.resetSwaps();
 assert.deepEqual([persisted?.swaps, persisted?.shiftSwaps], [{}, {}]);
+
+assert.equal(plugin.getState().config.presets.bankModifiers, false, "the bank Shift/Ctrl preset starts off");
+
+// Bank Shift/Ctrl preset: Shift pins Withdraw-All / Deposit-All, Ctrl pins Withdraw-1 / Deposit-1.
+const BANK_ITEMS = (12 << 16) | 13;
+const BANK_SIDE = (15 << 16) | 3;
+const bankItem = (widgetId: number, menu = false) => ({
+    surface: "widget" as const, menu, widgetId, childIndex: 0, itemId: 995,
+});
+const withdrawMenu = (): SimpleMenuEntry[] =>
+    ["Withdraw-5", "Withdraw-1", "Withdraw-10", "Withdraw-X", "Withdraw-All", "Withdraw-All-but-1", "Examine"]
+        .map((option, i) => ({ option, target: "<col=ff9040>Coins", opIndex: i + 1 }));
+const depositMenu = (): SimpleMenuEntry[] =>
+    ["Deposit-5", "Deposit-1", "Deposit-10", "Deposit-X", "Deposit-All", "Examine"]
+        .map((option, i) => ({ option, target: "<col=ff9040>Coins", opIndex: i + 2 }));
+const keys = (isShiftHeld: boolean, isCtrlHeld: boolean) => ({ isShiftHeld, isCtrlHeld });
+
+assert.equal(leftClick(applyBankModifierSwap(withdrawMenu(), bankItem(BANK_ITEMS), keys(true, false))), "Withdraw-All");
+assert.equal(leftClick(applyBankModifierSwap(withdrawMenu(), bankItem(BANK_ITEMS), keys(false, true))), "Withdraw-1");
+assert.equal(leftClick(applyBankModifierSwap(depositMenu(), bankItem(BANK_SIDE), keys(true, false))), "Deposit-All");
+assert.equal(leftClick(applyBankModifierSwap(depositMenu(), bankItem(BANK_SIDE), keys(false, true))), "Deposit-1");
+assert.equal(leftClick(applyBankModifierSwap(withdrawMenu(), bankItem(BANK_ITEMS), keys(true, true))), "Withdraw-All", "Shift wins over Ctrl");
+const swappedBank = applyBankModifierSwap(withdrawMenu(), bankItem(BANK_ITEMS, true), keys(false, true));
+assert.deepEqual(options(swappedBank), ["Withdraw-1", "Withdraw-5", "Withdraw-10", "Withdraw-X", "Withdraw-All", "Withdraw-All-but-1", "Examine"]);
+assert.equal(swappedBank[0].opIndex, 2, "the moved entry keeps its op");
+const noKeys = withdrawMenu();
+assert.equal(applyBankModifierSwap(noKeys, bankItem(BANK_ITEMS), keys(false, false)), noKeys, "no key held: unchanged");
+const elsewhere = withdrawMenu();
+assert.equal(applyBankModifierSwap(elsewhere, bankItem((149 << 16) | 0), keys(true, false)), elsewhere, "other interfaces: unchanged");
+const placeholder: SimpleMenuEntry[] = [{ option: "Release" }, { option: "Examine" }];
+assert.equal(applyBankModifierSwap(placeholder, bankItem(BANK_ITEMS), keys(true, false)), placeholder, "no matching option: unchanged");
+
+// Through the plugin: only with the preset on.
+const bankPlugin = new MenuSwapperPlugin({ load: () => undefined, save: () => {} });
+(bankPlugin as any).isEnabled = () => true;
+const { ClientState } = require("../game/ClientState");
+const realShift = ClientState.isShiftPressed;
+ClientState.isShiftPressed = () => true;
+try {
+    assert.equal(leftClick(bankPlugin.transformMenuEntries(withdrawMenu(), bankItem(BANK_ITEMS))), "Withdraw-5", "preset off: unchanged");
+    bankPlugin.setConfig({ presets: { ...bankPlugin.getState().config.presets, bankModifiers: true } });
+    assert.equal(leftClick(bankPlugin.transformMenuEntries(withdrawMenu(), bankItem(BANK_ITEMS))), "Withdraw-All");
+} finally {
+    ClientState.isShiftPressed = realShift;
+}
 
 console.log("menu swapper tests passed");
