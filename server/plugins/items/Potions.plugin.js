@@ -108,7 +108,7 @@ function setCurrentLevel(player, skill, level) {
 function heal(player, amount, extraCap = 0) {
   const current = getCurrentLevel(player, Skill.HITPOINTS);
   const baseMax = getMaxLevel(player, Skill.HITPOINTS);
-  const max = baseMax + Math.max(0, extraCap);
+  const max = Math.max(current, baseMax + Math.max(0, extraCap));
   player.setHitpoints(clamp(current + amount, 0, max));
 }
 
@@ -1656,7 +1656,7 @@ function cureFromHealthOrb({ player }) {
     if (itemId <= 0) continue;
     const entry = POTION_BY_ITEM_ID.get(itemId);
     const strength = entry && CURE_POTIONS.get(entry.potion.name);
-    if (strength === undefined || !entry) continue;
+    if (strength === undefined || !entry || pluginApi.core.ItemDefinition.forId(itemId).isNoted()) continue;
     if (!selected || strength > selected.strength ||
         (entry.potion === selected.entry.potion && entry.doses < selected.entry.doses)) {
       selected = { entry, strength, itemId, slot };

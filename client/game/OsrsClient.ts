@@ -306,6 +306,7 @@ import { retryOnMissingGroup } from "../rs/cache/js5/retryOnMissingGroup";
 import type { GraphicsDefaults } from "../rs/config/defaults/GraphicsDefaults";
 import { interactionModes } from "./InteractionModes";
 import { npcOpsVisibility } from "./NpcOpsVisibility";
+import { groundObjOpsVisibility } from "./GroundObjOpsVisibility";
 import { RuneLite } from "../runelite/client/RuneLite";
 import { notifyActorGraphic, notifyActorHitsplat, notifyActorHealth } from "./ActorEventHooks";
 import { dispatchMenuAction, menuClickListeners, type MenuActionData } from "../ui/menu/menuEvents";
@@ -366,6 +367,7 @@ import { isPauseButtonWidget, setMenuObjTypeLookup } from "../widgets/menu/utils
 import { INVENTORY } from "../runelite/api/gameval/InterfaceID";
 import { RenderDataWorkerPool } from "./worker/RenderDataWorkerPool";
 import { WorldMapController, type WorldMapRenderedIcon } from "./worldMap/WorldMapController";
+import type { PluginWorldMapPointEntry, RenderedWorldMapPoint } from "@runelite/client/ui/overlay/worldmap/worldMapLayout";
 import type { WorldMapViewport } from "./worldMap/WorldMapTypes";
 import { WorldViewManager } from "./worldview/WorldViewManager";
 
@@ -495,6 +497,8 @@ export class OsrsClient {
             });
     }
 
+    /** Plugin markers on the world map (Quest Helper's step, RuneLite points via the WorldMapPointManager); the world map draws them. */
+    pluginWorldMapPoints?: PluginWorldMapPointEntry[];
     inputManager: InputManager = new InputManager();
     camera: Camera = new Camera(3242, -26, 3202, 245, 1862);
 
@@ -1835,8 +1839,8 @@ export class OsrsClient {
                 applyWildernessHudLayout(self.widgetManager, self.varManager, scriptId);
                 self.clientPlugins.onScriptFinished(scriptId);
             },
-            onScriptPre: (scriptId: number) => {
-                self.clientPlugins.onScriptPreFired(scriptId);
+            onScriptPre: (scriptId: number, vm?: Cs2Vm) => {
+                self.clientPlugins.onScriptPreFired(scriptId, vm);
             },
             clientRevision: 235,
             // Canvas dimensions as defined by the renderer's current UI layout space.
@@ -4121,6 +4125,10 @@ export class OsrsClient {
 
     setRenderedWorldMapIcons(icons: WorldMapRenderedIcon[]): void {
         this.worldMap.setRenderedWorldMapIcons(icons);
+    }
+
+    setRenderedWorldMapPoints(points: RenderedWorldMapPoint[]): void {
+        this.worldMap.setRenderedWorldMapPoints(points);
     }
 
     getWorldMapMenuEntriesAt(screenX: number, screenY: number): SimpleMenuEntry[] {
@@ -6842,6 +6850,9 @@ export class OsrsClient {
             this.widgetManager.onGroupLoaded = (groupId) => {
                 for (const held of this.heldWidgetProperties.take(groupId)) this.handleWidgetPayload?.(held);
             };
+            // RuneLite's WidgetLoaded and dialogue chat sources read the widget manager, which did not
+            // exist when RuneLite loaded in the constructor.
+            this.runeLite?.bindWidgetSources();
             if (graphicsDefaults && graphicsDefaults.compass >= 0) {
                 this.widgetManager.compassSpriteId = graphicsDefaults.compass;
             }
@@ -7948,7 +7959,7 @@ export class OsrsClient {
         }
 
         if (block.say && ecsId !== undefined) {
-            this.npcEcs.setOverheadText(ecsId, block.say, 100);
+            this.npcEcs.setOverheadText(ecsId, this.clientPlugins.npcOverheadText(serverId, block.say), 100);
         }
 
         if (block.colorOverride && ecsId !== undefined) {
@@ -8616,6 +8627,7 @@ export class OsrsClient {
             // Live sets walk again before every logout; a dropped connection doesn't get that far.
             interactionModes.clear();
             npcOpsVisibility.clear();
+            groundObjOpsVisibility.clear();
 
             // Clear the last account's varps and transient varcs, keeping persistent client
             // preferences loaded: the next login only sends its non-zero varps, so anything
