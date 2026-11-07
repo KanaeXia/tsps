@@ -425,14 +425,9 @@ export class PendingHit {
         let firstBounds: SpecialDamageBounds | undefined;
         const priorHits: HitDamage[] = [];
         for (let i = 0; i < hits.length; i++) {
-<<<<<<< HEAD
             const roll = { attacker: this.attacker, target: this.target, combatType: this.combatType, forceAccurate: false, forceMaxHit: false, bypassProtectionPrayer, attackRolls: 1, accuracyRolls: 1 };
-            PluginManager.emitCombatHitRoll(roll);
-=======
-            const roll = { attacker: this.attacker, target: this.target, combatType: this.combatType, forceAccurate: false, forceMaxHit: false, bypassProtectionPrayer };
             const blockedByFirstMiss = i > 0 && this.requireFirstAccurate && firstAccurate !== true;
             if (!blockedByFirstMiss) PluginManager.emitCombatHitRoll(roll);
->>>>>>> main
             if (roll.bypassProtectionPrayer) this.protectionBypassed = true;
             const projectedDefence = !blockedByFirstMiss && i > 0 && this.method
                 ? this.method.projectedDefenceLevel?.(this.attacker, this.target, {
