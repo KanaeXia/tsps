@@ -788,5 +788,81 @@
     "models": {
       "1531050": "desert-wristbands/drop.dat"
     }
+  },
+  {
+    "id": 52106,
+    "baseItemId": 1067,
+    "objType": {
+      "name": "Desert sarong (slot)",
+      "examine": "Protects you from dust.",
+      "model": 1521060,
+      "maleModel": 1521061,
+      "femaleModel": 1521061,
+      "maleModel1": -1,
+      "maleModel2": -1,
+      "femaleModel1": -1,
+      "femaleModel2": -1,
+      "zoom2d": 750,
+      "xan2d": 512,
+      "yan2d": 0,
+      "zan2d": 0,
+      "offsetX2d": 0,
+      "offsetY2d": 0,
+      "recolorFrom": [],
+      "recolorTo": [],
+      "retextureFrom": [],
+      "retextureTo": [],
+      "inventoryActions": ["Wear", null, null, null, "Drop"],
+      "isTradable": false,
+      "note": -1,
+      "noteTemplate": -1,
+      "unnotedId": -1,
+      "notedId": -1,
+      "placeholder": -1,
+      "placeholderTemplate": -1
+    },
+    "itemDef": { "tradeable": false,"equipmentType":"LEGS","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,8,8,0,0,0,10,0,0,0,0,4] },
+    "models": {
+      "1521060": "desert-default/drop.dat",
+      "1521061": "desert-default/equip1.dat"
+    }
+  },
+  {
+    "id": 52107,
+    "baseItemId": 1837,
+    "objType": {
+      "name": "Desert shinguards (slot)",
+      "examine": "Protects you from dust.",
+      "model": 1521070,
+      "maleModel": 1521071,
+      "femaleModel": 1521071,
+      "maleModel1": -1,
+      "maleModel2": -1,
+      "femaleModel1": -1,
+      "femaleModel2": -1,
+      "zoom2d": 750,
+      "xan2d": 512,
+      "yan2d": 0,
+      "zan2d": 0,
+      "offsetX2d": 0,
+      "offsetY2d": 0,
+      "recolorFrom": [],
+      "recolorTo": [],
+      "retextureFrom": [],
+      "retextureTo": [],
+      "inventoryActions": ["Wear", null, null, null, "Drop"],
+      "isTradable": false,
+      "note": -1,
+      "noteTemplate": -1,
+      "unnotedId": -1,
+      "notedId": -1,
+      "placeholder": -1,
+      "placeholderTemplate": -1
+    },
+    "itemDef": { "tradeable": false,"equipmentType":"BOOTS","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,8,8,0,0,0,10,0,0,0,0,4] },
+    "models": {
+      "1521070": "desert-default/drop.dat",
+      "1521071": "desert-default/equip2.dat"
+    }
   }
 ]
