@@ -1,5 +1,20 @@
 {
-  "plugins": { "TutorialIsland": true },
+  "plugins": { 
+	"TutorialIsland": true,
+	"AchievementDiaries": true,
+	"CombatAchievements": true,
+	"CollectionLog": true,
+	"Ironman": true,
+	"Pets": true,
+	"Quests": true,
+	"Gravestones": true,
+	"GrandExchange": true,
+	"CustomShops": true,
+	"NpcSpawns": true,
+	"RandomEvents": true,
+	"ShootingStars": true,
+	"CustomCharacterSummary": false
+  },
   "description": "",
   "experienceMultiplier": 10,
   "spawn": {
@@ -8,7 +23,11 @@
     "z": 0
   },
   "pluginConfig": {
-    "SkillLevelUp:interruptActions": false
+	"NpcDrops:bossRareMultiplier": 10,
+	"quests:equipment-requirements": true,
+    "SkillLevelUp:interruptActions": false,
+	"CrossFloor:visibility": false,
+	"CrossFloor:combat": false
   },
   "zones": [
     { "_description": "Global zone", "tags": ["blast-furnace"] },

@@ -1,0 +1,8 @@
+{
+  "_description": "Per-account default looks: the item an EMPTY equipment slot shows, by login name (lower case). Worn items still show. Slots: HEAD, CAPE, AMULET, WEAPON, BODY, SHIELD, LEG, HANDS, FEET, RING, AMMUNITION.",
+  "qunai": {
+    "_description": "Desert Woven Top (52102) and Desert Sarong (52103), custom items",
+    "BODY": 52102,
+    "LEG": 52103
+  }
+}
