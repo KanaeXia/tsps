@@ -299,6 +299,12 @@ function loadItemDefinitions() {
         if (!Array.isArray(value) || !value.every(Number.isFinite)) throw new Error(`[custom-items] invalid ${key} for item ${row.id}`);
       } else if (["doubleHanded", "stackable", "tradeable", "dropable", "sellable"].includes(key)) {
         if (typeof value !== "boolean") throw new Error(`[custom-items] invalid ${key} for item ${row.id}`);
+      } else if (["attackAnim", "attackSoundAnim"].includes(key) && value && typeof value === "object") {
+        // By attack type, as item-gameplay.json's attackAnim: { "stab": 2890, "slash": 14255 }.
+        const types = ["stab", "slash", "crush", "magic", "range"];
+        if (Array.isArray(value) || !Object.entries(value).every(([type, id]) => types.includes(type) && Number.isFinite(id))) {
+          throw new Error(`[custom-items] invalid ${key} for item ${row.id}`);
+        }
       } else if (!Number.isFinite(value)) {
         throw new Error(`[custom-items] invalid ${key} for item ${row.id}`);
       }
