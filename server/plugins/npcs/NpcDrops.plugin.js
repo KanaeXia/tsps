@@ -74,6 +74,8 @@ const DROP_LOCATIONS = JSON.parse(fs.readFileSync(path.join(__dirname, "data", "
 const NPC_BOSS_PARAM = 1361;
 /** world.json pluginConfig: how many times likelier a boss's rare drops are (1, the default, is OSRS). */
 const BOSS_RARE_MULTIPLIER_CONFIG = "NpcDrops:bossRareMultiplier";
+/** world.json pluginConfig: how many times likelier every drop of a non-boss table is (1, the default, is OSRS). */
+const DROP_RATE_MULTIPLIER_CONFIG = "NpcDrops:dropRateMultiplier";
 /** Rarer than this is a rare drop for that multiplier: uniques, pets, jars, not the commons. */
 const RARE_CHANCE = 10 / 100;
 /** A unique or pre-roll row is rare up to this chance; more common than 1/10 is ordinary loot. */
@@ -629,9 +631,15 @@ function isUniqueEntry(entry) {
  * weighted main roll (see there for why).
  */
 function rareMultiplier(table, entry) {
-  if (!table?.boss) return 10;
-  const multiplier = 10; //Number(pluginApi?.getPluginConfig(BOSS_RARE_MULTIPLIER_CONFIG, 1));
-  return Number.isFinite(multiplier) && multiplier > 1 && isUniqueEntry(entry) ? multiplier : 1;
+  if (!table?.boss) return configMultiplier(DROP_RATE_MULTIPLIER_CONFIG);
+  const multiplier = configMultiplier(BOSS_RARE_MULTIPLIER_CONFIG);
+  return multiplier > 1 && isUniqueEntry(entry) ? multiplier : 1;
+}
+
+/** A world.json pluginConfig multiplier; 1 (the OSRS rate) when unset or not above 1. */
+function configMultiplier(key) {
+  const multiplier = Number(pluginApi?.getPluginConfig(key, 1));
+  return Number.isFinite(multiplier) && multiplier > 1 ? multiplier : 1;
 }
 
 /** The NPC's name (its current definition's), or the cache's name for `npcId`, for plugins that boost by source. */

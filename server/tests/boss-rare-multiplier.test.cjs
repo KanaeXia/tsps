@@ -219,3 +219,17 @@ test("Corp's conditional sigil access honors boss and per-entry chance boosts", 
   assert.equal(roll(0.999, 0.9, 10000).length, 1);
   config["NpcDrops:bossRareMultiplier"] = 1;
 });
+
+test("NpcDrops:dropRateMultiplier boosts other monsters' drops and leaves bosses to bossRareMultiplier", () => {
+  try {
+    config["NpcDrops:dropRateMultiplier"] = 10;
+    // 0.05 * 400 = 20 < 10 * 1: a 1/400 roll that only hits ten times likelier.
+    assert.deepEqual(dropsAt(table(false), 0.02, 1).sort(), [1, 2, 3]);
+    // A boss's tables ignore it: with bossRareMultiplier 1 its 1/400 rows stay at their rate.
+    assert.deepEqual(dropsAt(table(true), 0.02, 1), [2]);
+    // and bossRareMultiplier alone sets a boss's uniques.
+    assert.deepEqual(dropsAt(table(true), 0.02, 10).sort(), [1, 2, 3]);
+  } finally {
+    delete config["NpcDrops:dropRateMultiplier"];
+  }
+});

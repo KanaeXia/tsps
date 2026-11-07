@@ -25,6 +25,7 @@
   },
   "pluginConfig": {
 	"NpcDrops:bossRareMultiplier": 10,
+	"NpcDrops:dropRateMultiplier": 10,
 	"quests:equipment-requirements": true,
     "SkillLevelUp:interruptActions": false,
 	"CrossFloor:visibility": false,
