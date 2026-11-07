@@ -144,9 +144,16 @@ function toggleDestination(event, alternate) {
 function revertTablet(event) {
   const { player } = event;
   event.handled = true;
-  if (!player.getInventory().contains(event.itemId)) return;
-  player.getInventory().deleteNumber(event.itemId, 1);
-  player.getInventory().adds(core.ItemIdentifiers.TELEPORT_TO_HOUSE, 1);
+  const inventory = player.getInventory();
+  if (!inventory.contains(event.itemId)) return;
+  // Tablets stack, so reverting one of several frees no slot: the house tablet needs room, or it was lost.
+  const last = inventory.getAmount(event.itemId) === 1;
+  if (!last && inventory.getAddableAmount(new core.Item(core.ItemIdentifiers.TELEPORT_TO_HOUSE, 1)) < 1) {
+    player.sendMessage("You don't have enough inventory space.");
+    return;
+  }
+  inventory.deleteNumber(event.itemId, 1);
+  inventory.adds(core.ItemIdentifiers.TELEPORT_TO_HOUSE, 1);
 }
 
 function houseDestination(event, option) {
@@ -296,22 +303,52 @@ const QUEST_LOCKED_SPELLS = new Map([
   ["trollheim teleport", { key: "eadgars_ruse", name: "Eadgar's Ruse" }],
 ]);
 
+/**
+ * The refusal for a quest-locked standard teleport the player hasn't unlocked, or null. `action` ends the line
+ * ("cast this spell", or "direct this teleport" for the house portals).
+ */
+function questLockRefusal(player, name, action) {
+  const locked = QUEST_LOCKED_SPELLS.get(name);
+  if (!locked) return null;
+  const quest = { player, key: locked.key, complete: false };
+  pluginApi.emitCustomEvent("quest:is-complete", quest);
+  if (!quest.complete) return `You need to complete ${locked.name} to ${action}.`;
+  if (locked.stage === undefined) return null;
+  const stage = { player, key: locked.key, stage: null };
+  pluginApi.emitCustomEvent("quest:get-stage", stage);
+  if (Number(stage.stage) >= locked.stage) return null;
+  return locked.unread.replace("cast this spell", action);
+}
+
+/**
+ * Wiki (Portal chamber, Portal nexus): directing a portal "requires the same Magic level and quest requirements as
+ * casting the spell". The house portals ask here so the two share one list; sets `event.refusal`.
+ */
+function teleportQuestLock(event) {
+  // Other answerers (a quest's own lock, as Watchtower) may refuse too: the first refusal stands.
+  event.refusal ??= questLockRefusal(event.player, event.name?.trim().toLowerCase(), event.action ?? "cast this spell");
+}
+
+/**
+ * Teleport to House without a house went to Rimmington and spent its runes. It is refused first, with the house
+ * tablet's line (Construction answers "construction:owns-house"), so nothing is spent.
+ */
+function hasHouse(player) {
+  const request = { player, owns: true };
+  pluginApi.emitCustomEvent("construction:owns-house", request);
+  return request.owns !== false;
+}
+
 /** The standard spell requires the Awowogei rescue; the Arceuus spell and tablet are separate. */
 function mayCastApeAtoll(player, name) {
-  const locked = QUEST_LOCKED_SPELLS.get(name);
-  if (locked && player.getSpellbook() === core.MagicSpellbook.NORMAL) {
-    const quest = { player, key: locked.key, complete: false };
-    pluginApi.emitCustomEvent("quest:is-complete", quest);
-    if (!quest.complete) {
-      player.sendMessage(`You need to complete ${locked.name} to cast this spell.`);
-      return false;
-    }
-    if (locked.stage === undefined) return true;
-    const stage = { player, key: locked.key, stage: null };
-    pluginApi.emitCustomEvent("quest:get-stage", stage);
-    if (Number(stage.stage) >= locked.stage) return true;
-    player.sendMessage(locked.unread);
+  if (name === HOUSE_TABLET && player.getSpellbook() === core.MagicSpellbook.NORMAL && !hasHouse(player)) {
+    player.sendMessage("You do not own a house. Speak to an Estate agent to buy one.");
     return false;
+  }
+  if (QUEST_LOCKED_SPELLS.has(name) && player.getSpellbook() === core.MagicSpellbook.NORMAL) {
+    const refusal = questLockRefusal(player, name, "cast this spell");
+    if (refusal) player.sendMessage(refusal);
+    return !refusal;
   }
   if (name !== "ape atoll teleport" || player.getSpellbook() !== core.MagicSpellbook.NORMAL) return true;
   const rescue = { player, rescue: "king-awowogei", complete: false };
@@ -354,5 +391,6 @@ module.exports = {
     api.onSpellCast(toggleWarning);
     api.onSpellCast(castAlternate);
     api.onInterfaceActionClick(castSpell);
+    api.onCustomEvent("magic:teleport-quest-lock", teleportQuestLock);
   },
 };

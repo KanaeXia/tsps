@@ -1,4 +1,5 @@
 {
+  "name": "Old School RuneScape",
   "plugins": { 
 	"TutorialIsland": true,
 	"AchievementDiaries": true,
