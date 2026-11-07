@@ -17,6 +17,10 @@
 /client/build
 /client/public/browser-host/interfaces/
 
+AHK/
+Everything.db
+*.lnk
+
 # misc
 .DS_Store
 .env.local
