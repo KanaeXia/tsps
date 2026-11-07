@@ -1177,6 +1177,11 @@ module.exports = {
       return true;
     }, PlayerRights.OWNER, "Open bank");
 
+    api.registerCommand("b", ({ player }) => {
+      player.getBank(player.getCurrentBankTab()).open();
+      return true;
+    }, PlayerRights.OWNER, "Open bank");
+
     api.registerCommand("runes", ({ player }) => {
       const inventory = player.getInventory();
       let given = 0;

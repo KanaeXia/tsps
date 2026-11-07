@@ -5,6 +5,7 @@
 // SEND_SNAPSHOT: name, internal rule id, mute request). The form shows its own thank-you page,
 // so the server answers nothing; the report is appended to a JSON-lines file and announced as
 // the "report:abuse" custom event. See server/docs/social-chat-and-following.md.
+// Administrators and above get their bank from the chatbox Report button instead of the form.
 const fs = require("fs");
 const path = require("path");
 
@@ -99,9 +100,21 @@ function reportFromPlayerOption(event) {
   openReportForm(event.player, event.target?.getUsername?.() ?? "");
 }
 
+/** Rights id (PlayerRights.ADMINISTRATOR) from which the chatbox Report button opens the bank. */
+const BANK_FROM_REPORT_MIN_RIGHTS = 2;
+
+function opensBankFromReport(player) {
+  return (player.getRights?.()?.getId?.() ?? 0) >= BANK_FROM_REPORT_MIN_RIGHTS;
+}
+
 function reportFromChatbox(event) {
   if ((event.opId ?? event.action) !== CHATBOX_REPORT_ABUSE_OP) return false;
-  return openReportForm(event.player);
+  const { player } = event;
+  if (opensBankFromReport(player)) {
+    player.getBank(player.getCurrentBankTab()).open();
+    return true;
+  }
+  return openReportForm(player);
 }
 
 /** Records a submitted report. Anything malformed is swallowed: the form never needs an answer. */
