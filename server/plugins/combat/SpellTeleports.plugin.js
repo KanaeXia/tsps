@@ -284,8 +284,35 @@ function castAlternate(event) {
   }
 }
 
+/**
+ * Wiki (Standard spellbook): these teleports each require a quest's completion. The spells only; the tablets are
+ * separate. TSPS wording for the refusal: the retail line has not been established.
+ */
+const QUEST_LOCKED_SPELLS = new Map([
+  ["kourend castle teleport", { key: "client_of_kourend", name: "Client of Kourend" }],
+  // Wiki (Ardougne teleport scroll): the spell is learned by reading Edmond's scroll, Plague City's stage 30.
+  ["ardougne teleport", { key: "plague_city", name: "Plague City", stage: 30, unread: "You need to read Edmond's magic scroll to cast this spell." }],
+  ["civitas illa fortis teleport", { key: "twilights_promise", name: "Twilight's Promise" }],
+  ["trollheim teleport", { key: "eadgars_ruse", name: "Eadgar's Ruse" }],
+]);
+
 /** The standard spell requires the Awowogei rescue; the Arceuus spell and tablet are separate. */
 function mayCastApeAtoll(player, name) {
+  const locked = QUEST_LOCKED_SPELLS.get(name);
+  if (locked && player.getSpellbook() === core.MagicSpellbook.NORMAL) {
+    const quest = { player, key: locked.key, complete: false };
+    pluginApi.emitCustomEvent("quest:is-complete", quest);
+    if (!quest.complete) {
+      player.sendMessage(`You need to complete ${locked.name} to cast this spell.`);
+      return false;
+    }
+    if (locked.stage === undefined) return true;
+    const stage = { player, key: locked.key, stage: null };
+    pluginApi.emitCustomEvent("quest:get-stage", stage);
+    if (Number(stage.stage) >= locked.stage) return true;
+    player.sendMessage(locked.unread);
+    return false;
+  }
   if (name !== "ape atoll teleport" || player.getSpellbook() !== core.MagicSpellbook.NORMAL) return true;
   const rescue = { player, rescue: "king-awowogei", complete: false };
   pluginApi.emitCustomEvent("recipe-for-disaster:rescue-status", rescue);

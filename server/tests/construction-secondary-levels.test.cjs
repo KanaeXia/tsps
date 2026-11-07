@@ -8,7 +8,11 @@ const {Player}=require('../dist/game/entity/impl/player/Player');
 let core,Data,House;
 before(async()=>{
   await CachePipeline.initialize(path.resolve(__dirname,'..'));core=PluginManager.getCoreApi();
-  require('../plugins/skills/construction/Core.Construction').init(PluginManager.createApi('SecondaryFurnitureTest'));
+  const api=PluginManager.createApi('SecondaryFurnitureTest');
+  require('../plugins/skills/construction/Core.Construction').init(api);
+  // Farming answers "farming:use-water" in the game; here a carried filled can (1-8 doses) has water.
+  const I=PluginManager.getCoreApi().ItemIdentifiers,cans=[1,2,3,4,5,6,7,8].map(n=>I[`WATERING_CAN_${n}_`]);
+  api.onCustomEvent('farming:use-water',request=>{if(cans.some(id=>request.player.getInventory().contains(id)))request.used=true;});
   Data=require('../plugins/skills/construction/Data.Construction');House=require('../plugins/skills/construction/House.Construction');
 });
 const row=values=>({column:()=>values});
@@ -30,17 +34,19 @@ test('active cache maps expected secondary families and preserves Construction a
   assert.equal(count,expected.size);assert.equal(withRows,478);assert.equal(nullRows,3);for(const id of expected.keys()) assert.ok(Data.CONSTRUCTION_BUILDABLES.some(b=>b.menuRowId===id&&b.secondaryLevels?.length));
   for(const [key,level] of [['SMALL_STORAGE_UNIT',30],['MEDIUM_STORAGE_UNIT',60],['LARGE_STORAGE_UNIT',90]]){const b=Data.BUILDABLE_BY_KEY.get(key);assert.equal(b.level,level);assert.equal(b.secondaryLevels,undefined);}
 });
-test('shared build gate enforces Farming and preserves deferred skills with supplied materials',()=>{
+// Wiki: Beer barrel Cooking 5, Mithril armour (Construction) Smithing 68, Rune case space Runecraft 14/44/90 - all enforced.
+test('shared build gate enforces every second skill with supplied materials',()=>{
   const cases=[['SPIRIT_TREE',core.Skill.FARMING,83],['SPIRIT_TREE_AND_FAIRY_RING',core.Skill.FARMING,83],['MITHRIL_ARMOUR',core.Skill.SMITHING,68],['RUNE_CASE_2',core.Skill.RUNECRAFTING,44],['BEER_BARREL',core.Skill.COOKING,5]];
   for(const [key,skill,level] of cases){
     const p=new Player(null),skills=p.getSkillManager(),inv=p.getInventory(),b=Data.BUILDABLE_BY_KEY.get(key);
     skills.setMaxLevels(core.Skill.CONSTRUCTION,99,false).setExperiences(core.Skill.CONSTRUCTION,core.SkillManager.getExperienceForLevel(99),false).setCurrentLevel(core.Skill.CONSTRUCTION,99,false);
     skills.setMaxLevels(skill,level-1,false).setExperiences(skill,core.SkillManager.getExperienceForLevel(level-1),false).setCurrentLevel(skill,level-1,false);
-    for(const [id,n] of [[core.ItemIdentifiers.HAMMER,1],[core.ItemIdentifiers.SAW,1]])inv.add(new core.Item(id,n),false);
+    // Natural teleports are built with a filled watering can, not a saw and hammer (Wiki: Teleport space).
+    const tools=b.tool==='watering-can'?[[core.ItemIdentifiers.WATERING_CAN_8_,1]]:[[core.ItemIdentifiers.HAMMER,1],[core.ItemIdentifiers.SAW,1]];
+    for(const [id,n] of tools)inv.add(new core.Item(id,n),false);
     for(const material of b.materials){if(material.itemId!=null)inv.add(new core.Item(material.itemId,material.amount),false);else if(material.source==='NAILS')inv.add(new core.Item(core.ItemIdentifiers.STEEL_NAILS,material.amount),false);else assert.fail(`unsupported fixture material ${material.source}`);}
     const low=House.getBuildMaterials(p,null,undefined,b);
-    if(skill===core.Skill.FARMING) assert.match(String(low),new RegExp(`${skill.getName()} level ${level}`,'i'));
-    else assert.ok(low instanceof Map,`${key} retains existing deferred-skill behavior`);
+    assert.match(String(low),new RegExp(`${skill.getName()} level ${level}`,'i'),`${key} refused below ${level}`);
     skills.setCurrentLevel(skill,level,false);assert.ok(House.getBuildMaterials(p,null,undefined,b) instanceof Map,`${key} current-level control`);
   }
   const p=new Player(null),skills=p.getSkillManager(),inv=p.getInventory(),b=Data.BUILDABLE_BY_KEY.get('CRUDE_WOODEN_CHAIR');

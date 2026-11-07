@@ -1,6 +1,7 @@
 const { Animation } = require("../../src/main/typescript/elvarg/game/model/Animation");
 const { Skill } = require("../../src/main/typescript/elvarg/game/model/Skill");
 const { MagicSpellbook } = require("../../src/main/typescript/elvarg/game/model/MagicSpellbook");
+const { spellbookLockedRefusal } = require("../../src/main/typescript/elvarg/game/content/combat/magic/SpellbookLocks");
 const { Sound } = require("../../src/main/typescript/elvarg/game/Sound");
 const { Sounds } = require("../../src/main/typescript/elvarg/game/Sounds");
 const { ObjectIds } = require("../../src/main/typescript/elvarg/util/IdEnums");
@@ -34,7 +35,15 @@ const OCCULT_ALTAR_SPELLBOOKS = new Map([
   [ObjectIds.ALTAR_OF_THE_OCCULT_4, MagicSpellbook.ARCEUUS],
 ]);
 
+/** A switch to `spellbook` the player hasn't unlocked (core SpellbookLocks): refused with the line, and true (handled). */
+function refuseLocked(player, spellbook) {
+  const refusal = spellbookLockedRefusal(player, spellbook);
+  if (refusal) player.sendMessage(refusal);
+  return refusal !== null;
+}
+
 function handleAncientAltar(player) {
+  if (player.getSpellbook() !== MagicSpellbook.ANCIENT && refuseLocked(player, MagicSpellbook.ANCIENT)) return true;
   player.performAnimation(PRAY_AT_ALTAR_ANIMATION);
   Sounds.sendSound(player, Sound.PRAYER_RECHARGE);
   MagicSpellbook.changeSpellbook(
@@ -85,6 +94,8 @@ function handleJaldraochtAltar(player) {
 }
 
 function handleOccultAltar(player, spellbook) {
+  // Choosing the book already in use needs no unlock check, as the Ancient altar's own toggle.
+  if (player.getSpellbook() !== spellbook && refuseLocked(player, spellbook)) return true;
   player.performAnimation(PRAY_AT_ALTAR_ANIMATION);
   Sounds.sendSound(player, Sound.PRAYER_RECHARGE);
   MagicSpellbook.changeSpellbook(player, spellbook);
@@ -247,3 +258,4 @@ module.exports = {
     });
   },
 };
+module.exports._test = { ancientAltar, lunarAltar, ancientSpellbook, lunarSpellbook };
