@@ -11,6 +11,8 @@ export class MeleeCombatMethod extends CombatMethod {
         if (animation !== -1) {
             character.performAnimation(new Animation(animation));
             Sounds.sendSound(character, character.getAttackSound());
+            const soundAnimation = character.isPlayer() ? WeaponProfiles.attackSoundAnimation(character.getAsPlayer()) : -1;
+            if (soundAnimation > 0 && soundAnimation !== animation) Sounds.sendSequenceSounds(character, soundAnimation);
         }
     }
 

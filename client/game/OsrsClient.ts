@@ -182,7 +182,7 @@ import {
 import { NpcTypeLoader } from "../rs/config/npctype/NpcTypeLoader";
 import { ObjModelLoader } from "../rs/config/objtype/ObjModelLoader";
 import { ObjTypeLoader, PostProcessedObjTypeLoader } from "../rs/config/objtype/ObjTypeLoader";
-import { EquipToDisplaySlot, EquipmentSlot } from "../rs/config/player/Equipment";
+import { EquipToDisplaySlot, EquipmentDisplaySlot, EquipmentSlot } from "../rs/config/player/Equipment";
 import { PlayerAppearance } from "../rs/config/player/PlayerAppearance";
 import { uploadForumAvatar } from "./ForumAvatar";
 import type { SeqSoundEffect, SeqType } from "../rs/config/seqtype/SeqType";
@@ -352,6 +352,7 @@ import { NotificationDisplay } from "./widgets/NotificationDisplay";
 import { PlayerDesignController } from "./widgets/PlayerDesignController";
 import { SpellSelectionController } from "./widgets/SpellSelectionController";
 import { applyWildernessHudLayout } from "./widgets/WildernessHud";
+import { applyCustomCombatStyleLabels } from "./combat/CustomCombatStyleLabels";
 import {
     type SelectedSpellInfo,
     type SpellSelectionState,
@@ -1846,6 +1847,7 @@ export class OsrsClient {
             },
             onScriptFinished: (scriptId: number) => {
                 applyWildernessHudLayout(self.widgetManager, self.varManager, scriptId);
+                applyCustomCombatStyleLabels(self.widgetManager, self.equipment.getSlot(EquipmentDisplaySlot.WEAPON)?.itemId ?? -1);
                 self.clientPlugins.onScriptFinished(scriptId);
             },
             onScriptPre: (scriptId: number, vm?: Cs2Vm) => {

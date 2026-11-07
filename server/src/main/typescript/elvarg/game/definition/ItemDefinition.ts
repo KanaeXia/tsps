@@ -60,7 +60,7 @@ export class ItemDefinition {
             "tradeable", "dropable", "sellable", "value", "grandExchangeValue", "grandExchangeSellValue",
             "highAlch", "lowAlch", "dropValue",
             "bloodMoneyValue", "blockAnim", "standAnim", "walkAnim", "runAnim", "standTurnAnim",
-            "turn180Anim", "turn90CWAnim", "turn90CCWAnim", "attackAnim", "equipSound", "bonuses",
+            "turn180Anim", "turn90CWAnim", "turn90CCWAnim", "attackAnim", "attackSoundAnim", "equipSound", "bonuses",
             "requirements", "combatRequirement"]) {
             const value = raw[key];
             if (value !== undefined) {
@@ -104,6 +104,11 @@ export class ItemDefinition {
      * one per attack type ({ "slash": ..., "crush": ... }). -1 or a missing type: the type's.
      */
     private attackAnim: number | Partial<Record<AttackTypeName, number>> = -1;
+    /**
+     * An animation whose sounds play with the attack in place of the attack animation's own, by
+     * attack type like `attackAnim` (custom weapons swinging an animation without sounds).
+     */
+    private attackSoundAnim: number | Partial<Record<AttackTypeName, number>> = -1;
     /** The sound for wearing or removing it, recorded from live OSRS (-1: by its kind, EquipmentSounds). */
     private equipSound: number = -1;
     /** Tradeable items it splits into when lost to a player in the Wilderness (an upgraded staff: staff and orb). */
@@ -308,6 +313,11 @@ export class ItemDefinition {
     public getAttackAnim(attackType?: AttackTypeName): number {
         if (typeof this.attackAnim === "number") return this.attackAnim;
         return (attackType && this.attackAnim?.[attackType]) || -1;
+    }
+
+    public getAttackSoundAnim(attackType?: AttackTypeName): number {
+        if (typeof this.attackSoundAnim === "number") return this.attackSoundAnim;
+        return (attackType && this.attackSoundAnim?.[attackType]) || -1;
     }
 
     public getEquipSound(): number {

@@ -114,6 +114,18 @@ export class WeaponProfiles {
     }
 
     /**
+     * The animation whose sounds the attack plays instead of its own animation's (`attackSoundAnim`
+     * in the item's data, by the style's attack type), or -1.
+     */
+    public static attackSoundAnimation(player: Player): number {
+        // Scripted attackers (and some test doubles) have no equipment to read.
+        const weapon = player.getEquipment?.()?.getItems?.()?.[Equipment.WEAPON_SLOT];
+        if (!weapon || weapon.getId() <= 0) return -1;
+        const attackType = ATTACK_TYPE_NAMES[FightType.resolve(player.getFightType())?.getBonusType() ?? -1];
+        return weapon.getDefinition().getAttackSoundAnim(attackType);
+    }
+
+    /**
      * A profile registered for the item, then the cache's attack speed for the item
      * (ItemDefinition.ATTACK_SPEED_PARAM), then its weapon type's profile, then `fallback`.
      */

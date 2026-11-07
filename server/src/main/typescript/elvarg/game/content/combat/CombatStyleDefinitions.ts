@@ -24,6 +24,12 @@ export interface WeaponInterfaceDefinition {
     specialBar?: number;
     specialMeter?: number;
     fightTypes: string[];
+    /**
+     * A custom weapon's own styles, kept as written by dump-item-combat-styles (the cache's
+     * category only draws the Combat Options tab; client/game/combat/CustomCombatStyleLabels.ts
+     * renames its buttons).
+     */
+    customStyles?: boolean;
 }
 
 export interface CombatStyleDefinitions {
