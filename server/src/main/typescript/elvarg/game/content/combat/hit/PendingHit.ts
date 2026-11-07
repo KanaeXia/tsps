@@ -22,6 +22,12 @@ type PendingHitConfig = {
     delay?: number;
     handleAfterHitEffects?: boolean;
     hitAmount?: number;
+    /** Per-splat reveal offsets, in ticks. */
+    hitDelays?: readonly number[];
+    /** Split the final maximum across this many splats using integer arithmetic. */
+    hitMaximumSplitCount?: number;
+    /** Later splats cannot roll accuracy when the first splat missed. */
+    requireFirstAccurate?: boolean;
     rollAccuracy?: boolean;
     /** False for damage that pays its own XP (or none), skipping the usual combat XP. */
     experience?: boolean;
@@ -66,6 +72,8 @@ export class PendingHit {
     private hitDelays?: number[];
     /** The first hitsplat lands on the attack's own tick (from `landsOnAttackTick`). */
     private onAttackTick = false;
+    private hitMaximumSplitCount = 1;
+    private requireFirstAccurate = false;
     /** Spell selected when this hit was launched; the caster may clear it before impact. */
     private spell: CombatSpell | null = null;
     /** A roll hook (Verac's set) let this hit through protection prayers. */
@@ -100,6 +108,11 @@ export class PendingHit {
             }
         } else if (delayOrConfig && typeof delayOrConfig === "object") {
             this.damageBudget = delayOrConfig.damageBudget;
+            this.hitDelays = delayOrConfig.hitDelays?.map(tick => Math.max(0, Math.trunc(tick)));
+            if (Number.isInteger(delayOrConfig.hitMaximumSplitCount) && (delayOrConfig.hitMaximumSplitCount as number) > 1) {
+                this.hitMaximumSplitCount = delayOrConfig.hitMaximumSplitCount as number;
+            }
+            this.requireFirstAccurate = delayOrConfig.requireFirstAccurate === true;
             this.bestOf = Math.max(1, Math.trunc(delayOrConfig.bestOf ?? 1));
             this.damageMultiplier = delayOrConfig.damageMultiplier ?? 1;
             this.ordinary = delayOrConfig.ordinary === true;
@@ -126,6 +139,7 @@ export class PendingHit {
         const armed = this.ordinary && attacker?.isSpecialActivated?.() === true;
         if (armed) attacker.setSpecialActivated(false);
         try {
+            if (armed) CombatFactory.clearHitRollCache(attacker);
             // Defensive reactions are resolved when the hit lands, not when it is rolled:
             // a PendingHit only records the raw damage (already capped to the target's HP).
             if (typeof delayOrConfig === "object" && delayOrConfig?.statusDamage === true) {
@@ -143,7 +157,10 @@ export class PendingHit {
                             typeof delayOrConfig === "object" && delayOrConfig?.bypassProtectionPrayer === true)));
             }
         } finally {
-            if (armed) attacker.setSpecialActivated(true);
+            if (armed) {
+                attacker.setSpecialActivated(true);
+                CombatFactory.clearHitRollCache(attacker);
+            }
         }
         this.delay = Math.max(0, resolvedDelay);
         this.handleAfterHitEffects = resolvedHandleAfterHitEffects;
@@ -408,10 +425,16 @@ export class PendingHit {
         let firstBounds: SpecialDamageBounds | undefined;
         const priorHits: HitDamage[] = [];
         for (let i = 0; i < hits.length; i++) {
+<<<<<<< HEAD
             const roll = { attacker: this.attacker, target: this.target, combatType: this.combatType, forceAccurate: false, forceMaxHit: false, bypassProtectionPrayer, attackRolls: 1, accuracyRolls: 1 };
             PluginManager.emitCombatHitRoll(roll);
+=======
+            const roll = { attacker: this.attacker, target: this.target, combatType: this.combatType, forceAccurate: false, forceMaxHit: false, bypassProtectionPrayer };
+            const blockedByFirstMiss = i > 0 && this.requireFirstAccurate && firstAccurate !== true;
+            if (!blockedByFirstMiss) PluginManager.emitCombatHitRoll(roll);
+>>>>>>> main
             if (roll.bypassProtectionPrayer) this.protectionBypassed = true;
-            const projectedDefence = i > 0 && this.method
+            const projectedDefence = !blockedByFirstMiss && i > 0 && this.method
                 ? this.method.projectedDefenceLevel?.(this.attacker, this.target, {
                     hitIndex: i,
                     priorHits: [...priorHits],
@@ -419,7 +442,9 @@ export class PendingHit {
                 })
                 : undefined;
             let resolved: { accurate: boolean; bounds?: SpecialDamageBounds };
-            if (i > 0 && traits?.sharedAccuracyRollAcrossHits === true) {
+            if (blockedByFirstMiss) {
+                resolved = { accurate: false };
+            } else if (i > 0 && traits?.sharedAccuracyRollAcrossHits === true) {
                 resolved = { accurate: firstAccurate === true, bounds: firstBounds };
             } else if (i > 0 && traits?.sequentialAccuracy === true && !this.accurate) {
                 resolved = { accurate: false };
@@ -430,6 +455,9 @@ export class PendingHit {
                     firstBounds = resolved.bounds;
                 }
             }
+            if (this.hitMaximumSplitCount > 1) {
+                resolved.bounds = { ...resolved.bounds, maximumSplit: { index: i, count: this.hitMaximumSplitCount } };
+            }
             this.accurate = resolved.accurate;
             let damage: HitDamage = this.accurate ? ServerPerf.measurePhase(
                 "combat.process.method_hits.damage",
@@ -439,6 +467,7 @@ export class PendingHit {
                 ArceuusSpells.applyCorruption(this.attacker.getAsPlayer(), this.target.getAsPlayer());
             }
             this.emitHitDamage(damage);
+            if (i === 0 && this.requireFirstAccurate) firstAccurate = this.accurate;
             capToRemaining(damage);
             this.totalDamage += damage.getDamage();
             hits[i] = damage;
@@ -511,20 +540,9 @@ export class PendingHit {
         }
         const range = successfulRolls > 0 ? traits.damageRangeBySuccessfulAccuracyRolls?.[successfulRolls - 1] : undefined;
 
-        // maximumHitSplitCount divides the final max hit across the hit sequence.
-        const splitCount = Math.max(1, Math.trunc(traits.maximumHitSplitCount ?? 1));
-        let splitFraction = 1;
-        if (splitCount > 1) {
-            const total = Math.max(1, DamageFormulas.sourceMaxHit(this.attacker, this.combatType));
-            const index = Math.max(0, Math.min(splitCount - 1, hitIndex));
-            splitFraction =
-                (Math.floor((total * (index + 1)) / splitCount) - Math.floor((total * index) / splitCount)) /
-                total;
-        }
-
         const bounds: SpecialDamageBounds = {
-            minimumMultiplier: (range?.minimumDamageMultiplier ?? traits.minimumDamageMultiplier ?? 0) * splitFraction,
-            maximumMultiplier: (range?.maximumDamageMultiplier ?? traits.maximumDamageMultiplier ?? 1) * splitFraction,
+            minimumMultiplier: range?.minimumDamageMultiplier ?? traits.minimumDamageMultiplier ?? 0,
+            maximumMultiplier: range?.maximumDamageMultiplier ?? traits.maximumDamageMultiplier ?? 1,
             minimumBonus: traits.minimumDamageBonus,
             maximumBonus: traits.maximumDamageBonus,
             cap: traits.maximumDamageCap,

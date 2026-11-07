@@ -23,6 +23,9 @@ export const enum ServerPacketId {
     NPC_INFO = 21,
     ANIM = 22,
     MOVEMENT_POSITION = 23,
+    NPC_ANIM_SPECIFIC = 24,
+    NPC_SPOTANIM_SPECIFIC = 25,
+    NPC_HEADICON_SPECIFIC = 26,
 
     // ========================================
     // VARPS/VARBITS (40-49)
@@ -40,6 +43,7 @@ export const enum ServerPacketId {
     INVENTORY_SLOT = 51,
     BANK_SNAPSHOT = 52,
     BANK_SLOT = 53,
+    INVENTORY_STOP_TRANSMIT = 56, // discard a client container; later updates recreate it
     GROUND_ITEMS = 54,
     GROUND_ITEMS_DELTA = 55,
 
@@ -109,6 +113,7 @@ export const enum ServerPacketId {
     LOC_DEL = 135,
     LOC_ANIM = 136,
     CAMERA_CONTROL = 137,
+    LOC_MERGE = 138, // temporary player/loc model attachment
     SOUND = 131,
     PLAY_JINGLE = 132,
     PLAY_SONG = 133,
@@ -190,6 +195,9 @@ export const SERVER_PACKET_LENGTHS: Record<ServerPacketId, number> = {
 
     [ServerPacketId.PLAYER_SYNC]: -2,
     [ServerPacketId.MOVEMENT_POSITION]: 18,
+    [ServerPacketId.NPC_ANIM_SPECIFIC]: 5, // index(2) + id(2) + delay(1)
+    [ServerPacketId.NPC_SPOTANIM_SPECIFIC]: 9, // index(2) + id(2) + slot(1) + height(2) + delay(2)
+    [ServerPacketId.NPC_HEADICON_SPECIFIC]: 7, // index(2) + slot(1) + archive(2) + frame(2)
     [ServerPacketId.NPC_INFO]: -2,
     [ServerPacketId.ANIM]: 22, // 11 shorts for animation IDs
 
@@ -204,6 +212,7 @@ export const SERVER_PACKET_LENGTHS: Record<ServerPacketId, number> = {
     [ServerPacketId.INVENTORY_SLOT]: -1,
     [ServerPacketId.BANK_SNAPSHOT]: -2,
     [ServerPacketId.BANK_SLOT]: -1,
+    [ServerPacketId.INVENTORY_STOP_TRANSMIT]: 2,
     [ServerPacketId.GROUND_ITEMS]: -2,
     [ServerPacketId.GROUND_ITEMS_DELTA]: -2,
 
@@ -258,6 +267,7 @@ export const SERVER_PACKET_LENGTHS: Record<ServerPacketId, number> = {
     [ServerPacketId.LOC_CHANGE]: -1,
     [ServerPacketId.LOC_ADD_CHANGE]: -1,
     [ServerPacketId.LOC_DEL]: -1,
+    [ServerPacketId.LOC_MERGE]: 18, // loc/tile/shape + player index + cycle interval + signed bounds
     [ServerPacketId.LOC_ANIM]: 10, // locId(2) + x(2) + y(2) + level(1) + shape/rot(1) + animId(2)
     [ServerPacketId.CAMERA_CONTROL]: -1,
     [ServerPacketId.SOUND]: -1,

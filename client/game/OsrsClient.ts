@@ -1,4 +1,9 @@
+import { retainedInventory, stopInventoryTransmit } from "./sync/InventoryStopTransmit";
 import { openClientUrl } from "../common/openUrl";
+import { applyNpcSpecificEffect } from "./sync/NpcSpecificEffects";
+import { applyGlobalNpcHeadIcons, applyNpcSpecificHeadIcon } from "./sync/NpcHeadIcons";
+import { createNpcEcs, type NpcGraphicsEcs } from "./ecs/createNpcEcs";
+import { initializeWidgetItemModel } from "../widgets/WidgetItemModel";
 import { LISTENED_CLAN_TYPE, OWN_CLAN_TYPE } from "../common/social/Clans";
 import type { MinimapGeometry, SceneGeometry } from "./scene/SceneGeometry";
 import { vec3 } from "gl-matrix";
@@ -92,6 +97,7 @@ import {
     subscribeInventory,
     subscribeNotifications,
     subscribeNpcInfo,
+    subscribeNpcSpecificEffects,
     subscribePlayJingle,
     subscribePlaySong,
     subscribePlayerSync,
@@ -278,7 +284,6 @@ import { CombatOptionsController } from "./combat/CombatOptionsController";
 import { HitsplatFlushController } from "./combat/HitsplatFlushController";
 import { ClientScriptLoader } from "./cs2/ClientScriptLoader";
 import { ClientGroundItemStack, GroundItemStore } from "./data/ground/GroundItemStore";
-import { NpcEcs } from "./ecs/NpcEcs";
 import { PlayerEcs } from "./ecs/PlayerEcs";
 import { TileHighlightManager } from "./highlights/TileHighlightManager";
 import { PlayerInteractionSystem } from "./interactions/PlayerInteractionSystem";
@@ -863,7 +868,7 @@ export class OsrsClient {
     // Appearance is server-driven; no client defaults.
 
     // ECS stores
-    npcEcs: NpcEcs = new NpcEcs();
+    npcEcs: NpcGraphicsEcs = createNpcEcs(() => this.renderer, serverId => this.npcHeadIcons.delete(serverId));
     /** The active renderer's scene geometry, for plugins drawing over the scene in 2D. */
     sceneGeometry?: SceneGeometry;
     /** The minimap as last drawn, for plugins marking it. */
@@ -978,6 +983,8 @@ export class OsrsClient {
     equipment: Inventory = new Inventory(14); // Equipment has 14 slots
     /** Bank container inventory (ID 95) - indexed 0..1409 for CS2 bankmain_build */
     bankInventory: Inventory = new Inventory(1410);
+    /** The bank's last contents for plugins: follows bankInventory but keeps them past a stop-transmit. */
+    readonly lastKnownBank: Inventory = retainedInventory(this.bankInventory);
     /** Collection log inventory (ID 620) - stores obtained items for CS2 inv_total queries */
     collectionInventory: Inventory = new Inventory(2048);
     /** Shop stock inventory (ID 516) - stores shop items for CS2 inv queries */
@@ -1054,6 +1061,7 @@ export class OsrsClient {
     private handleWidgetPayload?: (payload: any) => void;
     private heldWidgetProperties = new HeldWidgetProperties();
     private unsubscribeNpcInfo?: () => void;
+    private unsubscribeNpcSpecificEffects?: () => void;
     private unsubscribeCombat?: () => void;
     private unsubscribePlayerSync?: () => void;
     private unsubscribeSpot?: () => void;
@@ -2966,6 +2974,7 @@ export class OsrsClient {
                         (w as any).itemId = normalizedItemId;
                         (w as any).itemQuantity = quantity;
                         (w as any).modelOrthog = true;
+                        if (obj) initializeWidgetItemModel(w, obj);
                         markWidgetInteractionDirty(w);
                         this.widgetManager.invalidateWidgetRender(w);
                     }
@@ -3065,6 +3074,8 @@ export class OsrsClient {
                         this.widgetManager.invalidateWidgetRender(parent, "flags-range");
                     }
                 }
+            } else if (payload?.action === "inventory_stop_transmit") {
+                stopInventoryTransmit(inventoriesMap, payload.inventoryId);
             } else if (payload?.action === "run_script") {
                 // RUNCLIENTSCRIPT packet - run a CS2 script with arguments
                 const scriptId = Number(payload.scriptId) | 0;
@@ -3178,6 +3189,14 @@ export class OsrsClient {
                 this.applyNpcInfo(payload);
             } catch (err) {
                 console.warn("[OsrsClient] npc_info error", err);
+            }
+        });
+        this.unsubscribeNpcSpecificEffects = subscribeNpcSpecificEffects(effect => {
+            if (effect.kind === "headicon") {
+                applyNpcSpecificHeadIcon(this.npcEcs, this.npcHeadIcons,
+                    typeId => this.npcTypeLoader?.load(typeId), effect);
+            } else {
+                applyNpcSpecificEffect(this.npcEcs, this.renderer, effect, getClientCycle());
             }
         });
         // Subscribe to server-side GFX (spot) messages and forward to renderer
@@ -7575,9 +7594,7 @@ export class OsrsClient {
             level: decodeBase.level | 0,
         });
 
-        for (const npcId of decoded.removals) {
-            this.despawnNpcBinary(npcId | 0);
-        }
+        this.npcEcs.removeForNpcInfo(decoded, npcId => this.despawnNpcBinary(npcId));
 
         for (const spawn of decoded.spawns) {
             this.spawnNpcBinary(spawn, payload.loopCycle | 0);
@@ -7890,8 +7907,7 @@ export class OsrsClient {
         const ecsId = this.npcEcs.getEcsIdForServer(serverId);
 
         if (Array.isArray(block.headIcons)) {
-            if (block.headIcons.length > 0) this.npcHeadIcons.set(serverId, block.headIcons);
-            else this.npcHeadIcons.delete(serverId);
+            applyGlobalNpcHeadIcons(this.npcHeadIcons, serverId, block.headIcons);
         }
 
         if (ecsId !== undefined) {
@@ -8107,7 +8123,8 @@ export class OsrsClient {
         const existingInstance = this.npcInstances.instanceMap.get(instanceKey);
         // Keep OSRS-style global NPC index array in sync for menuAction packet gates.
         ClientState.npcs[sid] = null;
-        this.npcHeadIcons.delete(sid);
+        // The ECS unmap callback owns head-icon cleanup. A remove/re-add in the same
+        // NPC_INFO can change this NPC's type without ending its customized icon lifetime.
         this.npcModelOverrides.delete(sid);
         try {
             (this.renderer as any)?.clearNpcHealthBars?.(sid);
@@ -8668,6 +8685,7 @@ export class OsrsClient {
             ...this.serverSubscriptions.splice(0),
             this.unsubscribeWidgetEvents,
             this.unsubscribeNpcInfo,
+            this.unsubscribeNpcSpecificEffects,
             this.unsubscribeCombat,
             this.unsubscribePlayerSync,
             this.unsubscribeSpot,

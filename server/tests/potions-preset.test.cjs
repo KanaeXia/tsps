@@ -16,6 +16,7 @@ require("../dist/Server").Server.installProductionPathResolver();
 const { CachePipeline } = require("../dist/game/cache/CachePipeline");
 const { PluginManager: PM } = require("../dist/plugins/PluginManager");
 const { Player } = require("../dist/game/entity/impl/player/Player");
+const { PlayerDeathTask } = require("../dist/game/task/impl/PlayerDeath");
 const { PlayerSession } = require("../dist/net/PlayerSession");
 const { ClientConnection } = require("../dist/net/NetworkBuilder");
 const { ItemActionPacketListener } = require("../dist/net/packet/impl/ItemActionPacketListener");
@@ -153,6 +154,289 @@ function completeQuest(f, key) {
 
 const slotOfId = (f, id) => f.inv.getItems().findIndex((held) => held.getId() === id);
 
+
+
+
+// Use the registered player and decoded action seam above for divine eligibility and maintenance.
+function divineActor(t, hitpoints) {
+  const f = actor(t);
+  const skills = f.p.getSkillManager();
+  const xp = core.SkillManager.getExperienceForLevel(99);
+  for (const name of [...SKILLS, "HITPOINTS"]) {
+    const skill = core.Skill[name];
+    skills.setExperience(skill, xp);
+    skills.setMaxLevel(skill, 99);
+    skills.setCurrentLevel(skill, name === "HITPOINTS" ? hitpoints : 99, false);
+    assert.equal(skills.getExperience(skill), xp);
+    assert.equal(skills.getMaxLevel(skill), 99);
+    assert.equal(skills.getCurrentLevel(skill), name === "HITPOINTS" ? hitpoints : 99);
+  }
+  assert.equal(f.p.isPlayerBot(), false);
+  assert.equal(f.p.getTimers().has(core.TimerKey.POTION), false);
+  assert.equal(f.p.getTimers().has(core.TimerKey.STUN), false);
+  return f;
+}
+function giveDrink(f, slot, id) {
+  assert.equal(core.CacheDefinitions.getItem(id).inventoryActions[0], "Drink");
+  assert.equal(core.ItemDefinition.forId(id).isNoted(), false);
+  const held = put(f, item(id), slot);
+  assert.equal(held.getAmount(), 1);
+  assert.equal(held.getMeta(), null);
+}
+function advancePotionTimer(f) {
+  assert.equal(f.p.getTimers().has(core.TimerKey.POTION), true);
+  for (let tick = 0; tick < 3; tick++) f.p.getTimers().process();
+  assert.equal(f.p.getTimers().has(core.TimerKey.POTION), false);
+}
+
+for (const hp of [1, 10]) {
+  test(`divine super attack requires more than ${hp} Hitpoints`, async t => {
+    const f = divineActor(t, hp);
+    giveDrink(f, 0, I.DIVINE_SUPER_ATTACK_POTION_4_);
+    assert.equal(f.inv.getItems()[0].getId(), 23697);
+    assert.equal(f.p.getHitpoints(), hp);
+    await browserOp(f, 0, "Drink");
+    assert.equal(f.inv.getItems()[0].getId(), 23697, "the full dose remains when HP is too low");
+    assert.equal(f.inv.getItems()[0].getAmount(), 1);
+    assert.equal(f.p.getHitpoints(), hp);
+    assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 99);
+    assert.equal(f.p.getAttribute("potions:divine:state") ?? null, null);
+    assert.equal(f.p.getTimers().has(core.TimerKey.POTION), false);
+    assert.ok(f.messages.includes("You need more than 10 hitpoints to survive the power of a divine potion."));
+  });
+}
+
+for (const [hp, after] of [[11, 1], [99, 89]]) {
+  test(`divine super attack pays ten Hitpoints from ${hp}`, async t => {
+    const f = divineActor(t, hp);
+    giveDrink(f, 0, I.DIVINE_SUPER_ATTACK_POTION_4_);
+    await browserOp(f, 0, "Drink");
+    assert.equal(f.inv.getItems()[0].getId(), 23700);
+    assert.equal(f.p.getHitpoints(), after);
+    assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 118);
+    assert.ok(f.p.getAttribute("potions:divine:state").endsAt > Date.now());
+    assert.equal(f.p.getTimers().has(core.TimerKey.POTION), true);
+  });
+}
+
+test("a non-divine super attack remains drinkable at ten Hitpoints", async t => {
+  const f = divineActor(t, 10);
+  giveDrink(f, 0, I.SUPER_ATTACK_4_);
+  await browserOp(f, 0, "Drink");
+  assert.equal(f.inv.getItems()[0].getId(), I.SUPER_ATTACK_3_);
+  assert.equal(f.p.getHitpoints(), 10);
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 118);
+});
+
+test("the existing potion cooldown still blocks a divine drink", async t => {
+  const f = divineActor(t, 99);
+  giveDrink(f, 0, I.SUPER_ATTACK_4_);
+  giveDrink(f, 1, I.DIVINE_SUPER_ATTACK_POTION_4_);
+  await browserOp(f, 0, "Drink");
+  assert.equal(f.inv.getItems()[0].getId(), I.SUPER_ATTACK_3_);
+  assert.equal(f.p.getTimers().has(core.TimerKey.POTION), true);
+  await browserOp(f, 1, "Drink");
+  assert.equal(f.inv.getItems()[1].getId(), 23697);
+  assert.equal(f.p.getHitpoints(), 99);
+  assert.equal(f.p.getAttribute("potions:divine:state") ?? null, null);
+});
+
+test("an active stun still blocks a divine drink", async t => {
+  const f = divineActor(t, 11);
+  giveDrink(f, 0, I.DIVINE_SUPER_ATTACK_POTION_4_);
+  f.p.getTimers().extendOrRegister(core.TimerKey.STUN, 3);
+  assert.equal(f.p.getTimers().has(core.TimerKey.STUN), true);
+  await browserOp(f, 0, "Drink");
+  assert.equal(f.inv.getItems()[0].getId(), 23697);
+  assert.equal(f.p.getHitpoints(), 11);
+  assert.equal(f.p.getAttribute("potions:divine:state") ?? null, null);
+});
+
+async function boostThenBrew(f, divine) {
+  const id = divine ? I.DIVINE_SUPER_ATTACK_POTION_4_ : I.SUPER_ATTACK_4_;
+  giveDrink(f, 0, id);
+  giveDrink(f, 1, I.SARADOMIN_BREW_4_);
+  await browserOp(f, 0, "Drink");
+  assert.equal(f.inv.getItems()[0].getId(), divine ? 23700 : I.SUPER_ATTACK_3_);
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 118);
+  if (divine) assert.equal(f.p.getHitpoints(), 89);
+  advancePotionTimer(f);
+  await browserOp(f, 1, "Drink");
+  assert.equal(f.inv.getItems()[1].getId(), I.SARADOMIN_BREW_3_);
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 105);
+  if (divine) {
+    const target = f.p.getAttribute("potions:divine:state").targets.find(entry => entry.skillIndex === core.Skill.ATTACK.getIndex());
+    assert.equal(target.target, 105, "the actual drain updates the maintained level before the next phase");
+  }
+}
+
+test("divine maintenance preserves the actual Saradomin brew drain", async t => {
+  const f = divineActor(t, 99);
+  await boostThenBrew(f, true);
+  const state = f.p.getAttribute("potions:divine:state");
+  assert.ok(state.endsAt > Date.now());
+  const expiry = state.endsAt;
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 105);
+  // This is the registered plugin-processing phase, not a complete World tick.
+  PM.emitPlayerProcess({ player: f.p });
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 105,
+    "the divine potion maintains the deliberately lowered boost");
+  assert.equal(f.p.getAttribute("potions:divine:state").endsAt, expiry);
+});
+
+test("ordinary super attack and brew retain the same drain", async t => {
+  const f = divineActor(t, 99);
+  await boostThenBrew(f, false);
+  PM.emitPlayerProcess({ player: f.p });
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 105);
+});
+
+test("an ordinary reboost does not extend the divine expiry", async t => {
+  const f = divineActor(t, 99);
+  await boostThenBrew(f, true);
+  const expiry = f.p.getAttribute("potions:divine:state").endsAt;
+  advancePotionTimer(f);
+  giveDrink(f, 2, I.SUPER_ATTACK_4_);
+  await browserOp(f, 2, "Drink");
+  assert.equal(f.inv.getItems()[2].getId(), I.SUPER_ATTACK_3_);
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 118);
+  PM.emitPlayerProcess({ player: f.p });
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 118);
+  assert.equal(f.p.getAttribute("potions:divine:state").endsAt, expiry);
+});
+
+
+for (const [name, drink, next] of [
+  ["restore", () => I.RESTORE_POTION_4_, () => I.RESTORE_POTION_3_],
+  ["Sanfew", () => I.SANFEW_SERUM_4_, () => I.SANFEW_SERUM_3_],
+]) {
+  test(`${name} does not restore a deliberately lowered divine boost`, async t => {
+    const f = divineActor(t, 99);
+    await boostThenBrew(f, true);
+    const expiry = f.p.getAttribute("potions:divine:state").endsAt;
+    advancePotionTimer(f);
+    giveDrink(f, 2, drink());
+    assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 105);
+    await browserOp(f, 2, "Drink");
+    assert.equal(f.inv.getItems()[2].getId(), next());
+    assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 105);
+    PM.emitPlayerProcess({ player: f.p });
+    assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 105);
+    assert.equal(f.p.getAttribute("potions:divine:state").endsAt, expiry);
+  });
+}
+
+
+test("a later ordinary boost raises a maintained divine level without extending it", async t => {
+  const f = divineActor(t, 99);
+  await boostThenBrew(f, true);
+  const expiry = f.p.getAttribute("potions:divine:state").endsAt;
+  PM.emitPlayerProcess({ player: f.p });
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 105);
+  advancePotionTimer(f);
+  giveDrink(f, 2, I.SUPER_ATTACK_4_);
+  await browserOp(f, 2, "Drink");
+  assert.equal(f.inv.getItems()[2].getId(), I.SUPER_ATTACK_3_);
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 118);
+  PM.emitPlayerProcess({ player: f.p });
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 118);
+  assert.equal(f.p.getAttribute("potions:divine:state").endsAt, expiry);
+});
+
+for (const [name, drink, next] of [
+  ["restore", () => I.RESTORE_POTION_4_, () => I.RESTORE_POTION_3_],
+  ["super restore", () => I.SUPER_RESTORE_4_, () => I.SUPER_RESTORE_3_],
+  ["Sanfew", () => I.SANFEW_SERUM_4_, () => I.SANFEW_SERUM_3_],
+]) {
+  test(`${name} restores a divine level drained below base`, async t => {
+    const f = divineActor(t, 99);
+    await boostThenBrew(f, true);
+    const expiry = f.p.getAttribute("potions:divine:state").endsAt;
+    PM.emitPlayerProcess({ player: f.p });
+    assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 105);
+    advancePotionTimer(f);
+    giveDrink(f, 2, I.SARADOMIN_BREW_4_);
+    await browserOp(f, 2, "Drink");
+    assert.equal(f.inv.getItems()[2].getId(), I.SARADOMIN_BREW_3_);
+    assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 93);
+    PM.emitPlayerProcess({ player: f.p });
+    assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 93);
+    assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.STRENGTH), 78);
+    advancePotionTimer(f);
+    giveDrink(f, 3, drink());
+    await browserOp(f, 3, "Drink");
+    assert.equal(f.inv.getItems()[3].getId(), next());
+    assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 99);
+    assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.STRENGTH), 99);
+    PM.emitPlayerProcess({ player: f.p });
+    assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 99);
+    assert.equal(f.p.getAttribute("potions:divine:state").targets.find(entry => entry.skillIndex === core.Skill.ATTACK.getIndex()).target, 99);
+    assert.equal(f.p.getAttribute("potions:divine:state").endsAt, expiry);
+  });
+}
+
+test("a death reset and later reboost update the maintained divine level", async t => {
+  const f = divineActor(t, 99);
+  await boostThenBrew(f, true);
+  const expiry = f.p.getAttribute("potions:divine:state").endsAt;
+  PM.emitPlayerProcess({ player: f.p });
+  advancePotionTimer(f);
+  giveDrink(f, 2, I.SARADOMIN_BREW_4_);
+  await browserOp(f, 2, "Drink");
+  assert.equal(f.inv.getItems()[2].getId(), I.SARADOMIN_BREW_3_);
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 93);
+  PM.emitPlayerProcess({ player: f.p });
+  assert.equal(f.p.getAttribute("potions:divine:state").targets.find(entry => entry.skillIndex === core.Skill.ATTACK.getIndex()).target, 93);
+  advancePotionTimer(f);
+
+  // This fixture account does not persist; death still follows the real queued task and hooks.
+  f.p.setAttribute("bot-skip-persistence", true);
+  f.inv.resetItems().refreshItems();
+  const existingGround = new Set(core.World.getItems());
+  t.after(() => {
+    for (const ground of [...core.World.getItems()]) {
+      if (!existingGround.has(ground) && ground.getOwner() === f.p.getUsername()) {
+        core.ItemOnGroundManager.deregister(ground);
+        const index = core.World.getItems().indexOf(ground);
+        if (index >= 0) core.World.getItems().splice(index, 1);
+      }
+    }
+  });
+  let deaths = 0;
+  const emitDeath = PM.emitPlayerDeath;
+  t.mock.method(PM, "emitPlayerDeath", function(event) {
+    if (event.player === f.p) deaths++;
+    return emitDeath.call(this, event);
+  });
+  let deathTask;
+  const submit = core.TaskManager.submit;
+  t.mock.method(core.TaskManager, "submit", function(task) {
+    if (task instanceof PlayerDeathTask && task.player === f.p) deathTask = task;
+    return submit.call(this, task);
+  });
+  t.after(() => deathTask?.stop());
+  f.p.setHitpoints(0);
+  f.p.appendDeath();
+  assert.ok(deathTask, "the real death task was submitted for this player");
+  assert.equal(f.p.isDyingReturn(), true);
+  for (let i = 0; i < 8 && deaths === 0; i++) core.TaskManager.process();
+  assert.equal(deaths, 1, "the actual queued death task reached its death hook");
+  assert.equal(f.p.isDyingReturn(), false);
+  assert.equal(f.p.getHitpoints(), 99);
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 99);
+  assert.equal(f.p.getAttribute("potions:divine:state").endsAt, expiry);
+  PM.emitPlayerProcess({ player: f.p });
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 99);
+  assert.equal(f.p.getAttribute("potions:divine:state").targets.find(entry => entry.skillIndex === core.Skill.ATTACK.getIndex()).target, 99);
+
+  giveDrink(f, 0, I.SUPER_ATTACK_4_);
+  await browserOp(f, 0, "Drink");
+  assert.equal(f.inv.getItems()[0].getId(), I.SUPER_ATTACK_3_);
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 118);
+  PM.emitPlayerProcess({ player: f.p });
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 118);
+  assert.equal(f.p.getAttribute("potions:divine:state").endsAt, expiry);
+});
 
 // ------------------------------------------------------------------ the tests
 
@@ -478,4 +762,241 @@ test("ordinary food preserves a brew's existing overheal", async t => {
   assert.equal(f.p.getHitpoints(), 115);
   assert.notEqual(f.inv.getItems()[1]?.getId(), shark);
   assert.equal(f.p.getSkillManager().getExperience(core.Skill.HITPOINTS), xp);
+});
+
+// Prayer restores must not lower a boost produced by a real Ancient brew.
+function prayerRestoreActor(t) {
+  const f = actor(t);
+  const skills = f.p.getSkillManager();
+  const xp = core.SkillManager.getExperienceForLevel(99);
+  for (const name of [...SKILLS, "HITPOINTS"]) {
+    const skill = core.Skill[name];
+    skills.setExperience(skill, xp);
+    skills.setMaxLevel(skill, 99);
+    skills.setCurrentLevel(skill, 99, false);
+    assert.equal(skills.getExperience(skill), xp);
+    assert.equal(skills.getMaxLevel(skill), 99);
+    assert.equal(skills.getCurrentLevel(skill), 99);
+  }
+  assert.equal(f.p.isPlayerBot(), false);
+  assert.equal(f.p.getPrayerActive().some(Boolean), false);
+  assert.equal(f.p.getTimers().has(core.TimerKey.STUN), false);
+  assert.equal(f.p.getTimers().has(core.TimerKey.POTION), false);
+  assert.equal(f.p.getAttribute("potions:divine:state") ?? null, null);
+  return { ...f, prayerXp: xp };
+}
+
+async function ancientPrayerBoost(f) {
+  plainDrink(f, 0, I.ANCIENT_BREW_4_);
+  assert.equal(f.inv.getItems()[0].getId(), 26340);
+  await browserOp(f, 0, "Drink");
+  assert.equal(f.inv.getItems()[0].getId(), 26342);
+  assert.equal(f.inv.getItems()[0].getAmount(), 1);
+  assert.equal(f.inv.getItems()[0].getMeta(), null);
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.PRAYER), 103);
+  for (const name of ["ATTACK", "STRENGTH", "DEFENCE"]) {
+    assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill[name]), 88);
+  }
+  assert.equal(f.p.getTimers().has(core.TimerKey.POTION), true);
+  for (let tick = 0; tick < 3; tick++) f.p.getTimers().process();
+  assert.equal(f.p.getTimers().has(core.TimerKey.POTION), false);
+  assert.equal(f.p.getTimers().has(core.TimerKey.STUN), false);
+  assert.equal(f.p.getPrayerActive().some(Boolean), false);
+  assert.equal(f.p.getAttribute("potions:divine:state") ?? null, null);
+  assert.equal(f.p.getSkillManager().getMaxLevel(core.Skill.PRAYER), 99);
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.PRAYER), 103);
+  assert.equal(f.p.getSkillManager().getExperience(core.Skill.PRAYER), f.prayerXp);
+}
+
+test("a super restore preserves an existing Ancient brew Prayer boost", async t => {
+  const f = prayerRestoreActor(t);
+  await ancientPrayerBoost(f);
+  plainDrink(f, 1, I.SUPER_RESTORE_4_);
+  assert.equal(f.inv.getItems()[1].getId(), 3024);
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 88);
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.PRAYER), 103);
+  await browserOp(f, 1, "Drink");
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.PRAYER), 103,
+    "a positive restore must not remove existing Prayer points");
+  assert.equal(f.inv.getItems()[1].getId(), 3026);
+  assert.equal(f.inv.getItems()[1].getAmount(), 1);
+  assert.equal(f.inv.getItems()[1].getMeta(), null);
+  assert.equal(f.inv.getItems()[0].getId(), 26342);
+  for (const name of ["ATTACK", "STRENGTH", "DEFENCE"]) {
+    assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill[name]), 99);
+  }
+  assert.equal(f.p.getSkillManager().getExperience(core.Skill.PRAYER), f.prayerXp);
+});
+
+test("the Ancient brew Prayer boost remains after its intake timer clears", async t => {
+  const f = prayerRestoreActor(t);
+  await ancientPrayerBoost(f);
+  PM.emitPlayerProcess({ player: f.p });
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.PRAYER), 103);
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.ATTACK), 88);
+  assert.equal(f.p.getSkillManager().getExperience(core.Skill.PRAYER), f.prayerXp);
+});
+
+test("a super restore raises Prayer below base", async t => {
+  const f = prayerRestoreActor(t);
+  f.p.getSkillManager().setCurrentLevel(core.Skill.PRAYER, 60, false);
+  assert.equal(f.p.getSkillManager().getMaxLevel(core.Skill.PRAYER), 99);
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.PRAYER), 60);
+  plainDrink(f, 0, I.SUPER_RESTORE_4_);
+  await browserOp(f, 0, "Drink");
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.PRAYER), 92);
+  assert.equal(f.inv.getItems()[0].getId(), 3026);
+  assert.equal(f.inv.getItems()[0].getMeta(), null);
+  assert.equal(f.p.getSkillManager().getExperience(core.Skill.PRAYER), f.prayerXp);
+});
+
+test("a super restore remains drinkable at base Prayer", async t => {
+  const f = prayerRestoreActor(t);
+  plainDrink(f, 0, I.SUPER_RESTORE_4_);
+  await browserOp(f, 0, "Drink");
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.PRAYER), 99);
+  assert.equal(f.inv.getItems()[0].getId(), 3026);
+  assert.equal(f.inv.getItems()[0].getMeta(), null);
+  assert.equal(f.p.getSkillManager().getExperience(core.Skill.PRAYER), f.prayerXp);
+});
+
+test("Jangerberries preserve an existing Ancient brew Prayer boost", async t => {
+  const f = prayerRestoreActor(t);
+  await ancientPrayerBoost(f);
+  assert.equal(core.CacheDefinitions.getItem(I.JANGERBERRIES).inventoryActions[0], "Eat");
+  assert.equal(core.ItemDefinition.forId(I.JANGERBERRIES).isNoted(), false);
+  const berries = put(f, item(I.JANGERBERRIES), 1);
+  assert.equal(berries.getAmount(), 1);
+  assert.equal(berries.getMeta(), null);
+  assert.equal(f.p.getTimers().has(core.TimerKey.FOOD), false);
+  await browserOp(f, 1, "Eat");
+  assert.equal(f.p.getSkillManager().getCurrentLevel(core.Skill.PRAYER), 103);
+  assert.notEqual(f.inv.getItems()[1].getId(), I.JANGERBERRIES);
+  assert.equal(f.p.getTimers().has(core.TimerKey.FOOD), true);
+  assert.equal(f.p.getSkillManager().getExperience(core.Skill.PRAYER), f.prayerXp);
+});
+
+// Ordinary drinks and house refreshments use different empty glasses.
+function ordinaryAleActor(t) {
+  const f = divineActor(t, 90);
+  assert.equal(core.WorldDefinition.isMembersWorld(), true);
+  assert.equal(f.p.isRegistered(), true);
+  assert.equal(f.p.isPlayerBot(), false);
+  assert.equal(f.p.isDyingReturn() ?? false, false);
+  assert.equal(f.p.getPrivateArea(), null);
+  assert.equal(f.p.getLocation().getX(), HOME[0]);
+  assert.equal(f.p.getLocation().getY(), HOME[1]);
+  assert.equal(f.p.getTimers().has(core.TimerKey.POTION), false);
+  assert.equal(f.p.getTimers().has(core.TimerKey.FOOD), false);
+  assert.equal(f.p.getTimers().has(core.TimerKey.STUN), false);
+  assert.equal(I.BEER_GLASS, 1919);
+  assert.equal(I.BEER_GLASS_4, 7742);
+  const ordinary = core.CacheDefinitions.getItem(I.BEER_GLASS);
+  const house = core.CacheDefinitions.getItem(I.BEER_GLASS_4);
+  assert.equal(ordinary.name, "Beer glass");
+  assert.equal(ordinary.isTradable, true);
+  assert.equal(ordinary.noteTemplate, -1);
+  assert.equal(ordinary.placeholderTemplate, -1);
+  assert.equal(house.name, "Beer glass");
+  assert.equal(house.isMembers, true);
+  assert.equal(f.inv.getAmount(I.BEER_GLASS), 0);
+  assert.equal(f.inv.getAmount(I.BEER_GLASS_4), 0);
+  return f;
+}
+
+function placeOrdinaryAle(f, id, expectedName) {
+  const definition = core.CacheDefinitions.getItem(id);
+  assert.equal(definition.name, expectedName);
+  assert.equal(definition.inventoryActions[0], "Drink");
+  assert.equal(definition.isTradable, true);
+  assert.equal(definition.noteTemplate, -1);
+  assert.equal(definition.placeholderTemplate, -1);
+  assert.equal(core.ItemDefinition.forId(id).isNoted(), false);
+  assert.equal(core.ItemDefinition.forId(id).isTradeable(), true);
+  const held = put(f, item(id), 0);
+  assert.equal(f.inv.getItems()[0], held);
+  assert.equal(held.getId(), id);
+  assert.equal(held.getAmount(), 1);
+  assert.equal(held.getMeta(), null);
+  return held;
+}
+
+for (const [name, id, expectedId, hitpoints] of [
+  ["Moonlight mead", () => I.MOONLIGHT_MEAD, 2955, 94],
+  ["Wizard's mind bomb", () => I.WIZARDS_MIND_BOMB, 1907, 91],
+]) {
+  test(`${name} returns an ordinary beer glass`, async t => {
+    const f = ordinaryAleActor(t);
+    assert.equal(id(), expectedId);
+    placeOrdinaryAle(f, id(), name);
+    const hpXp = f.p.getSkillManager().getExperience(core.Skill.HITPOINTS);
+    assert.equal(f.p.getHitpoints(), 90);
+    await browserOp(f, 0, "Drink");
+    assert.equal(f.inv.getItems()[0].getId(), I.BEER_GLASS,
+      "the consumed ordinary ale leaves an ordinary beer glass in its slot");
+    assert.equal(f.inv.getAmount(I.BEER_GLASS_4), 0);
+    assert.equal(f.inv.getItems()[0].getAmount(), 1);
+    assert.equal(f.inv.getItems()[0].getMeta(), null);
+    assert.equal(f.inv.getAmount(id()), 0);
+    assert.equal(f.inv.getAmount(I.BEER_GLASS), 1);
+    assert.equal(f.p.getHitpoints(), hitpoints);
+    assert.equal(f.p.getSkillManager().getExperience(core.Skill.HITPOINTS), hpXp);
+    assert.equal(f.p.getTimers().has(core.TimerKey.POTION), true);
+  });
+}
+
+test("ordinary beer leaves its normal glass", async t => {
+  const f = ordinaryAleActor(t);
+  assert.equal(I.BEER, 1917);
+  placeOrdinaryAle(f, I.BEER, "Beer");
+  await browserOp(f, 0, "Drink");
+  assert.equal(f.inv.getItems()[0].getId(), I.BEER_GLASS);
+  assert.equal(f.inv.getItems()[0].getAmount(), 1);
+  assert.equal(f.inv.getItems()[0].getMeta(), null);
+  assert.equal(f.inv.getAmount(I.BEER_GLASS_4), 0);
+  assert.equal(f.p.getHitpoints(), 91);
+});
+
+test("ordinary beer replaces its own slot when the inventory is full", async t => {
+  const f = ordinaryAleActor(t);
+  placeOrdinaryAle(f, I.BEER, "Beer");
+  fill(f);
+  assert.equal(f.inv.getFreeSlots(), 0);
+  await browserOp(f, 0, "Drink");
+  assert.equal(f.inv.getItems()[0].getId(), I.BEER_GLASS);
+  assert.equal(f.inv.getItems()[0].getAmount(), 1);
+  assert.equal(f.inv.getItems()[0].getMeta(), null);
+  assert.equal(f.inv.getFreeSlots(), 0);
+  assert.equal(f.inv.getAmount(I.BEER_GLASS_4), 0);
+});
+
+test("an active potion cooldown keeps ordinary mead intact", async t => {
+  const f = ordinaryAleActor(t);
+  const held = placeOrdinaryAle(f, I.MOONLIGHT_MEAD, "Moonlight mead");
+  f.p.getTimers().extendOrRegister(core.TimerKey.POTION, 3);
+  assert.equal(f.p.getTimers().has(core.TimerKey.POTION), true);
+  await browserOp(f, 0, "Drink");
+  assert.equal(f.inv.getItems()[0], held);
+  assert.equal(f.inv.getItems()[0].getId(), I.MOONLIGHT_MEAD);
+  assert.equal(f.inv.getItems()[0].getAmount(), 1);
+  assert.equal(f.inv.getItems()[0].getMeta(), null);
+  assert.equal(f.inv.getAmount(I.BEER_GLASS), 0);
+  assert.equal(f.inv.getAmount(I.BEER_GLASS_4), 0);
+  assert.equal(f.p.getHitpoints(), 90);
+});
+
+// This checks the registered identities; it does not create or consume a house drink.
+test("ale registrations retain the glass for their drink variant", () => {
+  const { findPotionEntry } = require("../plugins/items/Potions.plugin")._test;
+  const ordinary = [I.WIZARDS_MIND_BOMB, I.DWARVEN_STOUT, I.AXEMANS_FOLLY, I.BANDITS_BREW,
+    I.MOONLIGHT_MEAD, I.MOONLIGHT_MEAD_M_, I.SLAYERS_RESPITE, I.SLAYERS_RESPITE_M_];
+  const house = [I.BEER_3, I.CIDER_3, I.ASGARNIAN_ALE_3, I.GREENMANS_ALE_3,
+    I.DRAGON_BITTER_3, I.CHEFS_DELIGHT_3];
+  for (const [ids, expected] of [[ordinary, I.BEER_GLASS], [house, I.BEER_GLASS_4]]) {
+    for (const id of ids) {
+      const entry = findPotionEntry(id);
+      assert.ok(entry, `ale ${id} is registered`);
+      assert.equal(entry.replacementId, expected, `ale ${id} has the correct empty glass`);
+    }
+  }
 });

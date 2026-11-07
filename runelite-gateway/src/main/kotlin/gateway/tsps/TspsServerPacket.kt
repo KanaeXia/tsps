@@ -18,6 +18,9 @@ object TspsServerPacket {
     const val NPC_INFO = 21
     const val ANIM = 22
     const val MOVEMENT_POSITION = 23
+    const val NPC_ANIM_SPECIFIC = 24
+    const val NPC_SPOTANIM_SPECIFIC = 25
+    const val NPC_HEADICON_SPECIFIC = 26
     const val VARP_SMALL = 40
     const val VARP_LARGE = 41
     const val VARBIT = 42
@@ -27,6 +30,7 @@ object TspsServerPacket {
     const val INVENTORY_SLOT = 51
     const val BANK_SNAPSHOT = 52
     const val BANK_SLOT = 53
+    const val INVENTORY_STOP_TRANSMIT = 56
     const val GROUND_ITEMS = 54
     const val GROUND_ITEMS_DELTA = 55
     const val SKILLS_SNAPSHOT = 70
@@ -79,6 +83,7 @@ object TspsServerPacket {
     const val LOC_DEL = 135
     const val LOC_ANIM = 136
     const val CAMERA_CONTROL = 137
+    const val LOC_MERGE = 138
     const val REBUILD_REGION = 140
     const val REBUILD_NORMAL = 141
     const val REBUILD_WORLDENTITY = 142
@@ -119,6 +124,9 @@ object TspsServerPacket {
             PATH_RESPONSE to -1,
             PLAYER_SYNC to -2,
             MOVEMENT_POSITION to 18,
+            NPC_ANIM_SPECIFIC to 5,
+            NPC_SPOTANIM_SPECIFIC to 9,
+            NPC_HEADICON_SPECIFIC to 7,
             NPC_INFO to -2,
             ANIM to 22,
             VARP_SMALL to 3,
@@ -130,6 +138,7 @@ object TspsServerPacket {
             INVENTORY_SLOT to -1,
             BANK_SNAPSHOT to -2,
             BANK_SLOT to -1,
+            INVENTORY_STOP_TRANSMIT to 2,
             GROUND_ITEMS to -2,
             GROUND_ITEMS_DELTA to -2,
             SKILLS_SNAPSHOT to -1,
@@ -178,6 +187,7 @@ object TspsServerPacket {
             LOC_ADD_CHANGE to -1,
             LOC_DEL to -1,
             LOC_ANIM to 10,
+            LOC_MERGE to 18,
             SOUND to -1,
             PLAY_JINGLE to 5,
             PLAY_SONG to 10,

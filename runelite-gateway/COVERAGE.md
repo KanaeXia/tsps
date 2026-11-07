@@ -21,9 +21,11 @@ sessions, so the browser wire format doesn't change.
 | 21 NPC_INFO | NPC_INFO | mapped | 3, 8 | tsps's remove-and-re-add (jump, type change) becomes a teleport/setId of the same avatar; rsprot's own range culling is off, tsps decides visibility. Model customisation: tsps's per-slot overrides are applied to the type's models from the cache (an empty list resets). Tint: tsps sends NPC tint (mask 0x100) as it does for players. Hit delays and exact-move pass through |
 | 22 ANIM | — | dropped | 1 | base anims are in appearance |
 | 23 MOVEMENT_POSITION | — | dropped | 2 | sub-tile movement has no OSRS form |
+| 24 / 25 NPC_ANIM_SPECIFIC / NPC_SPOTANIM_SPECIFIC | NPC_ANIM_SPECIFIC / NPC_SPOTANIM_SPECIFIC | mapped | — | observer-local one-shot effects after NPC info; delay, height, slot and reset sentinel pass through. Unknown targets are discarded. Deck NPCs select their session world and restore the root before flushing |
 | 40 / 41 / 44 VARP_SMALL / LARGE / LONG | VARP_SMALL / LARGE / LONG | mapped | 4 | ids ≥ the cache varp count (5996) dropped |
 | 42 VARBIT | VARP_SMALL / LARGE | mapped | 4 | written into the session's varp mirror from the cache varbit definition |
 | 50 / 51 INVENTORY_SNAPSHOT / SLOT | UPDATE_INV_FULL / PARTIAL (93) | mapped | 5 | |
+| 56 INVENTORY_STOP_TRANSMIT | UPDATE_INV_STOPTRANSMIT | mapped | 5 | discards the matching mirror; later full/partial updates recreate it |
 | 52 / 53 BANK_SNAPSHOT / SLOT | UPDATE_INV_FULL / PARTIAL (95) | mapped | 5 | tab/placeholder bits dropped (tabs are varbits; placeholders are their own obj ids) |
 | 54 / 55 GROUND_ITEMS / DELTA | OBJ_ADD / DEL / COUNT _SPECIFIC | mapped | 5 | stack-id state, scene-filtered and re-sent after each rebuild; tick timers become ticks until public/despawn |
 | 70 / 71 SKILLS_SNAPSHOT / DELTA | UPDATE_STAT_V2 per skill | mapped | 4 | the combat level goes to varbit 13027, which the browser sets itself |

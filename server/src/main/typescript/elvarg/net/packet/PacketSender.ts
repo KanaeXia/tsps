@@ -14,12 +14,17 @@ import { Skill } from "../../game/model/Skill";
 import { Location } from "../../game/model/Location";
 import { BoatManager } from "../../game/content/sailing/BoatManager";
 import { Graphic } from "../../game/model/Graphic";
+import type { Animation } from "../../game/model/Animation";
+import type { NPC } from "../../game/entity/impl/npc/NPC";
 import { World } from "../../game/World";
 import { DonatorRights } from "../../game/model/rights/DonatorRights";
 import { InterfaceLayoutRegistry } from "../../game/definition/InterfaceLayoutDefinition";
 import { Misc } from "../../util/Misc";
 import {
   encodeBankSnapshot,
+  encodeNpcAnimationSpecific,
+  encodeNpcSpotAnimationSpecific,
+  encodeNpcHeadIconSpecific,
   encodeChatMessage,
   type ChatStyle,
   encodeCollectionLogSnapshot,
@@ -31,9 +36,11 @@ import {
   GROUND_ITEM_BYTES,
   encodeLocAddChange,
   encodeLocAnim,
+  encodeLocMerge,
   encodeTileSpotAnim,
   encodeLocDel,
   encodeInventorySlot,
+  encodeInventoryStopTransmit,
   encodeInventorySnapshot,
   encodePlayJingle,
   encodePlaySong,
@@ -173,11 +180,32 @@ export interface SubInterfaceMount {
 const WORN_INVENTORY_ID = 94;
 
 export class PacketSender {
+  /** Viewer-only slot customization, delivered after this viewer's NPC info. */
+  sendNpcHeadIconSpecific(npc: NPC, slot: number, archive: number, frame: number): this {
+    this.player.getSession()?.queueNpcSpecificEffect(npc,
+      encodeNpcHeadIconSpecific(npc.getIndex(), slot, archive, frame));
+    return this;
+  }
+  /** A sequence for this viewer alone; it never changes the shared NPC update flags. */
+  sendNpcAnimationSpecific(npc: NPC, animation: Animation): this {
+    this.player.getSession()?.queueNpcSpecificEffect(npc,
+      encodeNpcAnimationSpecific(npc.getIndex(), animation.getId(), animation.getDelay()));
+    return this;
+  }
+
+  /** A spotanim in this viewer's actor slot; id -1 clears that slot. */
+  sendNpcSpotAnimationSpecific(npc: NPC, graphic: Graphic, slot = 0): this {
+    this.player.getSession()?.queueNpcSpecificEffect(npc,
+      encodeNpcSpotAnimationSpecific(npc.getIndex(), graphic.getId(), slot, graphic.getHeight(), graphic.getDelay()));
+    return this;
+  }
   private groundItemSerial = 0;
   private readonly varps = new Map<number, number>();
   /** The spell unlock states go out with the session's first spellbook mount only. */
   private spellUnlocksSent = false;
   private subInterfaceTargets = new Map<number, SubInterfaceMount>();
+  /** Last interface owning each transmitted client container; never authoritative contents. */
+  private inventoryOwners = new Map<number, number>();
   private chatboxGroupId = -1;
   private chatboxOwner: object | undefined;
   private presentingChatboxOwner: object | undefined;
@@ -797,6 +825,7 @@ export class PacketSender {
     const slots: BankSlotView[] = Bank.layout(this.player).map(({ tab, item }, slot) => ({
       slot, itemId: Bank.displayItemId(item), quantity: item.getAmount(), tab,
     }));
+    this.inventoryOwners.set(CacheDefinitions.getInventoryId("bank")!, 12);
     this.player.getSession().sendClientPacket(encodeBankSnapshot(1410, slots));
     return this;
   }
@@ -809,6 +838,7 @@ export class PacketSender {
 
   private resetInterfaceState(): number {
     const interfaceId = this.player.getInterfaceId?.() ?? -1;
+    this.releaseInterfaceInventories(interfaceId);
     if (interfaceId === 12) {
       this.sendConfig(548, 0).sendVarbit(12393, 0);
     }
@@ -935,6 +965,7 @@ export class PacketSender {
     const target = this.subInterfaceTargets.get(groupId);
     if (target) {
       this.subInterfaceTargets.delete(groupId);
+      this.releaseInterfaceInventories(groupId);
       this.player.getSession().sendClientPacket(encodeWidgetCloseSub(target.targetUid));
       // A sub-interface closed by name (an overlay such as a floater) closes "by any route" too.
       this.emitInterfaceClosed(groupId);
@@ -1256,6 +1287,12 @@ export class PacketSender {
     return this;
   }
 
+  /** A recipient-specific native loc_merge; the target index belongs to player sync. */
+  sendObjectMerge(merge: import("../protocol/LocMerge").LocMergePayload): this {
+    this.player.getSession().sendClientPacket(encodeLocMerge(merge));
+    return this;
+  }
+
   sendObjectAnimation(object: any, animation: any): this {
     if (object?.getLocation) {
       const location = object.getLocation();
@@ -1374,6 +1411,7 @@ export class PacketSender {
       y: position.getY(),
       level: position.getZ(),
       ...item.getTiming?.(),
+      enabledOps: item.getEnabledOps?.(this.player) ?? 0x1f,
       ownerId: mine ? this.player.getIndex() : -1,
       isPrivate: item.getState?.() === 0,
       ownership: owner == null ? 0 : mine ? 1 : 2,
@@ -1481,7 +1519,10 @@ export class PacketSender {
   /** Include legacy native mounts without changing their packet or event sequence. */
   private rememberSubInterface(targetUid: number, groupId: number, type: number): SubInterfaceMount {
     for (const [mountedGroupId, mounted] of this.subInterfaceTargets) {
-      if (mounted.targetUid === targetUid) this.subInterfaceTargets.delete(mountedGroupId);
+      if (mounted.targetUid === targetUid) {
+        this.subInterfaceTargets.delete(mountedGroupId);
+        if (mountedGroupId !== groupId) this.releaseInterfaceInventories(mountedGroupId);
+      }
     }
     const mount: SubInterfaceMount = Object.freeze({ targetUid, groupId, type });
     this.subInterfaceTargets.set(groupId, mount);
@@ -1566,7 +1607,10 @@ export class PacketSender {
 
   closeSubInterface(targetUid: number): this {
     for (const [groupId, entry] of this.subInterfaceTargets) {
-      if (entry.targetUid === targetUid) this.subInterfaceTargets.delete(groupId);
+      if (entry.targetUid === targetUid) {
+        this.subInterfaceTargets.delete(groupId);
+        this.releaseInterfaceInventories(groupId);
+      }
     }
     this.player.getSession().sendClientPacket(encodeWidgetCloseSub(targetUid));
     return this;
@@ -1610,14 +1654,30 @@ export class PacketSender {
   sendInventory(
     inventoryId: number,
     capacity: number,
-    items: ReadonlyArray<{ id: number; amount: number } | null>
+    items: ReadonlyArray<{ id: number; amount: number } | null>,
+    ownerGroupId?: number
   ): this {
+    if (ownerGroupId !== undefined) this.inventoryOwners.set(inventoryId, ownerGroupId);
     const slots = Array.from({ length: capacity }, (_, slot) => ({
       slot,
       itemId: items[slot]?.id ?? -1,
       quantity: items[slot]?.amount ?? 0,
     }));
     return this.sendInterfaceScript(-1, [], undefined, undefined, { [inventoryId]: { capacity, slots } });
+  }
+
+  /** Discard only the client mirror. Subsequent snapshots/slots are still accepted normally. */
+  sendInventoryStopTransmit(inventoryId: number): this {
+    const packet = encodeInventoryStopTransmit(inventoryId);
+    this.inventoryOwners.delete(inventoryId);
+    this.player.getSession().sendClientPacket(packet);
+    return this;
+  }
+
+  private releaseInterfaceInventories(groupId: number): void {
+    for (const [inventoryId, owner] of this.inventoryOwners) {
+      if (owner === groupId) this.sendInventoryStopTransmit(inventoryId);
+    }
   }
 
   sendClientScript(scriptId: number, ...args: (number | string)[]): this {
