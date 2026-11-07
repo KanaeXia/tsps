@@ -1260,9 +1260,19 @@ export class Player extends Mobile {
         return this.skullTimer > 0;
     }
 
-    /** Counts the skull down a tick; the appearance drops the skull icon on the tick it runs out. */
+    /**
+     * Counts the skull down a tick; the appearance drops the skull icon on the tick it runs out. It stands still
+     * while dying: the items a death keeps follow the skull at the killing blow, not four ticks on.
+     */
     public processSkullTimer(): void {
-        if (!this.isSkulled()) {
+        if (!this.isSkulled() || this.isDying) {
+            return;
+        }
+        // Wiki (Skull (status), 9 December 2021): a skull "cannot disappear during PvP combat". Its last tick waits
+        // while a player is this player's target or attacker (the attacker clears six seconds after the last hit).
+        const combat = this.getCombat();
+        const inPvpCombat = combat.getTarget?.()?.isPlayer?.() === true || combat.getAttacker?.()?.isPlayer?.() === true;
+        if (this.skullTimer <= 1 && inPvpCombat) {
             return;
         }
         if (--this.skullTimer === 0) {

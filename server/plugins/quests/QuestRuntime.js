@@ -732,11 +732,8 @@ function registerQuest(api, def) {
       player.getPacketSender().sendConfig(QUEST_POINTS_VARP, points | 0);
 
       if (def.onReward) def.onReward(player, quest, options);
-      if (def.rewardItemId !== undefined) {
-        const inventory = player.getInventory();
-        if (inventory.isFull()) inventory.forceAdd(player, new coreApi.Item(def.rewardItemId, 1));
-        else inventory.adds(def.rewardItemId, 1);
-      }
+      // A plain add would clamp at a capped stack; giveReward's forceAdd floors what does not fit.
+      if (def.rewardItemId !== undefined) giveReward(player, def.rewardItemId, 1);
       if (options.scroll !== false) player.getPacketSender().sendJingle(def.completionJingleId ?? QUEST_COMPLETE_JINGLE, 0);
       if (options.announce !== false) {
         player.sendMessage(`Congratulations, you've completed a quest: <col=${def.completionMessageColor ?? "081190"}>${def.name}</col>`);
@@ -868,6 +865,18 @@ function startTranscript(api, player, npcId, page, variant, select, npc = null, 
   return true;
 }
 
+/**
+ * A quest reward item: into the inventory, or (what does not fit) onto the floor under the player, as the runtime's
+ * own completion item already is. `adds` alone drops a full inventory's reward on the spot.
+ */
+function giveReward(player, itemId, amount = 1) {
+  // forceAdd adds what fits (stacks included, up to the cap) and puts the rest on the floor. A container without it
+  // (a test stand-in) takes a plain add.
+  const inventory = player.getInventory();
+  if (typeof inventory.forceAdd === "function") inventory.forceAdd(player, new coreApi.Item(itemId, amount));
+  else inventory.adds(itemId, amount);
+}
+
 module.exports = {
   openBook,
   openIndexedBook,
@@ -877,6 +886,7 @@ module.exports = {
   QUEST_COMPLETE_JINGLE,
   registerQuestWidgets,
   registerQuest,
+  giveReward,
   getRegisteredQuests: () => quests.slice(),
   questNamed,
   pickQuestShopVersion,

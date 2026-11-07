@@ -4,7 +4,7 @@ Eating is `server/plugins/items/Food.plugin.js`. What each food does is
 `server/plugins/items/data/food.json`, one food per line, normally keyed by the item's cache name.
 An `itemId` row selects an exact same-name item when its effects differ; notes and placeholders
 are still excluded. Other same-name foods continue to use the name entry. Tests: `server/tests/food-effects.test.cjs` and `eat-attack-delay.test.cjs`.
-The full-plugin decoded Eat tests for same-name cabbage variants are in `server/tests/potions-preset.test.cjs`.
+The full-plugin decoded Eat tests for same-name cabbage variants, energy restoration from gout tubers and purple sweets, and Prayer restoration from bluefin are in `server/tests/potions-preset.test.cjs`.
 
 ## Sources
 
@@ -179,3 +179,9 @@ The [Draynor Manor cabbage](https://oldschool.runescape.wiki/w/Cabbage_%28Drayno
 uses a different item id from regular cabbage despite sharing its cache name. It heals one
 Hitpoint and boosts Defence by one plus 2% of its base level, rounded down. Its two eat
 messages come from the Wiki item page; their live timing has not been captured here.
+
+## Food and run energy
+
+[Gout tuber](https://oldschool.runescape.wiki/w/Gout_tuber) restores 50 run energy
+points, and [Purple sweets](https://oldschool.runescape.wiki/w/Purple_sweets) restore 10.
+Both use the existing food energy-restoration path, which caps energy at its maximum.
