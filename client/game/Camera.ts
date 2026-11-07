@@ -77,6 +77,11 @@ export class Camera {
     private scriptedLook?: ScriptedCameraShot;
     private scriptedCycleMs = 0;
     private scriptedPitchUnlocked = false;
+    /**
+     * The Camera plugin's Unrestricted pitch: the control pitch (0..512) is the scene angle
+     * itself, from level (0) to straight down (512), instead of OSRS's 128..383.
+     */
+    private pitchUnrestricted = false;
     private scriptedHeights = { move: 0, look: 0 };
 
     private readonly positionMaxSpeedPerSec = 12; // tiles per second toward target
@@ -436,7 +441,25 @@ export class Camera {
     }
 
     getControlPitchAngle(): number {
+        if (this.pitchUnrestricted) return clamp(Number(this.pitch) || 0, 0, 512);
         return Camera.rawPitchToScenePitchAngle(this.pitch);
+    }
+
+    isPitchUnrestricted(): boolean {
+        return this.pitchUnrestricted;
+    }
+
+    /** Switches the pitch range, keeping the camera at the angle it is looking from. */
+    setPitchUnrestricted(unrestricted: boolean): void {
+        if (unrestricted === this.pitchUnrestricted) return;
+        const angle = this.getControlPitchAngle();
+        const targetAngle = this.pitchUnrestricted
+            ? clamp(this.targetPitch, 0, 512)
+            : Camera.rawPitchToScenePitchAngle(this.targetPitch);
+        this.pitchUnrestricted = unrestricted;
+        const toRaw = (a: number) => (unrestricted ? a : clamp(((a - 128) * 512) / 255, 0, 512));
+        this.pitch = toRaw(angle);
+        this.targetPitch = toRaw(targetAngle);
     }
 
     getScenePitchAngle(): number {

@@ -1,13 +1,16 @@
 import { ConfigChanged } from "@runelite/api/events";
 import { ConfigManager } from "@runelite/client/config/ConfigManager";
 import { Plugin, type PluginDescriptor } from "@runelite/client/plugins/Plugin";
-import { inject } from "@runelite/client/plugins/PluginInjector";
+import { CLIENT_TOKEN, inject } from "@runelite/client/plugins/PluginInjector";
+import type { OsrsClient } from "../../OsrsClient";
+import type { WidgetOverlay } from "../ClientPluginManager";
 import {
     InteractHighlightConfig,
     readInteractHighlightConfig,
     type InteractHighlightPluginConfig,
     type InteractHighlightPluginState,
 } from "./InteractHighlightConfig";
+import { InteractTileOverlay } from "./InteractTileOverlay";
 
 type InteractHighlightPluginListener = () => void;
 
@@ -27,9 +30,36 @@ export class InteractHighlightPlugin extends Plugin {
     private config: InteractHighlightPluginConfig;
     private state: InteractHighlightPluginState;
     private version = 0;
+    /** The hovered and interacted NPC's or object's tiles (Highlight tiles). */
+    readonly widgetOverlay: WidgetOverlay;
 
-    constructor() {
+    constructor(osrsClient?: OsrsClient) {
         super();
+        // Injected now: the injector only answers while plugins are being built.
+        const osrs: any = osrsClient ?? inject<OsrsClient>(CLIENT_TOKEN);
+        const client = (): any => osrs;
+        this.widgetOverlay = new InteractTileOverlay({
+            // The editor swaps in its own highlight config, which has no tiles.
+            config: () => client()?.clientPlugins?.interactHighlightConfig?.(),
+            activeTarget: () => client()?.renderer?.interactHighlightActiveTarget,
+            hoverTarget: () => client()?.renderer?.interactHighlightHoverTarget,
+            npcArea: (ecsId) => {
+                const npcs = client()?.npcEcs;
+                if (!npcs) return undefined;
+                const size = Math.max(1, npcs.getSize(ecsId) | 0);
+                const state = npcs.getServerState(ecsId);
+                if (state) return { x: state.tileX, y: state.tileY, width: size, length: size, plane: state.plane };
+                return {
+                    x: Math.floor((npcs.getWorldX(ecsId) - size * 64) / 128),
+                    y: Math.floor((npcs.getWorldY(ecsId) - size * 64) / 128),
+                    width: size,
+                    length: size,
+                    plane: npcs.getLevel(ecsId) | 0,
+                };
+            },
+            locSize: (locId) => client()?.locTypeLoader?.load(locId),
+            scene: () => client()?.sceneGeometry,
+        });
         this.config = readInteractHighlightConfig(this.configManager, this.isEnabled());
         this.state = { config: this.config, version: this.version };
     }

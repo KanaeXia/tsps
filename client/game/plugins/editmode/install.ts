@@ -115,6 +115,8 @@ const EDITOR_INTERACT_HIGHLIGHT: InteractHighlightPluginConfig = {
     showInteract: true,
     hoverColor: 0xffffff,
     interactColor: 0xffffff,
+    showTiles: false,
+    trueTileOnly: false,
     itemShowHover: true,
     itemShowInteract: true,
     itemHoverColor: 0xffffff,

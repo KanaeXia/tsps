@@ -32,6 +32,20 @@ export const InteractHighlightConfig = ConfigGroup(
             position: 4,
             default: 0xff0000,
         }),
+        showTiles: ConfigItem({
+            name: "Highlight tiles",
+            description: "Also outline the true tiles of the highlighted NPC or object: every tile it covers (3x3 for a size 3 NPC).",
+            section: "world",
+            position: 9,
+            default: false,
+        }),
+        trueTileOnly: ConfigItem({
+            name: "True tile only",
+            description: "With Highlight tiles, outline only the NPC's or object's true (south-west) tile instead of its whole size.",
+            section: "world",
+            position: 10,
+            default: false,
+        }),
         itemShowHover: ConfigItem({
             name: "Show on hover",
             section: "items",
@@ -73,6 +87,8 @@ export interface InteractHighlightPluginConfig {
     showInteract: boolean;
     hoverColor: number;
     interactColor: number;
+    showTiles: boolean;
+    trueTileOnly: boolean;
     itemShowHover: boolean;
     itemShowInteract: boolean;
     itemHoverColor: number;
@@ -95,6 +111,8 @@ export function readInteractHighlightConfig(
         showInteract: config.showInteract(),
         hoverColor: config.hoverColor(),
         interactColor: config.interactColor(),
+        showTiles: config.showTiles(),
+        trueTileOnly: config.trueTileOnly(),
         itemShowHover: config.itemShowHover(),
         itemShowInteract: config.itemShowInteract(),
         itemHoverColor: config.itemHoverColor(),

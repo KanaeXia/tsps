@@ -75,6 +75,7 @@ export class CameraPlugin extends Plugin implements ClientPlugin, InputKeyHandle
     private easeOut = 30;
     private easeFrom: EaseFromValue = EaseFrom.BOTH;
     private easePitch = true;
+    private unrestrictedPitch = false;
 
     /** The cache's limits, from camera_set_zoom_limits, once it has run. */
     private defaultLimits?: { smallMin: number; smallMax: number; bigMin: number; bigMax: number };
@@ -102,6 +103,7 @@ export class CameraPlugin extends Plugin implements ClientPlugin, InputKeyHandle
         this.removeKeyHandler?.();
         this.removeKeyHandler = undefined;
         this.client.cameraShakeDisabled = false;
+        this.client.camera?.setPitchUnrestricted?.(false);
         this.easing.stop();
         this.applyLimits(false, 0);
         this.reapplyZoom();
@@ -149,6 +151,7 @@ export class CameraPlugin extends Plugin implements ClientPlugin, InputKeyHandle
 
     transformCameraRotation(rotation: CameraRotation): void {
         if (!this.isStarted()) return;
+        rotation.camera.setPitchUnrestricted?.(this.unrestrictedPitch);
         rotation.keyYaw *= this.cameraSpeed;
         rotation.keyPitch *= this.cameraSpeed;
         rotation.dragYaw *= this.cameraSpeed * (this.invertYaw ? -1 : 1);
@@ -213,7 +216,11 @@ export class CameraPlugin extends Plugin implements ClientPlugin, InputKeyHandle
         this.easeOut = config.easeOut();
         this.easeFrom = config.easeFrom();
         this.easePitch = config.easePitch();
-        if (this.isStarted()) this.client.cameraShakeDisabled = config.disableCameraShake();
+        this.unrestrictedPitch = config.unrestrictedPitch();
+        if (this.isStarted()) {
+            this.client.cameraShakeDisabled = config.disableCameraShake();
+            this.client.camera?.setPitchUnrestricted?.(this.unrestrictedPitch);
+        }
     }
 
     /** camera_set_zoom_limits just wrote the cache's limits: keep them, then widen them. */

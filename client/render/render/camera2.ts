@@ -328,7 +328,8 @@ export function updateCameraFollow(host: WebGLOsrsRendererHost, deltaTime?: numb
             host.osrsClient.zoomHeight;
         let camAngleX = camera.getControlPitchAngle();
         const terrainMinCamAngleX = (host.cameraTerrainPitchPressure | 0) >> 8;
-        if (terrainMinCamAngleX > camAngleX) {
+        // Unrestricted pitch (Camera plugin) is not pushed up by nearby terrain.
+        if (!camera.isPitchUnrestricted() && terrainMinCamAngleX > camAngleX) {
             camAngleX = terrainMinCamAngleX;
         }
         // active pitch-shake also raises the minimum camera angle for orbit distance.

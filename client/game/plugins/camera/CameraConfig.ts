@@ -82,6 +82,12 @@ export const CameraConfig = ConfigGroup(
             position: 8,
             default: false,
         }),
+        unrestrictedPitch: ConfigItem({
+            name: "Unrestricted pitch",
+            description: "Lets the camera tilt all the way, from level with the player (0 degrees) to straight down (90 degrees), and stops nearby terrain from pushing it higher.",
+            position: 9,
+            default: false,
+        }),
         invertYaw: ConfigItem({
             name: "Invert yaw",
             description: "Makes moving the camera horizontally with the mouse backwards.",
