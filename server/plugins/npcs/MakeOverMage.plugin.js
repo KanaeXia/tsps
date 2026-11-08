@@ -244,7 +244,7 @@ module.exports = {
     }
 
     api.registerCommand("mmt", ({ player }) => {
-	  let looks = player.GetAppearance().getLook();
+	  let looks = player.getAppearance().getLook();
       player.sendMessage(`Appearance: HEAD${looks[1]} CHEST${looks[2]}  ARMS${looks[3]}  HANDS${looks[4]}  LEGS${looks[5]}  FEET${looks[6]}  BEARD${looks[7]}`);
     }, undefined, "Print your appearance");
 	
