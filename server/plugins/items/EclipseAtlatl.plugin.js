@@ -14,7 +14,8 @@ function usingAtlatl(player) {
 function hasFullSet(player) {
   const { Equipment: E, ItemIdentifiers: I } = core;
   const equipment = player.getEquipment();
-  return [I.ECLIPSE_MOON_HELM, I.ECLIPSE_MOON_HELM_4, I.ECLIPSE_MOON_HELM_6].includes(equipment.get(E.HEAD_SLOT).getId())
+  return equipment.get(core.Equipment.WEAPON_SLOT).getId() === SANGUINE_ATLATL || 
+	[I.ECLIPSE_MOON_HELM, I.ECLIPSE_MOON_HELM_4, I.ECLIPSE_MOON_HELM_6].includes(equipment.get(E.HEAD_SLOT).getId())
     && [I.ECLIPSE_MOON_CHESTPLATE, I.ECLIPSE_MOON_CHESTPLATE_4, I.ECLIPSE_MOON_CHESTPLATE_6].includes(equipment.get(E.BODY_SLOT).getId())
     && [I.ECLIPSE_MOON_TASSETS, I.ECLIPSE_MOON_TASSETS_4, I.ECLIPSE_MOON_TASSETS_6].includes(equipment.get(E.LEG_SLOT).getId());
 }
