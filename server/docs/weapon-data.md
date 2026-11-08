@@ -130,13 +130,13 @@ The captures also confirm, unchanged: the Abyssal whip, the two-handed swords' s
 
 ## Multi-hit weapons
 
-Some weapons' ordinary attacks deal two hitsplats. `plugins/combat/MultiHitWeapons.plugin.js` gives each one traits through the `onAttackTraits` hook. `PendingHit` asks that hook for any attack that no armed special shapes, and it reads the same traits a special uses (`hitCount`, `maximumHitSplitCount`, `hitDelayTicks`, `sequentialAccuracy`).
+Some weapons' ordinary attacks deal two hitsplats. Each has a combat method whose `hits` builds one `PendingHit` with the multi-hit options (`hitAmount`, `hitMaximumSplitCount`, `hitDelays`, `requireFirstAccurate`, `landsOnAttackTick`): `plugins/combat/MultiHitWeapons.plugin.js` for Torag's hammers, the other twin weapons and Exalted Spring, and `plugins/combat/specials/DualMacuahuitl.SpecialAttack.js` for the Dual macuahuitl.
 
 | Weapon | Hits | Accuracy | Timing |
 | --- | --- | --- | --- |
 | Torag's hammers (and their degraded 100/75/50/25 forms) | max hit split in two: half rounded down, then the remainder (45 → 22 + 23) | each hit rolled on its own | same tick |
 | Dual macuahuitl (and the LMS copy) | split in two, as above | the second hit is rolled only if the first was accurate; otherwise both miss | the second hit lands a tick later against NPCs, on the same tick against players |
-| Exalted Spring (custom item 50003) | two hits, each up to the full max hit | each hit rolled on its own | same tick |
+| Exalted Spring (custom item 50001) | two hits, each up to the full max hit | each hit rolled on its own | the first on the tick of the attack (even against NPCs), the second a tick later |
 
 Source: the Wiki's [Multi-hit weapons](https://oldschool.runescape.wiki/w/Multi-hit_weapons) page for Torag's hammers and the Dual macuahuitl. Exalted Spring is a custom design, not an OSRS weapon. A special attack, such as the macuahuitl's, keeps its own traits.
 

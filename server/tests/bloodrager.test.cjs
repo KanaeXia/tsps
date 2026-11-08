@@ -186,6 +186,14 @@ test('dual attack rolls two dependent splats and retains the odd maximum remaind
   assert.deepEqual(result.remainingAccuracy, []);
 });
 
+test('against a player the ordinary dual attack lands both splats on the same tick', t => {
+  const { player } = actors(t, false);
+  const target = actors(t, false).player;
+  const method = core.CombatFactory.getMethod(player);
+  const [hit] = method.hits(player, target);
+  assert.deepEqual(hit.getHitDelays(), [0, 0]);
+});
+
 test('first normal miss suppresses the second accuracy roll', t => {
   const { player, npc } = actors(t, false);
   const result = attack(player, npc, [false], []);

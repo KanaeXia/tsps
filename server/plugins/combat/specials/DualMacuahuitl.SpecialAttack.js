@@ -44,10 +44,11 @@ function hits(character, target, method, special) {
     // A cannon can prime the per-cycle normal accuracy roll before this special.
     // Bound the special's synchronous rolls so neither value crosses this swing.
     if (special) CombatFactory.clearHitRollCache(character);
-    // NPC spacing is documented; PvP uses the general equipment-page wording as a
-    // qualified project inference pending a player-target capture.
+    // The second ordinary hit lands a tick later against NPCs and on the same tick against
+    // players (this server's choice; main spaces both, pending a player-target capture). The
+    // special's own traits keep their hitDelayTicks either way.
     hit = new PendingHit(character, target, method, {
-      hitAmount: 2, hitDelays: [0, 1], hitMaximumSplitCount: 2,
+      hitAmount: 2, hitDelays: target?.isNpc?.() ? [0, 1] : [0, 0], hitMaximumSplitCount: 2,
       requireFirstAccurate: !special,
     });
   } finally {

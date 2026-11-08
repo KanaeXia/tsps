@@ -95,6 +95,28 @@ test('both splats enter the same native NPC update and apply once', t => {
   assert.equal(npc.getHitpoints(), 55); assert.deepEqual(npc.getTickHits().map(hit => hit.getDamage()), [22, 23]);
   queue.process(101); assert.equal(npc.getHitpoints(), 55);
 });
+// Exalted Spring (custom item 50001, custom-items.json): two independent hits at the full maximum,
+// the first on the attack's tick and the second a tick later.
+const EXALTED_SPRING = 50001;
+test('Exalted Spring hits twice, each up to the full maximum, the second a tick later', t => {
+  const { player, npc } = actors(t, EXALTED_SPRING), result = roll(player, npc, [true, true], 47);
+  assert.equal(result.hits.length, 1);
+  assert.equal(result.hits[0].getHits().length, 2);
+  assert.deepEqual(result.remaining, [], 'two accuracy rolls');
+  assert.deepEqual(result.ranges, [47, 47], 'the maximum is not split');
+  // Independent: a missed first hit does not stop the second from landing.
+  const missFirst = roll(player, npc, [false, true], 47);
+  assert.deepEqual(missFirst.remaining, []);
+  assert.deepEqual(missFirst.parts.map(part => part.accurate), [false, true]);
+  assert.deepEqual(result.hits[0].getHitDelays(), [0, 1]);
+  assert.equal(result.hits[0].landsOnAttackTick(), true, 'the first hit lands on the attack tick');
+});
+test('Exalted Spring with a special armed or a spell set is not shaped by the multi-hit method', t => {
+  const { player } = actors(t, EXALTED_SPRING);
+  assert.ok(resolver.resolve(player), 'its ordinary attack');
+  player.setSpecialActivated(true);
+  assert.equal(resolver.resolve(player), null);
+});
 test('noted, placeholder, broken and unrelated items are not ordinary twin weapons', t => {
   for (const id of [4748, 4962, 4963, 15701, 15702, 29085, 29086, 29890, 29891, 30958, 30959, 33244, 4151]) {
     const { player } = actors(t, id); assert.equal(resolver.resolve(player), null, 'item ' + id);

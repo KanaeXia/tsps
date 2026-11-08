@@ -28,6 +28,12 @@ type PendingHitConfig = {
     hitMaximumSplitCount?: number;
     /** Later splats cannot roll accuracy when the first splat missed. */
     requireFirstAccurate?: boolean;
+    /**
+     * The first splat lands on the tick of the attack, not after the target's next turn (an NPC
+     * target normally takes it a tick later); later splats keep their hitDelays. As the trait
+     * WeaponSpecialTraits.landsOnAttackTick, for a method that builds its own hits.
+     */
+    landsOnAttackTick?: boolean;
     rollAccuracy?: boolean;
     /** False for damage that pays its own XP (or none), skipping the usual combat XP. */
     experience?: boolean;
@@ -72,6 +78,8 @@ export class PendingHit {
     private hitDelays?: number[];
     /** The first hitsplat lands on the attack's own tick (from `landsOnAttackTick`). */
     private onAttackTick = false;
+    /** The config's landsOnAttackTick, which the traits read at roll time cannot take away. */
+    private configOnAttackTick = false;
     private hitMaximumSplitCount = 1;
     private requireFirstAccurate = false;
     /** Spell selected when this hit was launched; the caster may clear it before impact. */
@@ -113,6 +121,7 @@ export class PendingHit {
                 this.hitMaximumSplitCount = delayOrConfig.hitMaximumSplitCount as number;
             }
             this.requireFirstAccurate = delayOrConfig.requireFirstAccurate === true;
+            this.configOnAttackTick = delayOrConfig.landsOnAttackTick === true;
             this.bestOf = Math.max(1, Math.trunc(delayOrConfig.bestOf ?? 1));
             this.damageMultiplier = delayOrConfig.damageMultiplier ?? 1;
             this.ordinary = delayOrConfig.ordinary === true;
@@ -344,7 +353,7 @@ export class PendingHit {
         if (traits?.hitDelayTicks) {
             this.hitDelays = [...traits.hitDelayTicks].map((tick) => Math.max(0, Math.trunc(tick)));
         }
-        this.onAttackTick = traits?.landsOnAttackTick === true;
+        this.onAttackTick = this.configOnAttackTick || traits?.landsOnAttackTick === true;
 
         // Which overhead is checked when the blow lands. A special that changes the
         // damage type (Favour, magic specials) must keep that type after it is disarmed.

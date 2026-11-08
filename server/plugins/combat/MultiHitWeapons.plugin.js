@@ -3,7 +3,13 @@
  * split final maximum (odd remainder on the second hit). Wiki: Multi-hit weapons,
  * Sulphur blades, Glacial temotli, Earthbound tecpatl, Infernal tecpatl, Torag's hammers.
  * Uses the same PendingHit maximum splitting as DualMacuahuitl, without its first-hit gate.
+ *
+ * Exalted Spring (custom item, data/definitions/custom-items.json; a server design, not an OSRS
+ * weapon): two independently rolled hits, each up to the full maximum. The first lands on the
+ * tick of the attack and the second a tick later, against any target.
  */
+const EXALTED_SPRING = 50001;
+
 function resolver(core) {
   const { ItemIdentifiers: ids } = core;
   const weapons = new Set([
@@ -18,21 +24,27 @@ function resolver(core) {
       })];
     }
   })();
+  const exaltedSpring = new (class extends core.MeleeCombatMethod {
+    hits(character, target) {
+      return [new core.PendingHit(character, target, this, {
+        hitAmount: 2, hitDelays: [0, 1], landsOnAttackTick: true, ordinary: true,
+      })];
+    }
+  })();
   function resolve(attacker) {
     if (!attacker?.isPlayer?.()) return null;
     const player = attacker.getAsPlayer();
-    if (player.isSpecialActivated() || core.Autocasting.isActive(player)
-      || !weapons.has(player.getEquipment().get(core.Equipment.WEAPON_SLOT)?.getId())) return null;
-    return method;
+    if (player.isSpecialActivated() || core.Autocasting.isActive(player)) return null;
+    const weapon = player.getEquipment().get(core.Equipment.WEAPON_SLOT)?.getId();
+    if (weapon === EXALTED_SPRING) return exaltedSpring;
+    return weapons.has(weapon) ? method : null;
   }
   return { resolve };
 }
 
 module.exports = {
   name: "MultiHitWeapons",
-  members: true,
   register(api) {
-    init(api);
     api.registerCombatMethodResolver(resolver(api.core));
   },
 };
