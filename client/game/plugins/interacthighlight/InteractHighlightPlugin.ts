@@ -38,11 +38,14 @@ export class InteractHighlightPlugin extends Plugin {
         // Injected now: the injector only answers while plugins are being built.
         const osrs: any = osrsClient ?? inject<OsrsClient>(CLIENT_TOKEN);
         const client = (): any => osrs;
+        // Where the renderer keeps its hover and interact targets: WebGPU's interaction host,
+        // WebGL's renderer itself.
+        const highlightHost = (): any => client()?.renderer?.interactionHost ?? client()?.renderer;
         this.widgetOverlay = new InteractTileOverlay({
             // The editor swaps in its own highlight config, which has no tiles.
             config: () => client()?.clientPlugins?.interactHighlightConfig?.(),
-            activeTarget: () => client()?.renderer?.interactHighlightActiveTarget,
-            hoverTarget: () => client()?.renderer?.interactHighlightHoverTarget,
+            activeTarget: () => highlightHost()?.interactHighlightActiveTarget,
+            hoverTarget: () => highlightHost()?.interactHighlightHoverTarget,
             npcArea: (ecsId) => {
                 const npcs = client()?.npcEcs;
                 if (!npcs) return undefined;
