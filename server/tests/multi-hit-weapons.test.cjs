@@ -1,139 +1,130 @@
-// Run after yarn build: node --test tests/multi-hit-weapons.test.cjs
-// Wiki: https://oldschool.runescape.wiki/w/Multi-hit_weapons (Torag's hammers, Dual macuahuitl).
-// Exalted Spring (custom item 50003) is a server design: two hits, each up to the full max hit.
-const assert = require("node:assert/strict");
-const { before, test } = require("node:test");
-const { Server } = require("../dist/Server");
-Server.installProductionPathResolver();
-const { PluginManager } = require("../dist/plugins/PluginManager");
-const core = PluginManager.getCoreApi();
-const { PendingHit, AccuracyFormulasDpsCalc, DamageFormulas, ItemIdentifiers: I, CombatType, Equipment } = core;
-const { CombatFactory } = require("../dist/game/content/combat/CombatFactory");
-
-const EXALTED_SPRING = 50003;
-const MAX_HIT = 45;
-
+// Registered ordinary method, real Player/NPC and PendingHit/HitQueue boundaries.
+process.env.DISABLE_PLAYER_BOTS = '1';
+const assert = require('node:assert/strict');
+const path = require('node:path');
+const { before, test } = require('node:test');
+require('../dist/Server').Server.installProductionPathResolver();
+const { PluginManager } = require('../dist/plugins/PluginManager');
+const { Player } = require('../dist/game/entity/impl/player/Player');
+const { PlayerSession } = require('../dist/net/PlayerSession');
+let core, resolver, observed, index = 6800;
+const WEAPONS = [29084, 29889, 30957, 33243, 4747, 4958, 4959, 4960, 4961];
 before(async () => {
-  await core.CachePipeline.initialize(require("node:path").resolve(__dirname, ".."));
-  require("../plugins/combat/MultiHitWeapons.plugin").register(PluginManager.createApi("MultiHitWeaponsTest"));
+  await require('../dist/game/cache/CachePipeline').CachePipeline.initialize(path.resolve(__dirname, '..'));
+  require('../plugins/items/ItemDefinitionLoader.plugin').register({ log() {}, onPlayerLogin() {}, registerContentEndpoint() {} });
+  new (require('../dist/game/definition/loader/impl/NpcDefinitionLoader').NpcDefinitionLoader)().load();
+  core = PluginManager.getCoreApi();
+  core.RegionManager.init(); core.RegionManager.loadMapFiles(3222, 3218);
+  const api = PluginManager.createApi('MultiHitWeaponsTest');
+  require('../plugins/combat/MultiHitWeapons.plugin').register({ ...api,
+    registerCombatMethodResolver(value) { resolver = value; api.registerCombatMethodResolver(value); },
+  });
+  require('../plugins/items/BarrowsEquipment.plugin').register(PluginManager.createApi('MultiHitBarrowsTest'));
+  api.onCombatHitDamage(event => { if (observed?.player === event.attacker) observed.parts.push(event); });
+  api.onCustomEvent('combat:hit-rolled', event => {
+    if (observed?.player === event.attacker) observed.ranges.push(event.maximum);
+  });
 });
-
-/**
- * One ordinary attack with `weaponId`, each accuracy roll answered in turn from `rolls` and every
- * accurate hit rolling its maximum. Returns the hitsplat damages and their extra delays.
- */
-function attack(weaponId, { rolls = [true, true], npcTarget = true, combatType = CombatType.MELEE, special = false } = {}) {
-  const weapon = { getId: () => weaponId };
-  const attacker = {
-    isPlayer: () => true, isNpc: () => false,
-    getAsPlayer() { return this; },
-    isSpecialActivated: () => special,
-    getCombatSpecial: () => null,
-    getAttribute: () => undefined,
-    getCombat: () => ({ getLastDamager: () => null }),
-    getFightType: () => ({ getBonusType: () => core.BonusManager.ATTACK_CRUSH }),
-    getEquipment: () => ({
-      get: (slot) => (slot === Equipment.WEAPON_SLOT ? weapon : { getId: () => -1 }),
-      getItems: () => Object.assign([], { [Equipment.WEAPON_SLOT]: weapon }),
-    }),
+function actors(t, weapon) {
+  const channel = { kind: 'test', remoteAddress: '127.0.0.1', isOpen: () => true, send: () => true, close() {}, onData() {}, onError() {}, onClose() {} };
+  const player = new Player(new PlayerSession(channel));
+  player.setIndex(index++); player.setUsername('TwinTest' + player.getIndex());
+  player.setRights(core.PlayerRights.NONE); player.setRegistered(true);
+  player.setAttribute('bot-skip-persistence', true);
+  player.setLocation(new core.Location(3222, 3218)); player.setNeedsPlacement(false);
+  for (const skill of [core.Skill.HITPOINTS, core.Skill.ATTACK, core.Skill.STRENGTH, core.Skill.DEFENCE]) {
+    player.getSkillManager().setMaxLevel(skill, 99); player.getSkillManager().setCurrentLevel(skill, 99);
+  }
+  player.setHitpoints(99);
+  player.getEquipment().setItem(core.Equipment.WEAPON_SLOT, new core.Item(weapon, 1));
+  player.setWeapon(core.WeaponInterfaces.MACE); player.setFightType(core.WeaponInterfaces.MACE.getFightType()[0]);
+  core.BonusManager.update(player);
+  const npc = PluginManager.spawnNpc({ id: core.NpcIdentifiers.SAND_CRAB, x: 3223, y: 3218, z: 0, wanderRadius: 0 });
+  assert.ok(npc?.isRegistered()); npc.setNeedsPlacement(false); npc.setHitpoints(100);
+  t.after(() => { observed = null; player.setRegistered(false); core.TaskManager.cancelTasks(player.getIndex()); npc.getCombat().getHitQueue().clear(); PluginManager.removeNpc(npc); });
+  return { player, npc };
+}
+function roll(player, npc, rolls, maximum) {
+  const originalAccuracy = core.AccuracyFormulasDpsCalc.rollAccuracy;
+  const originalMaximum = core.DamageFormulas.sourceMaxHit;
+  const remaining = [...rolls]; observed = { player, parts: [], ranges: [] };
+  core.AccuracyFormulasDpsCalc.rollAccuracy = (attacker, target, ...args) => {
+    if (attacker !== player || target !== npc) return originalAccuracy.call(core.AccuracyFormulasDpsCalc, attacker, target, ...args);
+    assert.ok(remaining.length, 'only two independent accuracy checks'); return remaining.shift();
   };
-  const target = {
-    isPlayer: () => !npcTarget, isNpc: () => npcTarget,
-    getAsPlayer() { return this; },
-    getHitpoints: () => 500,
-    getAttribute: () => undefined,
-    getCombat: () => ({ getLastDamager: () => null }),
-    getPrayerActive: () => [],
-    getEquipment: () => ({ getItems: () => Array(14).fill({ getId: () => -1 }) }),
-  };
-  const queue = [...rolls];
-  const original = { count: AccuracyFormulasDpsCalc.rollAccuracyCount, plain: AccuracyFormulasDpsCalc.rollAccuracy, max: DamageFormulas.sourceMaxHit, random: Math.random };
-  AccuracyFormulasDpsCalc.rollAccuracyCount = () => Number(queue.shift() ?? false);
-  AccuracyFormulasDpsCalc.rollAccuracy = () => queue.shift() ?? false;
-  DamageFormulas.sourceMaxHit = () => MAX_HIT;
-  Math.random = () => 0.999999;
+  core.DamageFormulas.sourceMaxHit = (attacker, ...args) => attacker === player ? maximum : originalMaximum.call(core.DamageFormulas, attacker, ...args);
   try {
-    const method = combatType === CombatType.MELEE ? CombatFactory.MELEE_COMBAT : { type: () => combatType, accuracyDefenceType: () => undefined };
-    const hit = new PendingHit(attacker, target, method);
-    return { damages: hit.getHits().map((h) => h.getDamage()), delays: hit.getHitDelays(), onAttackTick: hit.landsOnAttackTick(), rollsLeft: queue.length };
+    const method = core.CombatFactory.getMethod(player);
+    const hits = method.hits(player, npc);
+    return { ...observed, method, hits, remaining };
   } finally {
-    AccuracyFormulasDpsCalc.rollAccuracyCount = original.count;
-    AccuracyFormulasDpsCalc.rollAccuracy = original.plain;
-    DamageFormulas.sourceMaxHit = original.max;
-    Math.random = original.random;
+    core.AccuracyFormulasDpsCalc.rollAccuracy = originalAccuracy;
+    core.DamageFormulas.sourceMaxHit = originalMaximum;
+    observed = null;
   }
 }
-
-test("Torag's hammers hit twice on the same tick, the max hit split 22 + 23", () => {
-  for (const id of [I.TORAGS_HAMMERS, I.TORAGS_HAMMERS_100, I.TORAGS_HAMMERS_25]) {
-    const { damages, delays } = attack(id);
-    assert.deepEqual(damages, [22, 23], `${id}`);
-    assert.equal(delays, undefined, "both land together");
+test('all functional twin weapon variants create two same-tick ordinary splats', t => {
+  for (const id of WEAPONS) {
+    assert.ok(core.CacheDefinitions.getItem(id).inventoryActions.includes('Wield'));
+    const { player, npc } = actors(t, id), result = roll(player, npc, [true, true], 48);
+    assert.equal(result.hits.length, 1); assert.equal(result.hits[0].getHits().length, 2, 'weapon ' + id);
+    assert.deepEqual(result.remaining, []); assert.equal(result.hits[0].getHitDelays(), undefined, 'no staggered reveal delay');
+    assert.deepEqual(result.ranges, [24, 24]);
   }
 });
-
-test("Torag's hammers roll each hit's accuracy on its own", () => {
-  assert.deepEqual(attack(I.TORAGS_HAMMERS, { rolls: [false, true] }).damages, [0, 23]);
-  assert.deepEqual(attack(I.TORAGS_HAMMERS, { rolls: [true, false] }).damages, [22, 0]);
-});
-
-test("the Dual macuahuitl splits its max hit, the second hit a tick later against NPCs", () => {
-  for (const id of [I.DUAL_MACUAHUITL, I.DUAL_MACUAHUITL_4]) {
-    const { damages, delays } = attack(id);
-    assert.deepEqual(damages, [22, 23], `${id}`);
-    assert.deepEqual([...delays], [0, 1], `${id}`);
-  }
-  assert.equal(attack(I.DUAL_MACUAHUITL, { npcTarget: false }).delays, undefined, "against players both land together");
-});
-
-test("the Dual macuahuitl's second hit only rolls accuracy after an accurate first", () => {
-  const missed = attack(I.DUAL_MACUAHUITL, { rolls: [false, true] });
-  assert.deepEqual(missed.damages, [0, 0], "a missed first hit misses both");
-  assert.equal(missed.rollsLeft, 1, "the second accuracy roll is never made");
-  assert.deepEqual(attack(I.DUAL_MACUAHUITL, { rolls: [true, false] }).damages, [22, 0]);
-});
-
-test("Exalted Spring hits twice, each up to the full max hit", () => {
-  assert.deepEqual(attack(EXALTED_SPRING).damages, [MAX_HIT, MAX_HIT]);
-  assert.deepEqual(attack(EXALTED_SPRING, { rolls: [false, true] }).damages, [0, MAX_HIT], "independent accuracy");
-});
-
-test("Exalted Spring's first hit lands on the attack's tick and the second a tick later", () => {
-  for (const npcTarget of [true, false]) {
-    const { onAttackTick, delays } = attack(EXALTED_SPRING, { npcTarget });
-    assert.equal(onAttackTick, true, `npc target: ${npcTarget}`);
-    assert.deepEqual([...delays], [0, 1], `npc target: ${npcTarget}`);
-  }
-  for (const id of [I.TORAGS_HAMMERS, I.DUAL_MACUAHUITL]) {
-    assert.equal(attack(id).onAttackTick, false, `${id} keeps the usual impact tick`);
+for (const accuracy of [[false, true], [true, false], [false, false], [true, true]]) {
+  test('both accuracy rolls remain independent: ' + accuracy, t => {
+    const { player, npc } = actors(t, 29084), result = roll(player, npc, accuracy, 47);
+    assert.deepEqual(result.remaining, []);
+    assert.deepEqual(result.parts.map(part => part.accurate), accuracy);
+    assert.equal(result.hits[0].isAccurate(), accuracy.includes(true), 'after-hit effects see any landed hit');
+    assert.deepEqual(result.parts.filter(part => !part.accurate).map(part => part.damage.getDamage()), accuracy.filter(x => !x).map(() => 0));
+  });
+}
+test('final odd/even maximum is split without adding damage, on every weapon family', t => {
+  for (const id of [29084, 29889, 30957, 33243, 4747]) for (const maximum of [47, 48]) {
+    const { player, npc } = actors(t, id), result = roll(player, npc, [true, true], maximum);
+    assert.deepEqual(result.ranges, [Math.floor(maximum / 2), Math.ceil(maximum / 2)]);
   }
 });
-
-test("a hit queued after an NPC's turn waits a tick, unless it lands on its attack's tick", () => {
-  const { HitQueue } = require("../dist/game/content/combat/hit/HitQueue");
-  const executed = [];
-  const original = CombatFactory.executeHit;
-  CombatFactory.executeHit = (hit) => executed.push(hit.id);
-  try {
-    const owner = { isRegistered: () => true, getHitpoints: () => 99, isPlayer: () => false, isUntargetable: () => false };
-    const attacker = { isRegistered: () => true, getHitpoints: () => 99 };
-    const queue = new HitQueue(owner);
-    const hit = (id) => ({ id, getTarget: () => owner, getAttacker: () => attacker });
-    queue.process(10); // the NPC's own turn this tick
-    queue.addPendingHit(hit("usual"), 10);
-    queue.addPendingHit(hit("attack-tick"), 10, true);
-    queue.process(10); // the end-of-tick sweep
-    assert.deepEqual(executed, ["attack-tick"]);
-    queue.process(11);
-    assert.deepEqual(executed, ["attack-tick", "usual"]);
-  } finally {
-    CombatFactory.executeHit = original;
+test('both splats enter the same native NPC update and apply once', t => {
+  const { player, npc } = actors(t, 4747), result = roll(player, npc, [true, true], 47);
+  assert.equal(result.hits[0].getHits().length, 2);
+  result.hits[0].getHits()[0].setDamage(22); result.hits[0].getHits()[1].setDamage(23);
+  const queue = npc.getCombat().getHitQueue(); queue.addPendingHit(result.hits[0]); queue.process(100);
+  assert.equal(npc.getHitpoints(), 55); assert.deepEqual(npc.getTickHits().map(hit => hit.getDamage()), [22, 23]);
+  queue.process(101); assert.equal(npc.getHitpoints(), 55);
+});
+test('noted, placeholder, broken and unrelated items are not ordinary twin weapons', t => {
+  for (const id of [4748, 4962, 4963, 15701, 15702, 29085, 29086, 29890, 29891, 30958, 30959, 33244, 4151]) {
+    const { player } = actors(t, id); assert.equal(resolver.resolve(player), null, 'item ' + id);
   }
+  const { player } = actors(t, 29084); player.setSpecialActivated(true);
+  assert.equal(resolver.resolve(player), null, 'special method selection is preserved');
+  assert.equal(resolver.resolve({ isPlayer: () => false }), null);
 });
 
-test("other weapons, non-melee attacks and armed specials keep a single hit", () => {
-  assert.deepEqual(attack(I.ABYSSAL_WHIP).damages, [MAX_HIT]);
-  // A miss, so no spell damage formula runs; only the hitsplat count matters here.
-  assert.equal(attack(EXALTED_SPRING, { combatType: CombatType.MAGIC, rolls: [false, false] }).damages.length, 1);
-  assert.equal(attack(I.TORAGS_HAMMERS, { special: true }).damages.length, 1);
-});
+for (const accuracy of [[true, false], [false, true], [false, false], [true, true]]) {
+  test('Torag passive consumes aggregate accuracy at impact: ' + accuracy, t => {
+    const { player } = actors(t, 4747), victim = actors(t, 4151).player;
+    for (const [slot, id] of [[core.Equipment.HEAD_SLOT, 4745], [core.Equipment.BODY_SLOT, 4749], [core.Equipment.LEG_SLOT, 4751]]) {
+      player.getEquipment().setItem(slot, new core.Item(id, 1));
+    }
+    assert.equal(core.CombatFactory.fullTorags(player), true);
+    victim.setRunEnergy(100);
+    const result = roll(player, victim, accuracy, 48), hit = result.hits[0];
+    hit.getHits().forEach((part, i) => part.setDamage(accuracy[i] ? 5 : 0));
+    hit.updateTotalDamage();
+    const queue = victim.getCombat().getHitQueue(), random = Math.random;
+    t.after(() => queue.clear());
+    try {
+      Math.random = () => 0; // Force the existing Barrows proc after real accuracy and damage rolls.
+      queue.addPendingHit(hit);
+      queue.process(200);
+    } finally {
+      Math.random = random;
+    }
+    assert.equal(victim.getRunEnergy(), accuracy.includes(true) ? 80 : 100,
+      'real Barrows resolved-hit listener drains once on any successful roll, never on two misses');
+  });
+}
