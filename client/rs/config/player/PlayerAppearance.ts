@@ -1,3 +1,4 @@
+import { KitModelOverrides } from "../../../custom/chatheads/KitModelOverrides";
 import { IdkTypeLoader } from "../idktype/IdkTypeLoader";
 
 export enum Gender {
@@ -82,7 +83,8 @@ export class PlayerAppearance {
 
     getCacheKey(): string {
         const hash = this.getHash?.().toString() ?? "0";
-        return `${hash}|${this.getEquipKey()}|${this.firstPersonArmsOnly ? "first-person" : "full"}`;
+        // Kit model replacements change how the same kits look: their revision rebuilds cached models.
+        return `${hash}|${this.getEquipKey()}|${this.firstPersonArmsOnly ? "first-person" : "full"}|k${KitModelOverrides.revision}`;
     }
 
     static defaultMale(idkLoader: IdkTypeLoader): PlayerAppearance {

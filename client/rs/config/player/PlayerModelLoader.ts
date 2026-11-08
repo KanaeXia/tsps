@@ -1,3 +1,4 @@
+import { KitModelOverrides } from "../../../custom/chatheads/KitModelOverrides";
 import { Model } from "../../model/Model";
 import { ModelData } from "../../model/ModelData";
 import { ModelLoader } from "../../model/ModelLoader";
@@ -99,9 +100,11 @@ export class PlayerModelLoader {
             if (kitId === -1) continue;
             try {
                 const kit = this.idkTypeLoader.load(kitId) as any;
-                const ids: number[] = kit.modelIds ?? [];
+                // A kit's replacement in-game model (the server's Chathead Overrides) instead of its own.
+                const override = KitModelOverrides.get(kitId, "model");
+                const ids: number[] = override ? [-1] : kit.modelIds ?? [];
                 for (let i = 0; i < ids.length; i++) {
-                    const md = this.modelLoader.getModel(ids[i]);
+                    const md = override ? ModelData.decode(override) : this.modelLoader.getModel(ids[i]);
                     if (!md) continue;
                     // Apply kit recolors/retextures first
                     if (kit.recolorFrom) {

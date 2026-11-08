@@ -1,4 +1,4 @@
-import { ChatheadOverrideRegistry } from "../custom/chatheads/ChatheadOverrideRegistry";
+import { KitModelOverrides } from "../custom/chatheads/KitModelOverrides";
 import type { IdkTypeLoader } from "../rs/config/idktype/IdkTypeLoader";
 import type { ObjTypeLoader } from "../rs/config/objtype/ObjTypeLoader";
 import { Gender, PlayerAppearance } from "../rs/config/player/PlayerAppearance";
@@ -25,7 +25,7 @@ export class PlayerChatheadFactory {
     private cache = new Map<string, Model>();
     private static readonly CACHE_VERSION = "chathead_v3";
     /** The chathead overrides the cache was built with: a change rebuilds every chathead. */
-    private overridesRevision = ChatheadOverrideRegistry.revision;
+    private overridesRevision = KitModelOverrides.revision;
 
     constructor(
         private readonly modelLoader: ModelLoader,
@@ -39,9 +39,9 @@ export class PlayerChatheadFactory {
             console.log("[PlayerChatheadFactory] No appearance provided");
             return undefined;
         }
-        if (this.overridesRevision !== ChatheadOverrideRegistry.revision) {
+        if (this.overridesRevision !== KitModelOverrides.revision) {
             this.cache.clear();
-            this.overridesRevision = ChatheadOverrideRegistry.revision;
+            this.overridesRevision = KitModelOverrides.revision;
         }
         const keyBase = appearance.getCacheKey?.() ?? JSON.stringify(appearance);
         const key = `${keyBase}|${PlayerChatheadFactory.CACHE_VERSION}`;
@@ -125,7 +125,7 @@ export class PlayerChatheadFactory {
         const pushKitModels = (kitId: number) => {
             if (!(kitId >= 0)) return;
             // A hairstyle's replacement chathead (the server's Chathead Overrides) instead of its own.
-            const override = ChatheadOverrideRegistry.get(kitId);
+            const override = KitModelOverrides.get(kitId, "chathead");
             if (override) {
                 parts.push(ModelData.decode(override));
                 return;

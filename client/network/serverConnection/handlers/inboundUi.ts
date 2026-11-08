@@ -19,7 +19,7 @@ import { emitPlayerSync, emitSkills } from "../domain/skills";
 import { handleTradePayload } from "../domain/trade";
 import { markChatTransmit, markItemDefinitionsChanged, markMiscTransmit } from "../../../game/TransmitCycles";
 import { CustomItemRegistry } from "../../../custom/items/CustomItemRegistry";
-import { ChatheadOverrideRegistry } from "../../../custom/chatheads/ChatheadOverrideRegistry";
+import { KitModelOverrides } from "../../../custom/chatheads/KitModelOverrides";
 import { getDefinitionArchiveKey } from "../../../custom/archives/ArchivedDefinitionStore";
 import { getClientCycle } from "../timing";
 import { cloneRunEnergyState, state } from "../state";
@@ -295,14 +295,14 @@ export function handleInboundUi(msg: any): boolean {
             return true;
         }
         if (datasets?.length === 1 && datasets[0].key === "chatheadOverrides") {
-            // Hairstyle chathead replacements: an empty set clears, then one { kit, data } each.
+            // Kit model replacements: an empty set clears, then one { kit, chathead | model } each.
             const rows = Array.isArray(datasets[0].rows) ? datasets[0].rows : [];
-            if (rows.length === 0) ChatheadOverrideRegistry.clear();
+            if (rows.length === 0) KitModelOverrides.clear();
             for (const row of rows) {
                 try {
-                    ChatheadOverrideRegistry.register(row);
+                    KitModelOverrides.register(row);
                 } catch (err) {
-                    console.warn("[ws] bad chathead override", err);
+                    console.warn("[ws] bad kit model override", err);
                 }
             }
             return true;
