@@ -19,6 +19,7 @@ const Broavs = require("./hunter/Broavs.Hunter");
 const Overworld = require("./hunter/Overworld.Hunter");
 const Ceto = require("./hunter/Ceto.Hunter");
 const Annette = require("./hunter/Annette.Hunter");
+const Barehanded = require("./hunter/Barehanded.Hunter");
 
 // Ground traps are "Take" (op3) and "Lay"/"Activate" (op4) in the cache.
 const LAY_GROUND_OPTION = 4;
@@ -47,6 +48,10 @@ module.exports = {
     api.onCanEquip(Runtime.equipment);
     api.onCanUnequip(Runtime.equipment);
     api.onNpcRoute(Runtime.npcRoute);
+    // After Runtime.npcRoute: a barehanded catch overrides the falconry range.
+    api.onNpcRoute(Barehanded.route);
+    api.onNpcAttackOption(Barehanded.attackOption);
+    api.onBeforeNpcInteraction(Barehanded.interaction);
     api.onAnyNpcInteraction({ Catch: Runtime.catchNpc, Tease: Pitfalls.tease, Retrieve: Catching.retrieve });
     api.onNpcInteraction("Matthias", { "Quick-falcon": Catching.hire, Falconry: Catching.hire });
     api.onNpcInteraction("Alry the Angler", { "Get bird": Aerial.borrow, "Talk-to": Aerial.talk });

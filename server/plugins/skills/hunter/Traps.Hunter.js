@@ -468,4 +468,4 @@ function cleanup({ player }) {
 }
 
 module.exports = { activate, groundActivate, build, check, dismantle, reset, investigate, bait, process, cleanup,
-  find, owned, limit, materials, remove, lay, setState, returnedItems };
+  find, owned, limit, materials, remove, lay, setState, returnedItems, rewardsFor };
