@@ -630,10 +630,6 @@ export interface PluginCombatHitRollEvent {
   /** Set to make an accurate roll land on the maximum hit. */
   forceMaxHit?: boolean;
   bypassProtectionPrayer: boolean;
-  /** Rolls the attack this many times against one defence roll; the hit lands if any beats it. */
-  attackRolls?: number;
-  /** Repeats the whole accuracy check (attack and defence) this many times; the hit lands if any succeeds. */
-  accuracyRolls?: number;
 }
 
 /**

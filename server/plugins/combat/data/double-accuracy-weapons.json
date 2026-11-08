@@ -1,20 +1,14 @@
 {
+  "$comment": "Custom weapons with Osmumten's fang's accuracy passive (DoubleAccuracyWeapons.plugin.js). The fang's own passive is OsmumtensFang.EquipmentEffects.js. Item ids are data/definitions/custom-items.json's.",
   "weapons": [
     {
-      "name": "Osmumten's fang",
-      "items": [26219, 27246],
-      "combatType": "MELEE",
-      "attackTypes": ["STAB"],
-      "rerollDefenceInTombsOfAmascut": true
-    },
-    {
       "name": "Exalted Spring",
-      "items": [50003],
+      "items": [50001],
       "combatType": "MELEE"
     },
     {
       "name": "Sanguine atlatl",
-      "items": [50005],
+      "items": [50002],
       "combatType": "RANGED"
     }
   ]

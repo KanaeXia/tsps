@@ -14,9 +14,6 @@ import { CombatSpecial } from "../CombatSpecial";
 import { resolveSpecialAttackType, WeaponSpecialTraits } from "../WeaponSpecialTraits";
 import { Spell } from "../magic/Spell";
 
-/** Extra chances one accuracy check gets (see rollAccuracy). Absent or 1 is the ordinary roll. */
-export type AccuracyRepeats = { attackRolls?: number; accuracyRolls?: number };
-
 type RollCacheEntry = {
     cycle: number;
     defenceLevel: number;
@@ -312,36 +309,24 @@ export class AccuracyFormulasDpsCalc {
         }
     }
 
-    /**
-     * One accuracy check. `repeats` (from the hit-roll hook) can make the check more forgiving:
-     * `attackRolls` rolls the attack that many times against a single defence roll, landing if any
-     * beats it; `accuracyRolls` repeats the whole check (attack and defence), landing if any succeeds.
-     */
-    public static rollAccuracy(entity: any, enemy: any, style: any, defenceType?: CombatType, rangedDefenceType?: "light" | "standard" | "heavy", projectedDefenceLevel?: number, repeats?: AccuracyRepeats) {
+    public static rollAccuracy(entity: any, enemy: any, style: any, defenceType?: CombatType, rangedDefenceType?: "light" | "standard" | "heavy", projectedDefenceLevel?: number) {
         const rolls = AccuracyFormulasDpsCalc.specialRolls(entity, enemy, style, defenceType, rangedDefenceType, projectedDefenceLevel);
         if (rolls == null) {
             return false;
         }
-        const checks = AccuracyFormulasDpsCalc.repeatCount(repeats?.accuracyRolls);
-        const attackRolls = AccuracyFormulasDpsCalc.repeatCount(repeats?.attackRolls);
-        for (let check = 0; check < checks; check++) {
-            const defence = this.randomInclusive(rolls.defence);
-            for (let attack = 0; attack < attackRolls; attack++) {
-                if (this.randomInclusive(rolls.attack) > defence) return true;
-            }
-        }
-        return false;
-    }
-
-    private static repeatCount(value: number | undefined): number {
-        return Number.isFinite(value) ? Math.max(1, Math.trunc(value as number)) : 1;
+        const attackRolled = this.randomInclusive(rolls.attack);
+        const defenceRolled = this.randomInclusive(rolls.defence);
+        // Plugins may grant a further roll by changing `accurate` (combat:accuracy-rolled).
+        const rolled = { attacker: entity, target: enemy, combatType: style, attack: rolls.attack, defence: rolls.defence, attackRolled, defenceRolled, accurate: attackRolled > defenceRolled };
+        PluginManager.emitCustomEvent("combat:accuracy-rolled", rolled);
+        return rolled.accurate === true;
     }
 
     /** Number of successful independent accuracy rolls out of `count`. */
-    public static rollAccuracyCount(entity: any, enemy: any, style: any, count: number, defenceType?: CombatType, projectedDefenceLevel?: number, repeats?: AccuracyRepeats): number {
+    public static rollAccuracyCount(entity: any, enemy: any, style: any, count: number, defenceType?: CombatType, projectedDefenceLevel?: number): number {
         let successful = 0;
         for (let roll = 0; roll < Math.max(0, Math.trunc(count)); roll++) {
-            if (AccuracyFormulasDpsCalc.rollAccuracy(entity, enemy, style, defenceType, undefined, projectedDefenceLevel, repeats)) {
+            if (AccuracyFormulasDpsCalc.rollAccuracy(entity, enemy, style, defenceType, undefined, projectedDefenceLevel)) {
                 successful++;
             }
         }

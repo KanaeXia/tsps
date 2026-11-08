@@ -1,17 +1,14 @@
-// Weapons that roll accuracy twice, listed in data/double-accuracy-weapons.json.
-// - Osmumten's fang (https://oldschool.runescape.wiki/w/Osmumten%27s_fang): with the Stab attack styles
-//   (Stab, Lunge, Block) a hit makes two attack rolls against the target's one defence roll and lands if
-//   either beats it. Inside the Tombs of Amascut the whole check is repeated instead, defence roll and all.
-//   Its special attack, Eviscerate, keeps the passive.
-// - Exalted Spring (50001) and Sanguine atlatl (50002): custom items (data/definitions/custom-items.json)
-//   given the fang's passive outside the Tombs, with every attack style of their combat type.
-//   A server design, not OSRS.
+// Custom weapons given Osmumten's fang's accuracy passive (https://oldschool.runescape.wiki/w/Osmumten%27s_fang),
+// listed in data/double-accuracy-weapons.json: a hit that misses makes a second attack roll against the
+// same defence roll and lands if that one beats it. Exalted Spring (50001) and the Sanguine atlatl (50002),
+// custom items (data/definitions/custom-items.json), with every attack style of their combat type; a
+// server design, not OSRS. The fang's own passive is plugins/combat/effects/OsmumtensFang.EquipmentEffects.js;
+// both answer combat:accuracy-rolled, which AccuracyFormulasDpsCalc.rollAccuracy sends after each roll.
 // Each entry: `items` (item ids), `combatType` (MELEE, RANGED or MAGIC: other attacks while it is
 // wielded, such as a spell cast, roll normally), optional `attackTypes` (STAB, SLASH, CRUSH, MAGIC,
-// RANGE) and `rerollDefenceInTombsOfAmascut`.
+// RANGE) and `rerollDefenceInTombsOfAmascut` (inside the raid the second roll is a whole new check,
+// defence included, as the fang's is).
 const DATA = require("./data/double-accuracy-weapons.json");
-
-const DOUBLE_ROLL = 2;
 
 let api;
 let core;
@@ -55,17 +52,20 @@ function wieldedRule(player) {
   return weapon ? weaponsById.get(weapon.getId()) : undefined;
 }
 
-function rollAccuracyTwice(roll) {
-  if (!roll.attacker?.isPlayer?.()) return;
-  const player = roll.attacker.getAsPlayer();
+/** A roll from 0 to `max`, as the accuracy roll's own (AccuracyFormulasDpsCalc.randomInclusive). */
+function rollUpTo(max) {
+  return Math.floor(Math.random() * (Math.max(0, Math.floor(max)) + 1));
+}
+
+/** combat:accuracy-rolled: a missed roll gets a second attack roll, as the fang's passive. */
+function secondAccuracyRoll(rolled) {
+  if (rolled.accurate || !rolled.attacker?.isPlayer?.()) return;
+  const player = rolled.attacker.getAsPlayer();
   const rule = wieldedRule(player);
-  if (!rule || roll.combatType !== rule.combatType) return;
+  if (!rule || rolled.combatType !== rule.combatType) return;
   if (rule.attackTypes && !rule.attackTypes.has(player.getFightType().getBonusType())) return;
-  if (rule.rerollDefenceInTombs && inTombs(player)) {
-    roll.accuracyRolls = Math.max(roll.accuracyRolls ?? 1, DOUBLE_ROLL);
-  } else {
-    roll.attackRolls = Math.max(roll.attackRolls ?? 1, DOUBLE_ROLL);
-  }
+  const defence = rule.rerollDefenceInTombs && inTombs(player) ? rollUpTo(rolled.defence) : rolled.defenceRolled;
+  rolled.accurate = rollUpTo(rolled.attack) > defence;
 }
 
 function init(pluginApi) {
@@ -79,6 +79,6 @@ module.exports = {
   members: true,
   register(pluginApi) {
     init(pluginApi);
-    pluginApi.onCombatHitRoll(rollAccuracyTwice);
+    pluginApi.onCustomEvent("combat:accuracy-rolled", secondAccuracyRoll);
   },
 };
