@@ -62,6 +62,7 @@ import { LowEndDevicePlugin } from "../../../game/plugins/lowenddevice/LowEndDev
 import { XpTrackerPlugin } from "../../../game/plugins/xptracker/XpTrackerPlugin";
 import { XpGlobesPlugin } from "../../../game/plugins/xpglobes/XpGlobesPlugin";
 import { CustomXpDropsPlugin } from "../../../game/plugins/customxpdrops/CustomXpDropsPlugin";
+import { LevelUpCelebrationPlugin } from "../../../game/plugins/levelupcelebration/LevelUpCelebrationPlugin";
 import { GuidePlugin } from "../../../game/plugins/optimalquestguide/GuidePlugin";
 import { ShortestPathPlugin } from "../../../game/plugins/shortestpath/ShortestPathPlugin";
 import { AgilityTrackerPlugin } from "../../../game/plugins/agilitytracker/AgilityTrackerPlugin";
@@ -138,6 +139,7 @@ export const CORE_PLUGINS: ReadonlyArray<PluginClass> = [
     XpTrackerPlugin,
     XpGlobesPlugin,
     CustomXpDropsPlugin,
+    LevelUpCelebrationPlugin,
     AgilityTrackerPlugin,
     GatheringTrackerPlugin,
     SlayerTrackerPlugin,
