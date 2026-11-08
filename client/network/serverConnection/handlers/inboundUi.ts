@@ -19,6 +19,7 @@ import { emitPlayerSync, emitSkills } from "../domain/skills";
 import { handleTradePayload } from "../domain/trade";
 import { markChatTransmit, markItemDefinitionsChanged, markMiscTransmit } from "../../../game/TransmitCycles";
 import { CustomItemRegistry } from "../../../custom/items/CustomItemRegistry";
+import { ChatheadOverrideRegistry } from "../../../custom/chatheads/ChatheadOverrideRegistry";
 import { getDefinitionArchiveKey } from "../../../custom/archives/ArchivedDefinitionStore";
 import { getClientCycle } from "../timing";
 import { cloneRunEnergyState, state } from "../state";
@@ -291,6 +292,19 @@ export function handleInboundUi(msg: any): boolean {
             // Staff world map dots: [x, y, plane, isBot] rows, drawn by the map renderer.
             const g: any = (typeof window !== "undefined" ? window : globalThis) as any;
             if (g.__osrsClient) g.__osrsClient.worldMapPlayers = datasets[0].rows;
+            return true;
+        }
+        if (datasets?.length === 1 && datasets[0].key === "chatheadOverrides") {
+            // Hairstyle chathead replacements: an empty set clears, then one { kit, data } each.
+            const rows = Array.isArray(datasets[0].rows) ? datasets[0].rows : [];
+            if (rows.length === 0) ChatheadOverrideRegistry.clear();
+            for (const row of rows) {
+                try {
+                    ChatheadOverrideRegistry.register(row);
+                } catch (err) {
+                    console.warn("[ws] bad chathead override", err);
+                }
+            }
             return true;
         }
         if (datasets?.length === 1 && datasets[0].key === "hitpointsXpRate") {
