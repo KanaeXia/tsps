@@ -29,7 +29,8 @@
 	"quests:equipment-requirements": true,
     "SkillLevelUp:interruptActions": false,
 	"CrossFloor:visibility": false,
-	"CrossFloor:combat": false
+	"CrossFloor:combat": false,
+	"Pets:skillingPetMultiplier": 100
   },
   "zones": [
     { "_description": "Global zone", "tags": ["blast-furnace"] },

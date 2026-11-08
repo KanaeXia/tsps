@@ -793,7 +793,7 @@
     "id": 52106,
     "baseItemId": 1067,
     "objType": {
-      "name": "Desert sarong (slot)",
+      "name": "Desert panties",
       "examine": "Protects you from dust.",
       "model": 1521060,
       "maleModel": 1521061,
@@ -818,21 +818,58 @@
       "noteTemplate": -1,
       "unnotedId": -1,
       "notedId": -1,
-      "placeholder": -1,
+      "placeholder": 53106,
       "placeholderTemplate": -1
     },
     "itemDef": { "tradeable": false,"equipmentType":"LEGS","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,8,8,0,0,0,10,0,0,0,0,4] },
     "models": {
-      "1521060": "desert-default/drop.dat",
-      "1521061": "desert-default/equip1.dat"
+      "1521060": "desert-sarong/drop.dat",
+      "1521061": "desert-sarong/equip1.dat"
+    }
+  },
+  {
+    "id": 53106,
+    "baseItemId": 1,
+    "objType": {
+      "name": "Desert panties",
+      "examine": "Protects you from dust.",
+      "model": 1531060,
+      "maleModel": -1,
+      "femaleModel": -1,
+      "maleModel1": -1,
+      "maleModel2": -1,
+      "femaleModel1": -1,
+      "femaleModel2": -1,
+      "zoom2d": 750,
+      "xan2d": 512,
+      "yan2d": 0,
+      "zan2d": 0,
+      "offsetX2d": 0,
+      "offsetY2d": 0,
+      "recolorFrom": [],
+      "recolorTo": [],
+      "retextureFrom": [],
+      "retextureTo": [],
+      "inventoryActions": ["Wear", null, null, null, "Drop"],
+      "isTradable": false,
+      "note": -1,
+      "noteTemplate": -1,
+      "unnotedId": -1,
+      "notedId": -1,
+      "placeholder": 52106,
+      "placeholderTemplate": 14401
+    },
+    "itemDef": { "tradeable": false,"equipmentType":"LEGS","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,0,0,0,0,0,0,0,0,0,0,4] },
+    "models": {
+      "1531060": "desert-sarong/drop.dat"
     }
   },
   {
     "id": 52107,
-    "baseItemId": 1837,
+    "baseItemId": 1067,
     "objType": {
-      "name": "Desert shinguards (slot)",
-      "examine": "Protects you from dust.",
+      "name": "Desert sarong (slot)",
+      "examine": "-",
       "model": 1521070,
       "maleModel": 1521071,
       "femaleModel": 1521071,
@@ -859,10 +896,48 @@
       "placeholder": -1,
       "placeholderTemplate": -1
     },
-    "itemDef": { "tradeable": false,"equipmentType":"BOOTS","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,8,8,0,0,0,10,0,0,0,0,4] },
+    "itemDef": { "tradeable": false,"equipmentType":"LEGS","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,8,8,0,0,0,10,0,0,0,0,4] },
     "models": {
       "1521070": "desert-default/drop.dat",
-      "1521071": "desert-default/equip2.dat"
+      "1521071": "desert-default/equip1.dat"
+    }
+  },
+  {
+    "id": 52108,
+    "baseItemId": 1837,
+    "objType": {
+      "name": "Desert shinguards (slot)",
+      "examine": "-",
+      "model": 1521080,
+      "maleModel": 1521081,
+      "femaleModel": 1521081,
+      "maleModel1": -1,
+      "maleModel2": -1,
+      "femaleModel1": -1,
+      "femaleModel2": -1,
+      "zoom2d": 750,
+      "xan2d": 512,
+      "yan2d": 0,
+      "zan2d": 0,
+      "offsetX2d": 0,
+      "offsetY2d": 0,
+      "recolorFrom": [],
+      "recolorTo": [],
+      "retextureFrom": [],
+      "retextureTo": [],
+      "inventoryActions": ["Wear", null, null, null, "Drop"],
+      "isTradable": false,
+      "note": -1,
+      "noteTemplate": -1,
+      "unnotedId": -1,
+      "notedId": -1,
+      "placeholder": -1,
+      "placeholderTemplate": -1
+    },
+    "itemDef": { "tradeable": false,"equipmentType":"BOOTS","stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":2032,"highAlch":24,"lowAlch":16,"dropValue":40,"weight":0.9,"bonuses":[0,0,0,8,8,0,0,0,10,0,0,0,0,4] },
+    "models": {
+      "1521080": "desert-default/drop.dat",
+      "1521081": "desert-default/equip2.dat"
     }
   }
 ]
