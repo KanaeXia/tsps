@@ -13,7 +13,7 @@
 // Its cost is custom-items.json's specialAttack.energy (50%).
 module.exports = function registerExaltedSpringSpecialAttack(api) {
   const { Animation, BonusManager, CacheDefinitions, CombatFactory, CombatSpecial, CountdownTask, DamageFormulas,
-    Graphic, MeleeCombatMethod, PendingHit, Skill, TaskManager, World } = api.core;
+    Graphic, GraphicHeight, Location, MeleeCombatMethod, PendingHit, Skill, TaskManager, World } = api.core;
 
   const EXALTED_SPRING = 50001;
   const ID = "exalted_spring";
@@ -33,10 +33,11 @@ module.exports = function registerExaltedSpringSpecialAttack(api) {
   const ANIMATION_TICKS = 4;
   // The Ursine chainmace's special animation for now; the graphic is Sol Slam's own. Looked up by
   // name on first use: the cache may not be loaded yet when the specials register.
+  
   let visuals = null;
   const getVisuals = () => (visuals ??= {
-    animation: new Animation(CacheDefinitions.getSeqId("human_special_ursine")),
-    graphic: new Graphic(CacheDefinitions.getSpotanimId("vfx_sunspear_special")),
+    animation: new Animation(11124),
+    graphic: new Graphic(2804),
   });
 
   /** Whether any tile of the NPC lies in the square around the player. */
@@ -101,7 +102,36 @@ module.exports = function registerExaltedSpringSpecialAttack(api) {
       player.performGraphic(getVisuals().graphic);
       const combat = player.getCombat();
       combat.setAttackDelay(Math.max(combat.getAttackDelay(), ANIMATION_TICKS));
-
+	  player.getPacketSender().sendSound(10039, 1, 60);
+	  
+	  let x = player.getLocation().getX();
+	  let y = player.getLocation().getY();
+	  for (let i = 0; i < 25; i++) {
+		if (i % 2 === 1) {
+		  continue;
+		}
+	    const tile = new Location(x + i % 5 - 2, y + i / 5 - 2, player.getLocation().getZ());
+		if(i === 12) {
+	      World.sendLocalGraphicsObj(new Graphic(3108), tile);
+		} else if(i === 2) {
+	      World.sendLocalGraphicsObj(new Graphic(2993, 60), tile);
+		} else if(i === 10) {
+	      World.sendLocalGraphicsObj(new Graphic(2994, 60), tile);
+		} else if(i === 14) {
+	      World.sendLocalGraphicsObj(new Graphic(2996, 60), tile);
+		} else if(i === 22) {
+	      World.sendLocalGraphicsObj(new Graphic(2995, 60), tile);
+		} else if(i === 0 || i === 6) {
+	      World.sendLocalGraphicsObj(new Graphic(2998, 60), tile);
+		} else if(i === 4 || i === 8) {
+	      World.sendLocalGraphicsObj(new Graphic(2997, 60), tile);
+		} else if(i === 16 || i === 20) {
+	      World.sendLocalGraphicsObj(new Graphic(2999, 60), tile);
+		} else if(i === 18 || i === 24) {
+	      World.sendLocalGraphicsObj(new Graphic(3000, 60), tile);
+		}
+	  }
+	  
       let dealt = 0;
       for (const npc of struck) {
         // Each hit is capped by what the NPC has left after the hits before it.

@@ -69,6 +69,7 @@ module.exports = {
     require("./specials/RosewoodBlowpipe.SpecialAttack")(api);
     require("./specials/RuneClaws.SpecialAttack")(api);
     require("./specials/RuneThrownaxe.SpecialAttack")(api);
+    require("./specials/SanguineAtlatl.SpecialAttack")(api);
     require("./specials/SaradominGodsword.SpecialAttack")(api);
     require("./specials/SaradominSword.SpecialAttack")(api);
     require("./specials/SaradominsBlessedSword.SpecialAttack")(api);

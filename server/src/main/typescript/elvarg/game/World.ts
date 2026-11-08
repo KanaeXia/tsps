@@ -1137,7 +1137,13 @@ export class World {
         });
     }
 
-
+    public static sendLocalGraphicsObj(gfx: Graphic, position: Location): void {
+        World.forEachNetworkPlayer((player) => {
+            if (player.getLocation().isWithinDistance(position, 32)) {
+                player.getPacketSender().sendGraphic(gfx, position);
+            }
+        });
+    }
 
     public getPlayerByName(username: string): Player | undefined {
         return World.players.search(p => p != null && p.getUsername().toLowerCase() === username.toLowerCase());
