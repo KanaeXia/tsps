@@ -1,4 +1,7 @@
 {
   "_description": "Model replacements by identity kit (a hairstyle, say): kit id -> a model file under data/models, or { \"chathead\": path, \"model\": path }. \"chathead\" is shown in dialogue in place of the kit's chathead; \"model\" in game in place of the kit's own model (the hair, for a head kit). A bare path is a chathead. Both apply to every player with the kit. Female head kits are 45-55, 118-128, 141-143, 152 and 154-200; their originals are in data/models/player-chathead/female/<kit>/ (chathead.dat, hair.dat).",
-  "172": "player-chathead/female/172/chathead-edited.dat"
+  "172": {
+    "chathead": "player-chathead/female/172/chathead-edited.dat",
+    "model": "player-chathead/female/172/hair-edited.dat"
+  }
 }
