@@ -3,12 +3,15 @@
 // every target within three tiles of the player with typeless damage, 3% more per prayer bonus.
 // This one, a server design:
 // - fires on the button press, as Sol Slam does: no swing, no target needed;
-// - hits the NPCs in the 5x5 area centred on the player (any tile of their footprint): all of them in
-//   multi-combat, else one (the current target when it is in the area, otherwise the nearest);
+// - hits the NPCs and players in the square of RADIUS tiles around the player (any tile of an NPC's
+//   footprint): in multi-combat all it may attack (players only where PvP is allowed, the same checks
+//   as any multi-target special), else one: the current target when it is in the area, otherwise the
+//   nearest it may attack;
 // - never misses, and its damage is typeless: protection prayers and attack-style immunity don't
 //   apply;
-// - hits each NPC once per tile of its size (a 3x3 dragon three times), each hit rolled at 100-150%
-//   of the current max melee hit, 3% more per prayer bonus;
+// - hits each target once per tile of its size (a 3x3 dragon three times, a player once), each hit
+//   rolled at 100-150% of the current max melee hit, 3% more per prayer bonus;
+// - burns each target it hits (30 damage, Strong) as its hits land;
 // - heals Hitpoints and Prayer by 25% of the damage it dealt, when the hits land.
 // Its cost is custom-items.json's specialAttack.energy (50%).
 module.exports = function registerExaltedSpringSpecialAttack(api) {
@@ -25,6 +28,8 @@ module.exports = function registerExaltedSpringSpecialAttack(api) {
   const MAX_DAMAGE = 1.5;
   const PRAYER_BONUS_DAMAGE = 0.03;
   const HEAL_FRACTION = 0.25;
+  const BURN_DAMAGE = 30;
+  const BURN_SEVERITY = "strong";
   /** The hits' delay; an NPC takes a hit a tick after it (CombatFactory.hitProcessingDelay). */
   const HIT_DELAY = 1;
   /** The healing comes as the hits land on the NPCs. */
@@ -40,31 +45,39 @@ module.exports = function registerExaltedSpringSpecialAttack(api) {
     graphic: new Graphic(2804),
   });
 
-  /** Whether any tile of the NPC lies in the square around the player. */
-  function inArea(player, npc) {
-    const origin = player.getLocation(), at = npc.getLocation();
-    if (at.getZ() !== origin.getZ() || npc.getPrivateArea?.() !== player.getPrivateArea?.()) return false;
-    const size = Math.max(1, npc.getSize());
+  /** Whether any tile of the target (an NPC's whole footprint, a player's one tile) lies in the square. */
+  function inArea(player, target) {
+    const origin = player.getLocation(), at = target.getLocation();
+    if (at.getZ() !== origin.getZ() || target.getPrivateArea?.() !== player.getPrivateArea?.()) return false;
+    const size = Math.max(1, target.getSize());
     return at.getX() <= origin.getX() + RADIUS && at.getX() + size - 1 >= origin.getX() - RADIUS
       && at.getY() <= origin.getY() + RADIUS && at.getY() + size - 1 >= origin.getY() - RADIUS;
   }
 
-  function distance(player, npc) {
-    const origin = player.getLocation(), at = npc.getLocation(), size = Math.max(1, npc.getSize());
+  function distance(player, target) {
+    const origin = player.getLocation(), at = target.getLocation(), size = Math.max(1, target.getSize());
     const gap = (point, start) => Math.max(0, start - point, point - (start + size - 1));
     return Math.max(gap(origin.getX(), at.getX()), gap(origin.getY(), at.getY()));
   }
 
-  /** Who the slam hits: every NPC in the area in multi-combat, else one (see the header). */
+  /**
+   * Who the slam hits: every NPC and player in the area it may attack in multi-combat, else one (see
+   * the header). The core's attack checks decide who may be hit: the Wilderness and other PvP areas,
+   * duels, and single- and multi-combat.
+   */
   function targets(player, method) {
     const nearby = [];
-    World.getNpcs().forEach((npc) => { if (npc && npc.isRegistered?.() && inArea(player, npc)) nearby.push(npc); });
+    const consider = (mobile) => {
+      if (mobile && mobile !== player && mobile.isRegistered?.() && inArea(player, mobile)) nearby.push(mobile);
+    };
+    World.getNpcs().forEach(consider);
+    World.getPlayers().forEach(consider);
     if (api.getAreaManager().inMulti(player)) {
-      return nearby.filter((npc) => CombatFactory.canAttackSecondaryTarget(player, null, npc));
+      return nearby.filter((target) => CombatFactory.canAttackSecondaryTarget(player, null, target));
     }
-    const allowed = (npc) => CombatFactory.canAttack(player, method, npc) === api.core.CanAttackResponse.CAN_ATTACK;
+    const allowed = (target) => CombatFactory.canAttack(player, method, target) === api.core.CanAttackResponse.CAN_ATTACK;
     const current = player.getCombat().getTarget();
-    if (current?.isNpc?.() && nearby.includes(current) && allowed(current)) return [current];
+    if (current && nearby.includes(current) && allowed(current)) return [current];
     const nearest = nearby.filter(allowed).sort((a, b) => distance(player, a) - distance(player, b))[0];
     return nearest ? [nearest] : [];
   }
@@ -76,6 +89,11 @@ module.exports = function registerExaltedSpringSpecialAttack(api) {
     const rolled = low + Math.floor(Math.random() * (high - low + 1));
     const prayer = Number(player.getBonusManager().getOtherBonus()[BonusManager.PRAYER]) || 0;
     return Math.max(0, Math.floor(rolled * Math.max(0, 1 + PRAYER_BONUS_DAMAGE * prayer)));
+  }
+
+  function burn(player, target) {
+    if (!target.isRegistered?.() || target.getHitpoints() <= 0) return;
+    api.emitCustomEvent("combat:burn", { attacker: player, target, damage: BURN_DAMAGE, severity: BURN_SEVERITY });
   }
 
   function heal(player, amount) {
@@ -111,52 +129,61 @@ module.exports = function registerExaltedSpringSpecialAttack(api) {
 		if (i % 2 === 1) {
 		  continue;
 		}
-	    const tile = new Location(x + i % leng - RADIUS, y + i / leng - RADIUS, player.getLocation().getZ());
+	    // Column and row of tile i in the square, from its south-west corner.
+	    const col = i % leng, row = Math.floor(i / leng);
+	    const tile = new Location(x + col - RADIUS, y + row - RADIUS, player.getLocation().getZ());
+	    // Players in this instance who can see the tile (World.sendLocalGraphicsObj ignores instances).
+	    const show = (graphic) => player.getPacketSender().sendGlobalGraphic(graphic, tile);
 		if (i === (leng * leng - 1) / 2) {
-	      World.sendLocalGraphicsObj(new Graphic(3108), tile);
+	      show(new Graphic(3108), tile);
 		} else if (i < (leng * leng - 1) / 2 ) {
-		  if (i % leng - RADIUS === 0) {
-			World.sendLocalGraphicsObj(new Graphic(2993, 60), tile);
-		  } else if (i / leng - RADIUS === 0) {
-	        World.sendLocalGraphicsObj(new Graphic(2994, 60), tile);
-		  } else if (i % leng === i / leng) {
-	        World.sendLocalGraphicsObj(new Graphic(2998, 60), tile);
-		  } else if (i % leng + i / leng == RADIUS * 2) {
-	        World.sendLocalGraphicsObj(new Graphic(2997, 60), tile);
+		  if (col - RADIUS === 0) {
+			show(new Graphic(2993, 60), tile);
+		  } else if (row - RADIUS === 0) {
+	        show(new Graphic(2994, 60), tile);
+		  } else if (col === row) {
+	        show(new Graphic(2998, 60), tile);
+		  } else if (col + row === RADIUS * 2) {
+	        show(new Graphic(2997, 60), tile);
 		  }
 		} else {
-		  if (i % leng - RADIUS === 0) {
-			World.sendLocalGraphicsObj(new Graphic(2995, 60), tile);
-		  } else if (i / leng - RADIUS === 0) {
-	        World.sendLocalGraphicsObj(new Graphic(2996, 60), tile);
-		  } else if (i % leng === i / leng) {
-	        World.sendLocalGraphicsObj(new Graphic(3000, 60), tile);
-		  } else if (i % leng + i / leng == RADIUS * 2) {
-	        World.sendLocalGraphicsObj(new Graphic(2999, 60), tile);
+		  if (col - RADIUS === 0) {
+			show(new Graphic(2995, 60), tile);
+		  } else if (row - RADIUS === 0) {
+	        show(new Graphic(2996, 60), tile);
+		  } else if (col === row) {
+	        show(new Graphic(3000, 60), tile);
+		  } else if (col + row === RADIUS * 2) {
+	        show(new Graphic(2999, 60), tile);
 		  }
 		}
 	  }
 	  
       let dealt = 0;
-      for (const npc of struck) {
-        // Each hit is capped by what the NPC has left after the hits before it.
-        let remaining = npc.getHitpoints();
-        for (let i = 0; i < Math.max(1, npc.getSize()); i++) {
+      for (const target of struck) {
+        // Each hit is capped by what the target has left after the hits before it.
+        let remaining = target.getHitpoints();
+        let landsIn = HIT_DELAY;
+        for (let i = 0; i < Math.max(1, target.getSize()); i++) {
           const damage = rollDamage(player);
-          CombatFactory.addPendingHit(new PendingHit(player, npc, this, {
+          const hit = new PendingHit(player, target, this, {
             damage, rollAccuracy: false, bypassProtectionPrayer: true, delay: HIT_DELAY,
-          }));
-		  api.emitCustomEvent("combat:burn", { player, npc, damage: 30, severity: "strong" });
+          });
+          CombatFactory.addPendingHit(hit);
+          // An NPC takes its hits a tick later than a player does.
+          landsIn = HIT_DELAY + CombatFactory.hitProcessingDelay(hit);
           const landed = Math.min(remaining, damage);
           remaining -= landed;
           dealt += landed;
         }
+        // One burn per target, as its hits land (Burns.plugin.js reads attacker and target).
+        TaskManager.submit(new CountdownTask({}, landsIn, () => burn(player, target)));
       }
       const healing = Math.floor(dealt * HEAL_FRACTION);
       TaskManager.submit(new CountdownTask({}, HEAL_DELAY, () => heal(player, healing)));
     }
 
-    // Typeless: whatever the NPC is immune to, the slam's own checks (targets) decide who it hits.
+    // Typeless: whatever the target is immune to, the slam's own checks (targets) decide who it hits.
     canAttack() {
       return true;
     }
