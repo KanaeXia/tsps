@@ -20,7 +20,7 @@ module.exports = function registerExaltedSpringSpecialAttack(api) {
   /** Used without a cost in custom-items.json; that entry sets the real one. */
   const DEFAULT_DRAIN = 50;
   /** Tiles from the player in each direction: a 5x5 square (Sol Slam's is 7x7). */
-  const RADIUS = 2;
+  const RADIUS = 3;
   const MIN_DAMAGE = 1.0;
   const MAX_DAMAGE = 1.5;
   const PRAYER_BONUS_DAMAGE = 0.03;
@@ -106,29 +106,34 @@ module.exports = function registerExaltedSpringSpecialAttack(api) {
 	  
 	  let x = player.getLocation().getX();
 	  let y = player.getLocation().getY();
-	  for (let i = 0; i < 25; i++) {
+	  const leng = (RADIUS * 2 + 1);
+	  for (let i = 0; i < leng * leng; i++) {
 		if (i % 2 === 1) {
 		  continue;
 		}
-	    const tile = new Location(x + i % 5 - 2, y + i / 5 - 2, player.getLocation().getZ());
-		if(i === 12) {
+	    const tile = new Location(x + i % leng - RADIUS, y + i / leng - RADIUS, player.getLocation().getZ());
+		if (i === (leng * leng - 1) / 2) {
 	      World.sendLocalGraphicsObj(new Graphic(3108), tile);
-		} else if(i === 2) {
-	      World.sendLocalGraphicsObj(new Graphic(2993, 60), tile);
-		} else if(i === 10) {
-	      World.sendLocalGraphicsObj(new Graphic(2994, 60), tile);
-		} else if(i === 14) {
-	      World.sendLocalGraphicsObj(new Graphic(2996, 60), tile);
-		} else if(i === 22) {
-	      World.sendLocalGraphicsObj(new Graphic(2995, 60), tile);
-		} else if(i === 0 || i === 6) {
-	      World.sendLocalGraphicsObj(new Graphic(2998, 60), tile);
-		} else if(i === 4 || i === 8) {
-	      World.sendLocalGraphicsObj(new Graphic(2997, 60), tile);
-		} else if(i === 16 || i === 20) {
-	      World.sendLocalGraphicsObj(new Graphic(2999, 60), tile);
-		} else if(i === 18 || i === 24) {
-	      World.sendLocalGraphicsObj(new Graphic(3000, 60), tile);
+		} else if (i < (leng * leng - 1) / 2 ) {
+		  if (i % leng - RADIUS === 0) {
+			World.sendLocalGraphicsObj(new Graphic(2993, 60), tile);
+		  } else if (i / leng - RADIUS === 0) {
+	        World.sendLocalGraphicsObj(new Graphic(2994, 60), tile);
+		  } else if (i % leng === i / leng) {
+	        World.sendLocalGraphicsObj(new Graphic(2998, 60), tile);
+		  } else if (i % leng + i / leng == RADIUS * 2) {
+	        World.sendLocalGraphicsObj(new Graphic(2997, 60), tile);
+		  }
+		} else {
+		  if (i % leng - RADIUS === 0) {
+			World.sendLocalGraphicsObj(new Graphic(2995, 60), tile);
+		  } else if (i / leng - RADIUS === 0) {
+	        World.sendLocalGraphicsObj(new Graphic(2996, 60), tile);
+		  } else if (i % leng === i / leng) {
+	        World.sendLocalGraphicsObj(new Graphic(3000, 60), tile);
+		  } else if (i % leng + i / leng == RADIUS * 2) {
+	        World.sendLocalGraphicsObj(new Graphic(2999, 60), tile);
+		  }
 		}
 	  }
 	  
@@ -141,6 +146,7 @@ module.exports = function registerExaltedSpringSpecialAttack(api) {
           CombatFactory.addPendingHit(new PendingHit(player, npc, this, {
             damage, rollAccuracy: false, bypassProtectionPrayer: true, delay: HIT_DELAY,
           }));
+		  api.emitCustomEvent("combat:burn", { player, npc, damage: 30, severity: "strong" });
           const landed = Math.min(remaining, damage);
           remaining -= landed;
           dealt += landed;
