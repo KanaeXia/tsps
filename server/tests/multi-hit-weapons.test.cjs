@@ -8,6 +8,7 @@ const { PluginManager } = require('../dist/plugins/PluginManager');
 const { Player } = require('../dist/game/entity/impl/player/Player');
 const { PlayerSession } = require('../dist/net/PlayerSession');
 let core, resolver, observed, index = 6800;
+const burns = [];
 const WEAPONS = [29084, 29889, 30957, 33243, 4747, 4958, 4959, 4960, 4961];
 before(async () => {
   await require('../dist/game/cache/CachePipeline').CachePipeline.initialize(path.resolve(__dirname, '..'));
@@ -20,6 +21,8 @@ before(async () => {
     registerCombatMethodResolver(value) { resolver = value; api.registerCombatMethodResolver(value); },
   });
   require('../plugins/items/BarrowsEquipment.plugin').register(PluginManager.createApi('MultiHitBarrowsTest'));
+  require('../plugins/items/ExaltedSpring.plugin').register(PluginManager.createApi('MultiHitExaltedSpringTest'));
+  api.onCustomEvent('combat:burn', event => burns.push(event));
   api.onCombatHitDamage(event => { if (observed?.player === event.attacker) observed.parts.push(event); });
   api.onCustomEvent('combat:hit-rolled', event => {
     if (observed?.player === event.attacker) observed.ranges.push(event.maximum);
@@ -116,6 +119,17 @@ test('Exalted Spring with a special armed or a spell set is not shaped by the mu
   assert.ok(resolver.resolve(player), 'its ordinary attack');
   player.setSpecialActivated(true);
   assert.equal(resolver.resolve(player), null);
+});
+test('Exalted Spring: each accurate hitsplat that lands may burn the target (ExaltedSpring.plugin)', t => {
+  const { player, npc } = actors(t, EXALTED_SPRING), result = roll(player, npc, [true, false], 47);
+  burns.length = 0;
+  t.mock.method(Math, 'random', () => 0);
+  core.CombatFactory.executeHit(result.hits[0]);
+  t.mock.restoreAll();
+  assert.equal(burns.length, 1, 'one accurate hitsplat, one burn');
+  assert.equal(burns[0].target, npc);
+  assert.equal(burns[0].damage, 20);
+  assert.equal(burns[0].severity, 'strong');
 });
 test('noted, placeholder, broken and unrelated items are not ordinary twin weapons', t => {
   for (const id of [4748, 4962, 4963, 15701, 15702, 29085, 29086, 29890, 29891, 30958, 30959, 33244, 4151]) {
