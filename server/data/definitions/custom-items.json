@@ -353,6 +353,8 @@
       "maleModel2": -1,
       "femaleModel1": -1,
       "femaleModel2": -1,
+	  "maleHeadModel": 1521002,
+	  "femaleHeadModel": 1521002,
       "zoom2d": 750,
       "xan2d": 512,
       "yan2d": 0,

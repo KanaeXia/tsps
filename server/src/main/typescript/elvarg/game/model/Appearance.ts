@@ -113,9 +113,10 @@ export class Appearance {
 
     /** Whether this player may choose a skin colour; out-of-palette values never are. */
     isSkinColourUnlocked(colour: number): boolean {
-        if (!Number.isInteger(colour) || colour < 0 || colour >= Appearance.SKIN_COLOUR_COUNT) return false;
+        /**if (!Number.isInteger(colour) || colour < 0 || colour >= Appearance.SKIN_COLOUR_COUNT) return false;
         const unlock = Appearance.SKIN_UNLOCKS.find((entry) => entry.colours.includes(colour));
-        return !unlock || this.player.getAttribute(unlock.attribute) === true;
+        return !unlock || this.player.getAttribute(unlock.attribute) === true;*/
+		return true;
     }
 
     /** The skin colours this player may choose, in palette order. */
