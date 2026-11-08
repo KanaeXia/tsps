@@ -6,7 +6,7 @@
 // Butterflies, moths and implings keep their own barehanded catches (Catching.Hunter.js).
 
 const C = require("./Context.Hunter");
-const { H, ANIM, level, nearby, available, exchange, xp, begin } = C;
+const { H, ANIM, level, available, exchange, xp, begin } = C;
 const Traps = require("./Traps.Hunter");
 
 /** Who may catch barehanded: every condition must hold. */
@@ -68,33 +68,75 @@ function caughtLine(creature) {
   return `You've caught ${/^[aeiou]/.test(name) ? "an" : "a"} ${name}.`;
 }
 
+/** Whether the player can reach the creature from where they stand: beside it (OSRS reach, its whole size). */
+function reaches(player, npc) {
+  return player.getPrivateArea() === npc.getPrivateArea() && H.core.PathFinder.reachedEntity(player, npc);
+}
+
+/** The catch this player has under way on this creature, if any. */
+function catching(player, npc) {
+  return H.reserved.get(npc)?.barehanded === player;
+}
+
+/**
+ * Holds the creature still while it is caught, so it cannot wander out of reach mid-catch.
+ * Returns the release: it frees the creature and puts its movement back as it was.
+ */
+function hold(player, npc) {
+  const queue = npc.getMovementQueue();
+  const token = { barehanded: player, blocked: queue.isMovementBlocked() };
+  H.reserved.set(npc, token);
+  queue.reset();
+  queue.setBlockMovement(true);
+  return () => {
+    if (H.reserved.get(npc) !== token) return;
+    H.reserved.delete(npc);
+    if (npc.isRegistered()) npc.getMovementQueue().setBlockMovement(token.blocked);
+  };
+}
+
 function catchCreature(player, npc, creature) {
-  if (!available(npc) || !nearby(player, npc, CATCH_RANGE)) return;
+  if (catching(player, npc)) return;
+  if (!available(npc)) {
+    // Reserved: another catch or a trap's lure has it. Otherwise it is dying or gone.
+    if (H.reserved.has(npc)) player.sendMessage("That creature is already being caught.");
+    return;
+  }
+  if (!reaches(player, npc)) { player.sendMessage("I can't reach that!"); return; }
   const { items, xp: amount } = rewards(player, creature);
   if (!exchange(player, [], items, false)) { player.getInventory().full(); return; }
+  // A new catch replaces whatever Hunter action the player had going.
+  C.cancel(player);
   const trap = H.data.traps[creature.trap];
-  const token = { player };
-  H.reserved.set(npc, token);
-  const release = () => { if (H.reserved.get(npc) === token) H.reserved.delete(npc); };
+  const release = hold(player, npc);
   player.setPositionToFace(npc.getLocation());
   // The animation of picking the trap up, as a full trap's check plays.
   if (!begin(player, trap?.dismantleTicks ?? CATCH_TICKS, trap?.dismantle ?? ANIM.TAKE, () => {
     release();
-    if (!available(npc) || !nearby(player, npc, CATCH_RANGE) || level(player) < creature.level) return;
+    if (!available(npc) || !reaches(player, npc) || level(player) < creature.level) {
+      player.sendMessage("The creature slips away.");
+      return;
+    }
     if (!exchange(player, [], items)) { player.getInventory().full(); return; }
     xp(player, amount, creature.method, creature.npc);
     player.sendMessage(caughtLine(creature));
+    // After release: hide keeps the movement it finds and puts it back on respawn.
     C.hide(npc);
   }, release)) release();
 }
 
-/** Attack on a Hunter creature: walk up and catch it instead of fighting it. */
+/**
+ * Attack on a Hunter creature: walk up and catch it instead of fighting it. Once the player
+ * qualifies the click is always theirs to keep: a second click mid-catch, or on a creature a
+ * trap is luring, never falls through to a fight.
+ */
 function attackOption(event) {
   const { player, npc, npcId } = event;
   const creature = catchable(player, npcId);
-  if (!creature || !available(npc)) return;
+  if (!creature) return;
   event.handled = true;
-  player.getCombat().reset?.();
+  if (catching(player, npc)) return;
+  player.getCombat().reset(false);
   player.getMovementQueue().walkToEntity(npc, () => catchCreature(player, npc, creature), CATCH_RANGE);
 }
 
