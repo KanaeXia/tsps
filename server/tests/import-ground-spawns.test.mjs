@@ -237,3 +237,47 @@ test("only exact Civitas surface bucket/pot rows qualify; scenery, phase-owned p
  assert.equal(result.report.rows.filter(r=>r.status==="added").length,3);
  assert.deepEqual(importSpawns(source([base,other,pot]),result.definitions).definitions,result.definitions);
 });
+
+const varlamoreSpades=[row({page:"Spade",id:952,x:1641,y:3052,plane:0,members:true,quantity:1,infobox_respawn_ticks:100,location:"[[Outer Fortis]]"}),
+ row({page:"Spade",id:952,x:1405,y:2938,plane:0,members:true,quantity:1,infobox_respawn_ticks:100,location:"[[Aldarin]]"})];
+test("two pinned Varlamore spades preserve source state and legacy order",()=>{
+ const legacy=[{id:952,location:{x:3120,y:3359,z:0},amt:1,respawn:100}];const result=importSpawns(source(varlamoreSpades),legacy);assert.equal(result.definitions.length,3);assert.deepEqual(result.definitions[0],legacy[0]);
+ for(const[i,r]of varlamoreSpades.entries()){const d=result.definitions[i+1];assert.equal(d.id,952);assert.deepEqual(d.location,{x:r.x,y:r.y,z:0});assert.equal(d.amt,1);assert.equal(d.respawn,100);assert.equal(d.members,true);}
+ assert.deepEqual(importSpawns(source(varlamoreSpades),result.definitions).definitions,result.definitions);
+});
+test("Spade selection excludes scenery and other regions, identities, quantities and world variants",()=>{
+ const rows=varlamoreSpades.flatMap(r=>[{...r,x:r.x+1},{...r,location:"unverified"},{...r,plane:1},{...r,members:false},{...r,quantity:2},{...r,infobox_respawn_ticks:99},{...r,id:953}]);
+ for(const[x,y,location]of [[1728,3102,"[[Civitas illa Fortis]]"],[3355,2758,"[[Necropolis]]"],[3338,2751,"[[Necropolis]]"],[3334,2719,"[[Necropolis]]"],[3333,2702,"[[Necropolis]]"],[2592,2291,"[[Wyrmscraig]]"]])rows.push({...varlamoreSpades[0],x,y,location});
+ assert.equal(importSpawns(source(rows),[]).definitions.length,0);
+ assert.equal(importSpawns(source([{...varlamoreSpades[0],unresolved_reasons:["conditional"]}]),[]).definitions.length,0);
+ assert.throws(()=>importSpawns(source([{...varlamoreSpades[0],tile_respawn_raw:"100"}]),[]),/Invalid source-complete row/);
+});
+
+
+const iceDungeonCoins=[{x:2988,y:9584},{x:2987,y:9583},{x:2988,y:9582}].map(at=>row({
+ ...at,page:"Coins",id:995,plane:0,quantity:1,location:"[[Asgarnian Ice Dungeon]]",
+}));
+
+test("audited Ice Dungeon Coins preserve source default quantity and exact public location scope",()=>{
+ const result=importSpawns(source(iceDungeonCoins),[]);
+ assert.equal(result.report.counts.added,3);
+ assert.deepEqual(result.definitions.map(d=>[d.id,d.location.x,d.location.y,d.location.z,d.amt,d.respawn,d.members===true]),
+  [[995,2988,9584,0,1,100,false],[995,2987,9583,0,1,100,false],[995,2988,9582,0,1,100,false]]);
+ assert.deepEqual(importSpawns(source(iceDungeonCoins),result.definitions).definitions,result.definitions);
+ const base=iceDungeonCoins[0];
+ const held=[{...base,x:2989},{...base,x:2989,location:undefined},{...base,plane:1},
+  {...base,id:996},{...base,page:"Coins (Shilo Village)"},{...base,location:"[[Dwarven Mine]]"},
+  {...base,members:true},{...base,x:3188,y:9820,location:"[[Varrock]] - west bank basement"}];
+ assert.equal(importSpawns(source(held),[]).definitions.length,0);
+ const occupied={id:554,location:{x:2988,y:9584,z:0},amt:1,respawn:100};
+ const replaced=importSpawns(source([base]),[occupied]);
+ assert.deepEqual(replaced.definitions,[occupied]);assert.equal(replaced.report.counts["possible-replaced-id-review"],1);
+});
+
+test("committed Ice Dungeon Coins match all three audited public rows without duplicates",()=>{
+ const data=JSON.parse(readFileSync(new URL("../data/definitions/ground-items.json",import.meta.url),"utf8"));
+ for(const r of iceDungeonCoins){
+  const matches=data.filter(d=>d.id===995 && d.location.x===r.x && d.location.y===r.y && d.location.z===0);
+  assert.equal(matches.length,1);assert.equal(matches[0].amt,1);assert.equal(matches[0].respawn,100);assert.notEqual(matches[0].members,true);
+ }
+});

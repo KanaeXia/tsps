@@ -416,6 +416,36 @@ test("rewards: unlocks spend points and set their bit; cancel and block", () => 
   assert.equal(varbit(player, "slayer_blocked_vannaka_1"), 0);
 });
 
+test("rewards: a task already blocked with the master isn't blocked (and paid for) again", () => {
+  const player = createPlayer({ points: 500 });
+  player.getPacketSender().sendConfig(101, 100); // two block slots
+  setVarbit(player, "slayer_master_in_focus", 3);
+  setVarbit(player, "slayer_blocked_vannaka_1", taskId("Bloodveld"));
+  giveTask(player, 3, "Bloodveld", 10); // another master's assignment of a task blocked here
+  Rewards.block(player);
+  assert.equal(varbit(player, "slayer_points"), 500, "nothing spent");
+  assert.equal(varbit(player, "slayer_blocked_vannaka_2"), 0, "no second slot taken");
+  assert.equal(Tasks.current(player)?.taskId, taskId("Bloodveld"), "the task is kept");
+  assert.match(player.messages.at(-1), /already blocked/);
+  setVarbit(player, "slayer_blocked_vannaka_1", 0);
+});
+
+test("rewards: a block confirmed after the task changed blocks nothing", () => {
+  const player = createPlayer({ points: 500 });
+  player.setEnteredAmountAction = (action) => { player.amountAction = action; };
+  player.getPacketSender().sendConfig(101, 50);
+  setVarbit(player, "slayer_master_in_focus", 3);
+  giveTask(player, 5, "Drakes", 10); // Vannaka doesn't give Drakes: the Yes/No popup
+  Rewards.block(player);
+  assert.ok(player.amountAction, "the confirm is waiting");
+  Tasks.clear(player);
+  giveTask(player, 3, "Bloodveld", 10);
+  player.amountAction.execute(1);
+  assert.equal(varbit(player, "slayer_points"), 500, "nothing spent");
+  assert.equal(varbit(player, "slayer_blocked_vannaka_1"), 0, "the old task isn't blocked");
+  assert.equal(Tasks.current(player)?.taskId, taskId("Bloodveld"), "the new task stays");
+});
+
 test("rewards: the Buy tab sells enum 840's items for enum 842's prices", () => {
   const player = createPlayer({ points: 100 });
   const items = CacheDefinitions.getEnumValues(840);
@@ -784,6 +814,28 @@ test("::slayerpoints sets the points; ::clearunlocks locks everything again", ()
   assert.equal(varbit(player, "slayer_points"), 500, "points stay");
 });
 
+test("Stop the Wyvern and the longer revenant tasks stop applying once toggled off on the Rewards screen", () => {
+  const player = createPlayer();
+  const entryOf = (name) => [...Data.get().masters.values()].flatMap((m) => m.tasks.map((entry) => [m, entry])).find(([, entry]) => entry.task.displayName === name);
+  const [wyvernMaster, wyverns] = entryOf("Fossil Island Wyverns");
+  const [, revenants] = entryOf("Revenants");
+  const unbought = Tasks.eligible(player, wyvernMaster, wyverns, new Set());
+  assert.equal(unbought, true, "the fixture can be given fossil wyverns");
+  const baseRevenants = Tasks.rollAmount(player, revenants, 0, () => 0);
+  Rewards.setUnlockBit(player, 43, true);
+  Rewards.setUnlockBit(player, 53, true);
+  assert.equal(Tasks.eligible(player, wyvernMaster, wyverns, new Set()), false, "Stop the Wyvern blocks them");
+  assert.equal(Tasks.rollAmount(player, revenants, 0, () => 0), revenants.task.extension.min, "the longer revenant range");
+  setVarbit(player, "slayer_toggleoff_fossilwyvernblock", 1);
+  setVarbit(player, "slayer_toggleoff_longerrevenants", 1);
+  assert.equal(Tasks.eligible(player, wyvernMaster, wyverns, new Set()), unbought, "toggled off: as if never bought");
+  assert.equal(Tasks.rollAmount(player, revenants, 0, () => 0), baseRevenants, "toggled off: the normal revenant range");
+  Rewards.setUnlockBit(player, 43, false);
+  Rewards.setUnlockBit(player, 53, false);
+  setVarbit(player, "slayer_toggleoff_fossilwyvernblock", 0);
+  setVarbit(player, "slayer_toggleoff_longerrevenants", 0);
+});
+
 test("::superior spawns the current task's superior", () => {
   const player = createPlayer();
   player.getLocation = () => ({ getX: () => 3200, getY: () => 3200, getZ: () => 0 });
@@ -945,6 +997,21 @@ test("picking a task sets it with its modifier, as live does", () => {
   setVarbit(shorter, "slayer_choose_task_1_modifier_negative", 1);
   Choice.pick({ player: shorter, action: 0 });
   assert.equal(Tasks.current(shorter).count, Tasks.current(shorter).original - 20);
+});
+
+test("a Mortimer choice is picked only while his choice interface is open", () => {
+  const buttons = new Map();
+  Choice.attach({ onInterfaceActionButton: (id, fn) => buttons.set(id, fn) });
+  const [content, button] = [...buttons][0]; // the choice content, registered first
+  const player = createPlayer();
+  Choice.roll(player, master(MORTIMER));
+  player.getInterfaceId = () => -1;
+  button({ player, action: 0 });
+  assert.equal(Tasks.current(player), null, "closed: no task claimed");
+  assert.ok(varbit(player, "slayer_choose_rolled_master"), "the roll waits");
+  player.getInterfaceId = () => content >>> 16;
+  button({ player, action: 0 });
+  assert.equal(Tasks.current(player)?.masterId, MORTIMER, "open: picked");
 });
 
 test("completing a Mortimer task: his own streak and the points modifier (captured lines)", () => {
