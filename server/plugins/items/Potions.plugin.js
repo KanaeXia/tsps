@@ -464,15 +464,25 @@ function applyDivine(player, baseEffect, affectedSkills, { damage = 10 } = {}) {
   baseEffect(player);
   if (damage > 0) damageButKeepAlive(player, damage);
 
-  const targets = affectedSkills
+  // Each divine potion keeps its own five minutes (Wiki: each lasts "for 5 minutes"): a second one (divine ranging after
+  // divine super combat) adds its skills with their own end, rather than dropping the first one's pinned boosts.
+  const now = Date.now();
+  const endsAt = now + DIVINE_DURATION_MS;
+  const fresh = affectedSkills
     .filter(Boolean)
     .map((skill) => ({
       skillIndex: skill.getIndex(),
       target: getCurrentLevel(player, skill),
+      endsAt,
     }));
-
+  const previous = player.getAttribute(ATTR_DIVINE_STATE);
+  const kept = (previous && Array.isArray(previous.targets) ? previous.targets : [])
+    .filter((entry) => Number.isInteger(entry?.skillIndex) && !fresh.some((next) => next.skillIndex === entry.skillIndex))
+    .map((entry) => ({ ...entry, endsAt: Number.isFinite(entry.endsAt) ? entry.endsAt : previous.endsAt }))
+    .filter((entry) => entry.endsAt > now);
+  const targets = [...kept, ...fresh];
   player.setAttribute(ATTR_DIVINE_STATE, {
-    endsAt: Date.now() + DIVINE_DURATION_MS,
+    endsAt: Math.max(...targets.map((entry) => entry.endsAt)),
     targets,
   });
 }
@@ -1288,7 +1298,8 @@ GOURD_STRENGTHS.forEach((strength, tier) => {
   registerGourd(antipoison, GOURD_FIRST_DOSE.antipoison[tier], (player) => applyPoisonImmunity(player, GOURD_ANTIPOISON_SECONDS[tier]));
   registerGourd(`Overload${suffix} (Chambers of Xeric)`, GOURD_FIRST_DOSE.overload[tier],
     (player) => applyOverload(player, strength.overload[0], strength.overload[1]),
-    (player) => getCurrentLevel(player, Skill.HITPOINTS) >= 50);
+    // Wiki (Overload (Chambers of Xeric)): more than 50 Hitpoints, as Overload (+) and the refusal text say.
+    (player) => getCurrentLevel(player, Skill.HITPOINTS) > 50);
 });
 
 /** Wiki: the stamina effect only slows the drain; MovementQueue applies the 30% modifier. */
@@ -1342,16 +1353,22 @@ function processDivine(player) {
     return;
   }
 
-  if (Date.now() >= state.endsAt) {
-    player.setAttribute(ATTR_DIVINE_STATE, null);
-    for (const entry of state.targets) {
+  // Each skill ends at its own potion's time (an older save holds one endsAt for all of them).
+  const now = Date.now();
+  const endOf = (entry) => (Number.isFinite(entry?.endsAt) ? entry.endsAt : state.endsAt);
+  const expired = state.targets.filter((entry) => now >= endOf(entry));
+  if (expired.length > 0) {
+    for (const entry of expired) {
       const skill = Skill.values()[entry?.skillIndex];
       if (skill) {
         setCurrentLevel(player, skill, getMaxLevel(player, skill));
       }
     }
+    state.targets = state.targets.filter((entry) => now < endOf(entry));
+    if (state.targets.length === 0) player.setAttribute(ATTR_DIVINE_STATE, null);
+    else player.setAttribute(ATTR_DIVINE_STATE, { ...state, endsAt: Math.max(...state.targets.map(endOf)) });
     player.sendMessage("Your divine potion effect has worn off.");
-    return;
+    if (state.targets.length === 0) return;
   }
 
   for (const entry of state.targets) {
@@ -1667,6 +1684,10 @@ function resumeTimedEffects({ player }) {
     if (!state || typeof state !== "object") continue;
     for (const field of ["endsAt", "nextBoostAt", "nextDamageAt", "nextRestoreAt", "nextAt"]) {
       if (Number.isFinite(state[field])) state[field] += offline;
+    }
+    // A divine state's skills each carry their own end.
+    for (const entry of Array.isArray(state.targets) ? state.targets : []) {
+      if (Number.isFinite(entry?.endsAt)) entry.endsAt += offline;
     }
     player.setAttribute(key, state);
   }
