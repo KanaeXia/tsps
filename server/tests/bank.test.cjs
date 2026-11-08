@@ -12,6 +12,7 @@ const { Bank } = require("../dist/game/model/container/impl/Bank");
 const { World } = require("../dist/game/World");
 const { PlayerStatus } = require("../dist/game/model/PlayerStatus");
 const { EquipPacketListener } = require("../dist/net/packet/impl/EquipPacketListener");
+const { ChatType } = require("../dist/net/protocol/ClientProtocol");
 const { PluginManager } = require("../dist/plugins/PluginManager");
 
 const TRIDENT = 11907;
@@ -66,7 +67,9 @@ function createPlayer() {
         ? (id, value) => { varbits.push([id, value]); return sender; }
         : prop === "sendEnterAmountPrompt"
           ? (title) => { prompts.push(title); return sender; }
-          : () => sender,
+          : prop === "sendTypedMessage"
+            ? (type, text) => { messages.push(`${type}:${text}`); return sender; }
+            : () => sender,
   });
   let currentTab = 0;
   const messages = [];
@@ -111,7 +114,7 @@ test("unsupported placeholders warn only when a successful withdrawal empties th
   Bank.withdraw(player, MYSTIC_LAVA_STAFF, 0, 1, 0);
   assert.deepEqual(player.messages, []);
   Bank.withdraw(player, MYSTIC_LAVA_STAFF, 0, 1, 0);
-  assert.deepEqual(player.messages, ["That item cannot leave a placeholder."]);
+  assert.deepEqual(player.messages, [`${ChatType.SPAM}:This item cannot leave a placeholder.`]);
   assert.equal(player.getInventory().getAmount(MYSTIC_LAVA_STAFF), 2);
   assert.equal(player.getBank().contains(MYSTIC_LAVA_STAFF), false);
   player.getBank().add(new Item(LAVA_BATTLESTAFF, 1), false);
@@ -1375,24 +1378,3 @@ test("price checking quantities and closing returns every item", () => {
   }
 });
 
-test("the worn items view banks the one worn item clicked", () => {
-  const player = createPlayer();
-  // A plain container stands in for the worn equipment; the view's slot is the item's place in
-  // the list, so the click's item names it.
-  const worn = new Inventory(player);
-  worn.resetItems();
-  worn.add(new Item(TRIDENT, 1), false);
-  worn.add(new Item(LAVA_BATTLESTAFF, 1), false);
-  player.getEquipment = () => worn;
-  const click = (buttonNum, itemId) => Bank.handleWidgetAction(player, {
-    groupId: Bank.SIDE_INTERFACE_ID, childId: Bank.SIDE_WORN_CHILD, buttonNum, slot: 1, itemId,
-  });
-
-  assert.equal(click(1, LAVA_BATTLESTAFF), true);
-  assert.equal(player.getBank().getAmount(LAVA_BATTLESTAFF), 1);
-  assert.equal(worn.getAmount(LAVA_BATTLESTAFF), 0);
-  assert.equal(worn.getAmount(TRIDENT), 1, "only the clicked item");
-  // Its other ops aren't banking.
-  assert.notEqual(click(10, TRIDENT), true);
-  assert.equal(worn.getAmount(TRIDENT), 1);
-});

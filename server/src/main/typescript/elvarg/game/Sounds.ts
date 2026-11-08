@@ -65,7 +65,7 @@ export class Sounds {
         }
         const player = Sounds.resolvePlayer(entity);
         if (player) {
-            if (!player.isPlayerBot()) {
+            if (!(player.isUnwatchedBot?.() ?? player.isPlayerBot?.())) {
                 player
                     .getPacketSender()
                     .sendSoundEffect(sound.getId(), sound.getLoopType(), sound.getDelay(), sound.getClientVolume());
@@ -133,7 +133,7 @@ export class Sounds {
         const source = options.source as { getPrivateArea?: () => unknown } | undefined;
         const sourceArea = source?.getPrivateArea?.();
         for (const player of World.getPlayers()) {
-            if (player.isPlayerBot() || player === options.exclude) continue;
+            if ((player.isUnwatchedBot?.() ?? player.isPlayerBot?.()) || player === options.exclude) continue;
             if (source?.getPrivateArea && player.getPrivateArea() !== sourceArea) continue;
             const location = player.getLocation();
             if (location.getZ() !== level || Math.max(

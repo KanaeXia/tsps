@@ -28,6 +28,7 @@ export class SkillManager {
      * The experience cap: the largest value the skills packet's signed 32-bit field carries
      * (2,147,483,647). Level 150 needs 2,033,749,558, so the cap sits within level 150.
      */
+    // Wiki (Experience): a skill's experience is capped at 200,000,000.
     public static readonly MAX_EXPERIENCE: number = 2147483647;
     public static readonly XP_LOCKED_ATTRIBUTE = "skills:xp-locked";
     public static readonly EXPERIENCE_FOR_99: number = 13034431;

@@ -90,7 +90,8 @@ export class ItemOnGroundManager {
         if (item.isPendingRemoval()) {
             type = OperationType.DELETE;
         }
-        if (player?.isPlayerBot?.() === true) {
+        // A bot an administrator drives sees ground items, as a player does; only one no client watches is skipped.
+        if ((player?.isUnwatchedBot?.() ?? player?.isPlayerBot?.()) === true) {
             return;
         }
         // Skip stale/disconnected sessions to avoid write-time crashes while broadcasting ground-item updates.
@@ -207,7 +208,10 @@ export class ItemOnGroundManager {
             const item = this.getGroundItemById(stackId, player);
             return item && matches(item) ? item : null;
         }
-        return World.getItems().find(matches) ?? null;
+        // Different owners' stacks of one item stay apart: prefer the clicker's own, so an Ironman's drop on a
+        // main's public pile is the one their Take picks up (an Ironman may not take the main's).
+        return World.getItems().find((item) => matches(item) && this.isOwner(player.getUsername(), item))
+            ?? World.getItems().find(matches) ?? null;
     }
 
     public static canOperate(player: Player, groundItem: ItemOnGround, operation: number): boolean {

@@ -3733,6 +3733,9 @@ export class OsrsClient {
             this.trackServerSubscription(
                 subscribeHandshake(({ id, name, appearance, chatIcons, chatPrefix, isAdmin, membersWorld }) => {
                     try {
+                        if (this.controlledPlayerServerId !== -1 && this.controlledPlayerServerId !== (id | 0)) {
+                            this.resetWorld(true);
+                        }
                         const isMembersWorld = membersWorld !== false;
                         if (isMembersWorld !== this.isMembersWorld) {
                             this.isMembersWorld = isMembersWorld;

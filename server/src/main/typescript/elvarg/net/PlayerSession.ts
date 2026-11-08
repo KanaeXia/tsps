@@ -41,6 +41,7 @@ import { CachePipeline } from "../game/cache/CachePipeline";
 import type { PrivateArea } from "../game/model/areas/impl/PrivateArea";
 
 type SessionChannel = {
+  kind?: string;
   binaryTransport?: boolean;
   bufferedAmount?: number;
   close?: (code?: number, reason?: string) => void;
@@ -157,6 +158,11 @@ export class PlayerSession {
 
   public setPlayer(player: Player) {
     this.player = player;
+  }
+
+  /** A real client is on the other end: a websocket, TCP or WebRTC data channel (not a bot's or headless one). */
+  public hasNetworkClient(): boolean {
+    return this.channel.kind === "websocket" || this.channel.kind === "tcp" || this.channel.kind === "webrtc";
   }
 
   public getChannel(): SessionChannel {
