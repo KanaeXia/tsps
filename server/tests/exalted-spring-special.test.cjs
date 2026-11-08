@@ -141,6 +141,31 @@ test("in single-combat it hits one NPC: the current target when it is in the are
   assert.deepEqual([...slam(t, p).keys()], [near], "without one, the nearest");
 });
 
+/** An NPC with no combat option (a banker, say): it can't be fought at all. */
+function peaceful() {
+  const N = core.NpcIdentifiers;
+  return Object.values(N).find((id) => Number.isInteger(id) && core.CacheDefinitions.getNpc(id)?.size === 1
+    && (core.CacheDefinitions.getNpc(id)?.actions ?? []).some((action) => action === "Talk-to")
+    && !(core.CacheDefinitions.getNpc(id)?.actions ?? []).some((action) => /attack/i.test(action ?? "")));
+}
+
+test("NPCs that can't be attacked are never hit, even as the current target", (t) => {
+  const single = player(t, SINGLE);
+  const banker = npc(t, peaceful(), [SINGLE[0] + 1, SINGLE[1]]);
+  assert.equal(banker.getCurrentDefinition(single).isAttackable(), false);
+  const fightable = npc(t, sized(1), [SINGLE[0] + 2, SINGLE[1]]);
+  single.getCombat().setTarget(banker);
+  assert.deepEqual([...slam(t, single).keys()], [fightable], "single-combat: the nearest it may attack");
+  single.getCombat().setTarget(null);
+
+  const multi = player(t, MULTI);
+  const other = npc(t, peaceful(), [MULTI[0] + 1, MULTI[1]]);
+  const fightableToo = npc(t, sized(1), [MULTI[0] - 1, MULTI[1]]);
+  const hit = [...slam(t, multi).keys()];
+  assert.ok(hit.includes(fightableToo));
+  assert.ok(!hit.includes(other), "multi-combat: skipped");
+});
+
 test("with nothing in range it does nothing and keeps the energy", (t) => {
   const p = player(t, MULTI);
   const hits = slam(t, p);

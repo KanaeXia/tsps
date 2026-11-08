@@ -54,6 +54,16 @@ module.exports = function registerExaltedSpringSpecialAttack(api) {
       && at.getY() <= origin.getY() + RADIUS && at.getY() + size - 1 >= origin.getY() - RADIUS;
   }
 
+  /**
+   * Whether the target can be fought at all: an NPC needs an Attack option (or one a plugin makes a
+   * combat option), as NpcDefinition.isAttackable says, in the form this player sees. The core's
+   * single-combat check (canAttack) leaves that to the menu, and this special has no menu click.
+   */
+  function attackable(player, target) {
+    if (!target.isNpc()) return true;
+    return target.getAsNpc().getCurrentDefinition(player)?.isAttackable() === true;
+  }
+
   function distance(player, target) {
     const origin = player.getLocation(), at = target.getLocation(), size = Math.max(1, target.getSize());
     const gap = (point, start) => Math.max(0, start - point, point - (start + size - 1));
@@ -68,7 +78,9 @@ module.exports = function registerExaltedSpringSpecialAttack(api) {
   function targets(player, method) {
     const nearby = [];
     const consider = (mobile) => {
-      if (mobile && mobile !== player && mobile.isRegistered?.() && inArea(player, mobile)) nearby.push(mobile);
+      if (mobile && mobile !== player && mobile.isRegistered?.() && inArea(player, mobile) && attackable(player, mobile)) {
+        nearby.push(mobile);
+      }
     };
     World.getNpcs().forEach(consider);
     World.getPlayers().forEach(consider);
