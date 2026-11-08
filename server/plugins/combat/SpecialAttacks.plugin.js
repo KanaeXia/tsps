@@ -52,6 +52,7 @@ module.exports = {
     require("./specials/EldritchNightmareStaff.SpecialAttack")(api);
     require("./specials/Emberlight.SpecialAttack")(api);
     require("./specials/Excalibur.SpecialAttack")(api);
+    require("./specials/ExaltedSpring.SpecialAttack")(api);
     require("./specials/EyeOfAyak.SpecialAttack")(api);
     require("./specials/GraniteHammer.SpecialAttack")(api);
     require("./specials/GraniteMaul.SpecialAttack")(api);
