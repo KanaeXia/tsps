@@ -110,6 +110,7 @@ export type TouchControlsClient = {
         interactHighlightConfig(): InteractHighlightPluginConfig | undefined;
         groundItemMenuName?(stack: ClientGroundItemStack, name: string): string;
         deprioritizeGroundItem?(stack: ClientGroundItemStack): boolean;
+        orderGroundItemStacks?<T extends ClientGroundItemStack>(stacks: T[]): T[];
     };
     setKeyboardMovement?(dx: number, dy: number, running: boolean, rotation: number): void;
     stopKeyboardMovement?(deactivate?: boolean): void;
@@ -429,7 +430,8 @@ export class TouchControlsPlugin extends Plugin implements ClientPlugin {
         const { groundItems, objTypeLoader: loader, clientPlugins: plugins } = this.client;
         if (!groundItems || !loader || groundObjOpsVisibility.hidden) return undefined;
         const options: ObjOption[] = [];
-        for (const stack of groundItems.getStacksAt(x, y, plane).reverse()) {
+        const stacks = groundItems.getStacksAt(x, y, plane);
+        for (const stack of (plugins?.orderGroundItemStacks?.(stacks) ?? stacks).slice().reverse()) {
             let type;
             try {
                 type = loader.load(stack.itemId);

@@ -112,7 +112,24 @@ export type RuleSettings = {
     hiddenColor: number;
     /** Value tiers, highest first, for prices above 0 (RuneLite's priceChecks). */
     priceChecks: { price: number; color: number }[];
+    /**
+     * Value an item that doesn't stack in the inventory by one of it, however many lie on the
+     * tile: two 8k items are two 8k pickups, not a 16k one. Stackable (and noted) items are
+     * still valued by the whole stack.
+     */
+    stackableAware?: boolean;
 };
+
+/** The quantity an item's value counts: the stack's, or one for a non-stackable item when stackable-aware. */
+export function valuedQuantity(item: GroundItem, s: Pick<RuleSettings, "stackableAware">): number {
+    return s.stackableAware && !item.stackable ? 1 : item.quantity;
+}
+
+/** The item's value for tiers, hiding, notifications and loot beams, by the calculation mode. */
+export function itemValue(item: GroundItem, s: Pick<RuleSettings, "stackableAware" | "valueCalculationMode">): number {
+    const quantity = valuedQuantity(item, s);
+    return valueByMode(s.valueCalculationMode, item.gePrice * quantity, item.haPrice * quantity);
+}
 
 export function valueByMode(mode: ValueCalculationMode, gePrice: number, haPrice: number): number {
     if (mode === "GE") return gePrice;
@@ -136,16 +153,39 @@ export function getHighlighted(item: GroundItem, listResult: number, s: RuleSett
     if (listResult === HIGHLIGHTED) return itemColor ?? s.highlightedColor;
     if (listResult === HIDDEN) return undefined;
     if (itemColor !== undefined) return itemColor;
-    const price = valueByMode(s.valueCalculationMode, stackGePrice(item), stackHaPrice(item));
+    const price = itemValue(item, s);
     for (const check of s.priceChecks) if (price > check.price) return check.color;
     return undefined;
+}
+
+/**
+ * The item's value tier for menu order: the number of tiers it is worth more than (0 for none),
+ * by its value alone, whatever its list or colour. Items on the hidden list rank below all.
+ */
+export function valueTierRank(item: GroundItem, listResult: number, s: RuleSettings): number {
+    if (listResult === HIDDEN) return -1;
+    const price = itemValue(item, s);
+    const index = s.priceChecks.findIndex((check) => price > check.price);
+    return index < 0 ? 0 : s.priceChecks.length - index;
+}
+
+/**
+ * Value priority: the stacks in the order the menu is built (the last added is on top), lower
+ * tiers first so the highest tier ends on top. Equal tiers keep the game's order.
+ */
+export function orderByTier<T>(stacks: readonly T[], rank: (stack: T) => number): T[] {
+    return stacks
+        .map((stack, index) => ({ stack, index, rank: rank(stack) }))
+        .sort((a, b) => a.rank - b.rank || a.index - b.index)
+        .map((entry) => entry.stack);
 }
 
 /** isHidden: on the hidden list, or under the hide value on both GE and HA. */
 export function isHidden(item: GroundItem, listResult: number, s: RuleSettings): boolean {
     const canBeHidden = item.gePrice > 0 || item.tradeable || !s.dontHideUntradeables;
-    const underGe = stackGePrice(item) < s.hideUnderValue;
-    const underHa = stackHaPrice(item) < s.hideUnderValue;
+    const quantity = valuedQuantity(item, s);
+    const underGe = item.gePrice * quantity < s.hideUnderValue;
+    const underHa = item.haPrice * quantity < s.hideUnderValue;
     return listResult === HIDDEN || (listResult !== HIGHLIGHTED && canBeHidden && underGe && underHa);
 }
 

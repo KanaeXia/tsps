@@ -1030,13 +1030,15 @@ export function checkInteractions(host: WebGLOsrsRendererHost, ): void {
 
                     // Ground items stay indexed by the raw client plane; bridge promotion is render-only.
                     const plane = resolveGroundItemStackPlane(host.getPlayerRawPlane() | 0);
-                    const stacks = host.osrsClient.groundItems.getStacksAt(
+                    const tileStacks = host.osrsClient.groundItems.getStacksAt(
                         worldTileX,
                         worldTileY,
                         plane,
                     );
-                    if (!stacks || stacks.length === 0) continue;
+                    if (!tileStacks || tileStacks.length === 0) continue;
                     const plugins = host.osrsClient.clientPlugins;
+                    // Ground Items' value priority: higher value tiers are added last, on top.
+                    const stacks = plugins.orderGroundItemStacks(tileStacks);
 
                     const tileKey = `${localX}:${localY}`;
                     if (objIds.has(tileKey)) continue;

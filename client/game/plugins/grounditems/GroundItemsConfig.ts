@@ -120,6 +120,18 @@ export const GroundItemsConfig = ConfigGroup(
             enumLabels: { HA: "High Alchemy", GE: "Grand Exchange", HIGHEST: "Highest" },
             default: "HIGHEST",
         }),
+        valuePriority: ConfigItem({
+            name: "Prioritize by value tier",
+            description: "Puts items of a higher value tier above lower ones on the same tile, in the right-click menu and for left-click.",
+            position: 12,
+            default: false,
+        }),
+        stackableAwareValue: ConfigItem({
+            name: "Stackable-aware value",
+            description: "Values items that don't stack in the inventory one at a time, so several on a tile don't reach a higher tier. Stackable and noted items count the whole stack.",
+            position: 12,
+            default: false,
+        }),
         hideUnderValue: ConfigItem({
             name: "Hide under value",
             description: "Configures hidden ground items under both GE and HA value.",

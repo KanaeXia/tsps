@@ -19,6 +19,12 @@ Colours, in order:
 Items on the hidden list, or worth less than "Hide under value" on both prices, are not drawn.
 "Do not hide untradeables" keeps untradeable items from being hidden by value.
 
+**Stackable-aware value** (off by default, not in RuneLite): an item that doesn't stack in the
+inventory is valued one at a time, however many lie on the tile. With a 10k tier, two 8k
+swords stay untiered, while a stack of two 7k stackable items (or noted items) counts 14k and
+reaches the tier. It applies to the tiers, "Hide under value", tier notifications and loot
+beams; the label still shows the whole stack's price.
+
 ## Lists
 
 "Highlighted items" and "Hidden items" take comma-separated names, in the **Item lists**
@@ -46,6 +52,12 @@ the item name or both ("Menu highlight mode"), when "Item highlight mode" includ
 Its target gets the stack quantity for stackable items. Hidden items can be recoloured
 ("Recolor menu hidden items") and made right-click only ("Deprioritize menu hidden items").
 "Collapse ground item menu" merges identical entries into one, with ` x N` added.
+
+**Prioritize by value tier** (off by default, not in RuneLite): on a tile, items of a higher
+value tier always come above lower ones, so the left-click takes the most valuable tier. Items
+in one tier keep the game's order (the last to land on top), and hidden-list items go below
+everything. Only the value decides the tier, not the highlight list or an item's own colour.
+It also orders touch controls' item options.
 
 ## Other features
 

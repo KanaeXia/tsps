@@ -33,10 +33,10 @@ import {
     quantityToStackSize,
     shouldDisplayItem,
     splitList,
-    stackGePrice,
-    stackHaPrice,
+    itemValue,
+    orderByTier,
     tierValue,
-    valueByMode,
+    valueTierRank,
 } from "./groundItemRules";
 import { type LootbeamHost, Lootbeams } from "./lootbeams";
 
@@ -180,6 +180,7 @@ export class GroundItemsPlugin extends Plugin {
             highlightedColor: Number(c.highlightedColor()) >>> 0,
             hiddenColor: Number(c.hiddenColor()) >>> 0,
             priceChecks: tiers,
+            stackableAware: c.stackableAwareValue() === true,
         };
         this.itemColors.clear();
         for (const path of this.configManager.getConfigurationKeys(`${GROUP}.${ITEM_COLOR_PREFIX}`)) {
@@ -390,6 +391,18 @@ export class GroundItemsPlugin extends Plugin {
         return e.hidden && e.highlighted === undefined;
     }
 
+    /**
+     * Value priority: a tile's stacks in the order its menu is built (the last on top), so a
+     * higher value tier's options always sit above a lower one's, left-click included.
+     */
+    orderGroundItemStacks<T extends ClientGroundItemStack>(stacks: T[]): T[] {
+        if (!this.isStarted() || this.config.valuePriority() !== true || stacks.length < 2) return stacks;
+        return orderByTier(stacks, (stack) => {
+            const item = this.groundItemAt(stack.tile.x, stack.tile.y, stack.tile.level, stack.itemId);
+            return item ? valueTierRank(item, this.evaluate(item).listResult, this.settings) : 0;
+        });
+    }
+
     transformMenuEntries(entries: SimpleMenuEntry[], context: MenuTransformContext): SimpleMenuEntry[] {
         if (!this.isStarted() || context.surface !== "world") return entries;
         const player = this.playerTile();
@@ -503,7 +516,7 @@ export class GroundItemsPlugin extends Plugin {
         const isHighlighted = this.highlightedList.matches(item.name, item.quantity) !== NONE;
         const isHiddenListed = this.hiddenList.matches(item.name, item.quantity) !== NONE;
         const tierPrice = tierValue(tier, this.tierPrices());
-        const value = valueByMode(this.settings.valueCalculationMode, stackGePrice(item), stackHaPrice(item));
+        const value = itemValue(item, this.settings);
         let dropType: string;
         if (notifyHighlighted && isHighlighted) dropType = "highlighted";
         else if (tierPrice !== undefined && value > tierPrice && !isHiddenListed) dropType = "valuable";
@@ -574,7 +587,7 @@ export class GroundItemsPlugin extends Plugin {
             }
             // An explicit hide wins over a value highlight.
             if (listResult === HIDDEN) continue;
-            price = Math.max(price, valueByMode(this.settings.valueCalculationMode, stackGePrice(item), stackHaPrice(item)));
+            price = Math.max(price, itemValue(item, this.settings));
         }
         const tierPrice = tierValue(tier, this.tierPrices());
         if (tierPrice !== undefined) {

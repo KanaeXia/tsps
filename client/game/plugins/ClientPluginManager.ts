@@ -384,6 +384,8 @@ export interface ClientPlugin {
     groundItemMenuName?(stack: ClientGroundItemStack, name: string): string;
     groundItemMenuTarget?(stack: ClientGroundItemStack, target: string): string;
     deprioritizeGroundItem?(stack: ClientGroundItemStack): boolean;
+    /** A tile's stacks in the order its menu is built (the last added on top). */
+    orderGroundItemStacks?<T extends ClientGroundItemStack>(stacks: T[]): T[];
     /** Text drawn with the local player's overhead chat. */
     appendLocalPlayerOverheads?(
         host: WebGLOsrsRendererHost,
@@ -758,6 +760,11 @@ export class ClientPluginManager {
 
     deprioritizeGroundItem(stack: ClientGroundItemStack): boolean {
         return this.plugins.some((plugin) => plugin.deprioritizeGroundItem?.(stack) === true);
+    }
+
+    orderGroundItemStacks<T extends ClientGroundItemStack>(stacks: T[]): T[] {
+        for (const plugin of this.plugins) stacks = plugin.orderGroundItemStacks?.(stacks) ?? stacks;
+        return stacks;
     }
 
     appendLocalPlayerOverheads(

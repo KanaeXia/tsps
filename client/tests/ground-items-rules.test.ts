@@ -17,8 +17,11 @@ import {
     itemColorOf,
     itemLabel,
     quantityToStackSize,
+    itemValue,
+    orderByTier,
     shouldDisplayItem,
     tierValue,
+    valueTierRank,
 } from "../game/plugins/grounditems/groundItemRules";
 import { lootbeamSpotAnim } from "../game/plugins/grounditems/lootbeams";
 import { migrateGroundItemsConfig } from "../game/plugins/grounditems/migrateGroundItems";
@@ -42,6 +45,32 @@ const settings: RuleSettings = {
         { price: 20_000, color: 1 },
     ],
 };
+
+// --- Stackable-aware value and value tier rank ----------------------------------------------------
+{
+    // The tiers 10k and up: an 8k non-stackable item twice is two 8k pickups, a 7k stackable stack of two is 14k.
+    const s: RuleSettings = { ...settings, priceChecks: [{ price: 100_000, color: 2 }, { price: 10_000, color: 1 }] };
+    const aware: RuleSettings = { ...s, stackableAware: true };
+    const sword = item({ gePrice: 8_000, quantity: 2, stackable: false });
+    const arrows = item({ name: "Rune arrow", gePrice: 7_000, quantity: 2, stackable: true });
+    assert.equal(itemValue(sword, s), 16_000, "off: the stack's value");
+    assert.equal(getHighlighted(sword, NONE, s), 1);
+    assert.equal(itemValue(sword, aware), 8_000, "on: one of a non-stackable item");
+    assert.equal(getHighlighted(sword, NONE, aware), undefined, "so two don't reach the 10k tier");
+    assert.equal(itemValue(arrows, aware), 14_000, "a stackable stack still counts whole");
+    assert.equal(getHighlighted(arrows, NONE, aware), 1);
+    assert.equal(itemValue(item({ gePrice: 8_000, quantity: 2, stackable: true }), aware), 16_000, "noted items are stackable");
+    assert.equal(isHidden(sword, NONE, { ...aware, hideUnderValue: 10_000 }), true, "hiding judges one too");
+    assert.equal(isHidden(sword, NONE, { ...s, hideUnderValue: 10_000 }), false);
+
+    assert.equal(valueTierRank(item({ gePrice: 200_000 }), NONE, s), 2);
+    assert.equal(valueTierRank(sword, NONE, s), 1);
+    assert.equal(valueTierRank(sword, NONE, aware), 0);
+    assert.equal(valueTierRank(item({ gePrice: 200_000 }), HIGHLIGHTED, s), 2, "lists don't change the tier");
+    assert.equal(valueTierRank(item({ gePrice: 200_000 }), HIDDEN, s), -1, "hidden items rank lowest");
+    assert.deepEqual(orderByTier(["a", "b", "c", "d"], (x) => ({ a: 2, b: 0, c: 2, d: 1 })[x]!), ["b", "d", "a", "c"],
+        "lowest first (built first, so on the bottom); equal tiers keep their order");
+}
 
 // --- ItemList: thresholds, wildcards, quoted exact names; exact beats wildcard ----------------
 {

@@ -267,6 +267,28 @@ async function main(): Promise<void> {
     assert.equal(plugin.deprioritizeGroundItem(store.getAllStacks().find((s) => s.itemId === SCIM)!), false);
     set("deprioritizeHiddenItems", false);
 
+    // Value priority: a tile's stacks in menu-building order, the highest tier last (on top).
+    store.update({ kind: "delta", serial: 30, upserts: [
+        stack(SCIM, 1, 3220, 3220), stack(WHIP, 1, 3220, 3220), stack(BONES, 1, 3220, 3220), stack(SCIM, 1, 3220, 3220),
+    ], removes: [] } as any);
+    const tile = store.getStacksAt(3220, 3220, 0);
+    const ids = (stacks: { itemId: number }[]) => stacks.map((s) => s.itemId);
+    assert.equal(plugin.orderGroundItemStacks(tile), tile, "off by default: the game's order");
+    set("valuePriority", true);
+    const tierOf = (id: number) => (id === WHIP ? 3 : id === SCIM ? 1 : id === BONES ? -1 : 0);
+    const ordered = plugin.orderGroundItemStacks(tile);
+    assert.deepEqual(ids(ordered), ids(tile).slice().sort((a, b) => tierOf(a) - tierOf(b)),
+        "hidden Bones lowest, two scimitars (30k, low tier) next, the whip (high tier) on top");
+    assert.equal(ordered[ordered.length - 1].itemId, WHIP);
+    // Stackable-aware: one 15k scimitar is under the low tier, so the scimitars drop to no tier.
+    set("stackableAwareValue", true);
+    assert.equal(plugin.groundItemAt(3220, 3220, 0, SCIM)!.quantity, 2);
+    assert.deepEqual(ids(plugin.orderGroundItemStacks(tile)).slice(-1), [WHIP]);
+    assert.equal(plugin.evaluate(plugin.groundItemAt(3220, 3220, 0, WHIP)!).highlighted !== undefined, true);
+    set("stackableAwareValue", false);
+    set("valuePriority", false);
+    store.update({ kind: "delta", serial: 31, upserts: [], removes: tile.map((s: any) => s.id) } as any);
+
     // Collapse identical entries.
     const dup = [objMenu(BONES, "Take", 2, "Bones"), objMenu(BONES, "Take", 2, "Bones"), objMenu(SCIM, "Take", 2, "Rune scimitar")];
     assert.deepEqual(collapse(dup).map((e) => e.target), ["<col=ff9040>Bones x 2", "<col=ff9040>Rune scimitar"]);
