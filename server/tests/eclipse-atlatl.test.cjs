@@ -208,6 +208,15 @@ test("range is 6 or 8 on Longrange; Rapid is 3 ticks PvM, 4 PvP, or 3 PvP with t
   }
 });
 
+test("the Sanguine atlatl (50002) is 3 ticks on Rapid against NPCs and players, without the set", () => {
+  const p = player({ weapon: 50002 }), method = normalMethod(p);
+  p.style = FightType.SHORTBOW_RAPID;
+  for (const target of [npc(), player()]) {
+    const event = { attacker: p, target, combatType: CombatType.RANGED, speed: method.attackSpeed(p) };
+    hooks.onAttackSpeed.forEach(fn => fn(event)); assert.equal(event.speed, 3);
+  }
+});
+
 test("Ranger Void boosts damage; melee Void does not", () => {
   const p = player();
   p.items[E.BODY_SLOT] = new core.Item(I.VOID_KNIGHT_TOP);
