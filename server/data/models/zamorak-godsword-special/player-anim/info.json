@@ -32,5 +32,6 @@
   "framemaps": [
     0
   ],
-  "handItems": "removed: the animation keeps the player's own weapon and shield (the cache's sequence 7638 shows item 11808 in the right hand and empties the left)"
+  "leftHand": 0,
+  "rightHand": 12320
 }
