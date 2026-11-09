@@ -1,7 +1,7 @@
 import { strict as assert } from "node:assert";
 import { GameStateChanged, StatChanged } from "@runelite/api/events";
 import { GameState } from "@runelite/api/GameState";
-import { LevelUpCelebrationPlugin } from "../game/plugins/levelupcelebration/LevelUpCelebrationPlugin";
+import { LevelUpCelebrationPlugin, XP_SPRITE_POP_SOUNDS } from "../game/plugins/levelupcelebration/LevelUpCelebrationPlugin";
 import { skillName } from "../game/plugins/levelupcelebration/LevelUpCelebrationOverlay";
 import {
     CelebrationQueue,
@@ -133,11 +133,19 @@ assert.equal(skillName(SkillId.Runecraft), "Runecraft");
     assert.deepEqual(plugin.xpSpriteTarget(), { x: 660, y: 15 }, "to the counter's middle");
     widgets[(122 << 16) | 20] = { _absX: 700, _absY: 200, _absWidth: 40, _absHeight: 20 };
     assert.deepEqual(plugin.xpSpriteOrigin(), { x: 720, y: 210 }, "or the game's own drop while it shows");
+    const sounds: number[] = [];
+    let mostInOneTick = 0;
+    plugin.playSound = (id) => sounds.push(id);
     for (let i = 0; i < 200; i++) {
         now += 20;
+        const before = sounds.length;
         plugin.onClientTick();
+        mostInOneTick = Math.max(mostInOneTick, sounds.length - before);
     }
     assert.equal(plugin.xpSprites.length, 0, "all popped at the counter within four seconds");
+    assert.ok(sounds.length >= 6 && sounds.length <= 10, `a pop sound for (nearly) each sprite, got ${sounds.length}`);
+    assert.ok(mostInOneTick <= 3, "no more than three pops sound in one tick");
+    assert.ok(sounds.every((id) => (XP_SPRITE_POP_SOUNDS as readonly number[]).includes(id)), "only the pop sounds");
     delete widgets[(122 << 16) | 4];
     delete widgets[(122 << 16) | 17];
     delete widgets[(122 << 16) | 20];

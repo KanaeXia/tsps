@@ -28,6 +28,11 @@ import {
     xpSpriteCount,
 } from "./xpSprites";
 
+/** The pop sounds, one picked at random for each sprite that pops. */
+export const XP_SPRITE_POP_SOUNDS = [1134, 2214, 2215, 3499] as const;
+/** At most this many pops sound in one client tick, so a big burst arriving at once isn't a wall of noise. */
+const MAX_POP_SOUNDS_PER_TICK = 3;
+
 /**
  * The vanilla XP drops interface: its XP counter (the total, or a skill's), the area the drops
  * rise through (from its bottom), and the drops themselves.
@@ -70,6 +75,9 @@ export class LevelUpCelebrationPlugin extends Plugin {
     readonly queue = new CelebrationQueue();
     confetti: Confetti[] = [];
     readonly widgetOverlay: LevelUpCelebrationOverlay;
+    /** Plays a sound effect at the sound effects volume; overridable for tests. */
+    playSound: (soundId: number) => void = (soundId) =>
+        (this.osrsClient as any)?.soundEffectSystem?.playSoundEffect?.(soundId, {});
     /** Overridable clock, in milliseconds. */
     now: () => number = () => performance.now();
     /** The screen's width over its height, for where the right-hand corner is. */
@@ -138,6 +146,25 @@ export class LevelUpCelebrationPlugin extends Plugin {
         this.burstGains(now);
         if (this.xpSprites.length > 0) {
             this.xpSprites = stepXpSprites(this.xpSprites, now, dt, this.xpSpriteTarget(), this.hudScale);
+            this.soundPops(now);
+        }
+    }
+
+    /** Each sprite that popped this tick plays one of the pop sounds, picked at random. */
+    private soundPops(now: number): void {
+        let popped = 0;
+        for (const sprite of this.xpSprites) if (sprite.poppedAt === now) popped++;
+        popped = Math.min(popped, MAX_POP_SOUNDS_PER_TICK);
+        if (popped === 0) return;
+        this.seed = (this.seed + 0x9e3779b9) >>> 0;
+        const random = seededRandom(this.seed);
+        for (let i = 0; i < popped; i++) {
+            const sound = XP_SPRITE_POP_SOUNDS[Math.floor(random() * XP_SPRITE_POP_SOUNDS.length)];
+            try {
+                this.playSound(sound);
+            } catch {
+                // No audio (not started yet, or unavailable): the pop is just silent.
+            }
         }
     }
 
