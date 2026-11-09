@@ -1637,6 +1637,7 @@ export interface PluginCoreApi {
   Accounts: any;
   BoatManager: any;
   Sailing: any;
+  BoatMoveMode: typeof import("../game/content/sailing/Boat").BoatMoveMode;
   BOAT_VIEW_DISTANCE: number;
   GameObject: any;
   PrivateArea: any;
