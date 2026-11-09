@@ -23,6 +23,7 @@ const { Task } = require("../../src/main/typescript/elvarg/game/task/Task");
 const { PlayerSave } = require("../../src/main/typescript/elvarg/game/entity/impl/player/persistence/PlayerSave");
 const { DamageFormulas } = require("../../src/main/typescript/elvarg/game/content/combat/formula/DamageFormulas");
 const { ServerLogger } = require("../../src/main/typescript/elvarg/util/ServerLogger");
+const { PlayerDeathTask } = require("../../src/main/typescript/elvarg/game/task/impl/PlayerDeath");
 const {
   DefinitionLoader,
 } = require("../../src/main/typescript/elvarg/game/definition/loader/DefinitionLoader");
@@ -39,8 +40,10 @@ const {
   ShopManager,
 } = require("../../src/main/typescript/elvarg/game/model/container/shop/ShopManager");
 
-/** Read by Mobile.ts and PlayerDeath.ts: a developer with it set takes damage and loses items on death. */
+/** Read by Mobile.ts and PlayerDeath.ts: a developer with it set can die (and, without ::nodrop, loses items). */
 const MORTAL_DEVELOPER_ATTRIBUTE = "dev:mortal";
+/** Read by PlayerDeath.ts: true keeps everything on death, false drops as any player; unset follows ::mortal. */
+const NO_DROP_ATTRIBUTE = "dev:nodrop";
 
 const ATTACK_RANGE_DEBUG_GRAPHIC = new Graphic(332, 0);
 const MAX_NPC_COMMAND_SPAWNS = 20;
@@ -1036,15 +1039,26 @@ module.exports = {
       return true;
     }, PlayerRights.ADMINISTRATOR, "Teleport to coordinates");
 
-    // Developers take no damage; this turns it on (and off again) to test fights for real.
+    // Developers lose HP but never drop below 1; this lets them die (and back again) to test fights for real.
     api.registerCommand("mortal", ({ player }) => {
       const mortal = player.getAttribute(MORTAL_DEVELOPER_ATTRIBUTE) !== true;
       player.setAttribute(MORTAL_DEVELOPER_ATTRIBUTE, mortal ? true : null);
+      const keeps = PlayerDeathTask.keepsEverything(player);
       player.sendMessage(mortal
-        ? "You now take damage and lose items on death, like any player. ::mortal again to stop."
-        : "You no longer take damage, and keep everything on death.");
+        ? `You can now die, like any player${keeps ? ", but keep everything (::nodrop)" : ""}. ::mortal again to stop.`
+        : "Damage no longer takes you below 1 HP.");
       return true;
-    }, PlayerRights.DEVELOPER, "Toggle taking damage and losing items on death as a developer (this session)");
+    }, PlayerRights.DEVELOPER, "Toggle whether you can die, or only drop to 1 HP, as a developer (this session)");
+
+    // Whether a death keeps everything, separately from ::mortal.
+    api.registerCommand("nodrop", ({ player }) => {
+      const keeps = !PlayerDeathTask.keepsEverything(player);
+      player.setAttribute(NO_DROP_ATTRIBUTE, keeps);
+      player.sendMessage(keeps
+        ? "You now keep everything on death. ::nodrop again to stop."
+        : "You now drop items on death, like any player.");
+      return true;
+    }, PlayerRights.OWNER, "Toggle keeping everything on death (this session)");
 
     api.registerCommand("coords", ({ player }) => {
       const location = player.getLocation();

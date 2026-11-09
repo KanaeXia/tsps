@@ -1,5 +1,5 @@
 import { GameConstants } from "../../GameConstants";
-import { MORTAL_DEVELOPER_ATTRIBUTE } from "../../entity/impl/Mobile";
+import { MORTAL_DEVELOPER_ATTRIBUTE, NO_DROP_ATTRIBUTE } from "../../entity/impl/Mobile";
 import { CombatFactory } from "../../content/combat/CombatFactory";
 import { ItemOnGroundManager } from "../../entity/impl/grounditem/ItemOnGroundManager";
 import { Player } from "../../entity/impl/player/Player";
@@ -320,8 +320,13 @@ export class PlayerDeathTask extends Task {
         };
     }
 
-    /** Owners and developers keep everything, unless they made themselves mortal (::mortal). */
-    private static keepsEverything(player: Player): boolean {
+    /**
+     * Whether a death keeps everything: as ::nodrop last set it, or, before that, for owners and
+     * developers who have not made themselves mortal (::mortal).
+     */
+    public static keepsEverything(player: Player): boolean {
+        const noDrop = player.getAttribute(NO_DROP_ATTRIBUTE);
+        if (typeof noDrop === "boolean") return noDrop;
         const rights = player.getRights();
         return (rights === PlayerRights.OWNER || rights === PlayerRights.DEVELOPER)
             && player.getAttribute(MORTAL_DEVELOPER_ATTRIBUTE) !== true;

@@ -103,6 +103,43 @@ test('a hit leaves the developer dialogue exception intact', t => {
   assert.equal(f.p.getDialogueManager().getCurrent(), original);
 });
 
+test('a developer loses HP down to 1 but not below, unless mortal', t => {
+  const { PlayerRights } = require('../dist/game/model/rights/PlayerRights');
+  const { MORTAL_DEVELOPER_ATTRIBUTE } = require('../dist/game/entity/impl/Mobile');
+  const f = impactFixture(t);
+  f.p.setRights(PlayerRights.DEVELOPER);
+  f.hit(4);
+  assert.equal(f.p.getHitpoints(), 6, 'ordinary hits land');
+  const take = damage => f.p.decrementHealth(new HitDamage(damage, HitMask.RED));
+  assert.equal(take(20).getDamage(), 5, 'the hitsplat shows what was taken');
+  assert.equal(f.p.getHitpoints(), 1, 'a killing hit stops at 1 HP');
+  assert.equal(take(3).getDamage(), 0);
+  assert.equal(f.p.getHitpoints(), 1, 'at 1 HP nothing more is taken');
+  f.p.setAttribute(MORTAL_DEVELOPER_ATTRIBUTE, true);
+  take(3);
+  assert.equal(f.p.getHitpoints(), 0, '::mortal lets the hit kill');
+});
+
+test('::nodrop decides whether a death keeps everything, apart from ::mortal', t => {
+  const { PlayerRights } = require('../dist/game/model/rights/PlayerRights');
+  const { MORTAL_DEVELOPER_ATTRIBUTE, NO_DROP_ATTRIBUTE } = require('../dist/game/entity/impl/Mobile');
+  const { PlayerDeathTask } = require('../dist/game/task/impl/PlayerDeath');
+  const f = impactFixture(t);
+  assert.equal(PlayerDeathTask.keepsEverything(f.p), false, 'a player drops by default');
+  f.p.setAttribute(NO_DROP_ATTRIBUTE, true);
+  assert.equal(PlayerDeathTask.keepsEverything(f.p), true, '::nodrop keeps everything for anyone it is on');
+  f.p.setAttribute(NO_DROP_ATTRIBUTE, null);
+  f.p.setRights(PlayerRights.DEVELOPER);
+  assert.equal(PlayerDeathTask.keepsEverything(f.p), true, 'a developer keeps everything by default');
+  f.p.setAttribute(MORTAL_DEVELOPER_ATTRIBUTE, true);
+  assert.equal(PlayerDeathTask.keepsEverything(f.p), false, 'a mortal developer drops by default');
+  f.p.setAttribute(NO_DROP_ATTRIBUTE, true);
+  assert.equal(PlayerDeathTask.keepsEverything(f.p), true, '::nodrop keeps everything while mortal');
+  f.p.setAttribute(MORTAL_DEVELOPER_ATTRIBUTE, null);
+  f.p.setAttribute(NO_DROP_ATTRIBUTE, false);
+  assert.equal(PlayerDeathTask.keepsEverything(f.p), false, '::nodrop off drops even when not mortal');
+});
+
 for (const status of ['TRADING', 'DUELING']) {
   test(`a hit still removes interfaces while ${status.toLowerCase()}`, t => {
     const { PlayerStatus } = require('../dist/game/model/PlayerStatus');

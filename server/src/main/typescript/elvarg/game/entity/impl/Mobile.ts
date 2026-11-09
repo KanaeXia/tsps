@@ -51,8 +51,13 @@ class MobileTask extends Task {
 }
 
 /** An actor tint: cycles from now, HSL (-1 keeps the model's own) and how strongly (0-255). */
-/** Set (true) on a developer who takes damage and loses items on death after all; ::mortal toggles it. Not saved. */
+/** Set (true) on a developer who can die after all; ::mortal toggles it. Not saved. */
 export const MORTAL_DEVELOPER_ATTRIBUTE = "dev:mortal";
+/**
+ * Whether an owner or developer keeps everything on death; ::nodrop toggles it. Unset, they keep
+ * everything unless they made themselves mortal (::mortal). Not saved.
+ */
+export const NO_DROP_ATTRIBUTE = "dev:nodrop";
 
 export type ActorTint = {
     startCycle: number;
@@ -735,7 +740,7 @@ export abstract class Mobile extends Entity {
         // ordinary combat impacts. Plugins mutate the HitDamage before the HP cap.
         getPluginManager().emitCustomEvent("combat:damage-apply", { target: this, hit });
         const PlayerRights = getPlayerRights();
-        // Developers take no damage unless they turned it on (::mortal, for this session).
+        // Developers lose HP but never below 1, unless they turned that off (::mortal, for this session).
         const protectedDeveloper =
           this.isPlayer() &&
           this.getAsPlayer()?.getRights?.() === PlayerRights.DEVELOPER &&
@@ -746,9 +751,8 @@ export abstract class Mobile extends Entity {
             hit.setDamage(Math.max(1, Math.ceil(this.getHitpoints())));
         if (hit.getDamage() < 0)
             hit.setDamage(0);
-        if (protectedDeveloper) {
-            return hit;
-        }
+        if (protectedDeveloper && hit.getDamage() >= this.getHitpoints())
+            hit.setDamage(Math.max(0, Math.ceil(this.getHitpoints()) - 1));
         let outcome = this.getHitpoints() - hit.getDamage();
         if (outcome < 0)
             outcome = 0;
