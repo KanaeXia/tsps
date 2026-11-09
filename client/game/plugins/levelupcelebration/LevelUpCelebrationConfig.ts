@@ -70,6 +70,13 @@ export const LevelUpCelebrationConfig = ConfigGroup(
             default: 100,
             range: { min: 10, max: 300 },
         }),
+        xpSpritePopSounds: ConfigItem({
+            name: "Pop sounds",
+            description: "Each XP sprite plays a popping sound as it pops at the XP counter.",
+            position: 8,
+            section: XP_SPRITES,
+            default: true,
+        }),
     },
     {
         sections: {

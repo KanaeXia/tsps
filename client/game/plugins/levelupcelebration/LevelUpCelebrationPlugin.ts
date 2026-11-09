@@ -29,7 +29,7 @@ import {
 } from "./xpSprites";
 
 /** The pop sounds, one picked at random for each sprite that pops. */
-export const XP_SPRITE_POP_SOUNDS = [1134, 2214, 2215, 3499] as const;
+export const XP_SPRITE_POP_SOUNDS = [1134, 2214, 2215] as const;
 /** At most this many pops sound in one client tick, so a big burst arriving at once isn't a wall of noise. */
 const MAX_POP_SOUNDS_PER_TICK = 3;
 
@@ -155,7 +155,7 @@ export class LevelUpCelebrationPlugin extends Plugin {
         let popped = 0;
         for (const sprite of this.xpSprites) if (sprite.poppedAt === now) popped++;
         popped = Math.min(popped, MAX_POP_SOUNDS_PER_TICK);
-        if (popped === 0) return;
+        if (popped === 0 || this.config.xpSpritePopSounds() === false) return;
         this.seed = (this.seed + 0x9e3779b9) >>> 0;
         const random = seededRandom(this.seed);
         for (let i = 0; i < popped; i++) {

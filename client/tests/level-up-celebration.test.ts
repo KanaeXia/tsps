@@ -146,6 +146,16 @@ assert.equal(skillName(SkillId.Runecraft), "Runecraft");
     assert.ok(sounds.length >= 6 && sounds.length <= 10, `a pop sound for (nearly) each sprite, got ${sounds.length}`);
     assert.ok(mostInOneTick <= 3, "no more than three pops sound in one tick");
     assert.ok(sounds.every((id) => (XP_SPRITE_POP_SOUNDS as readonly number[]).includes(id)), "only the pop sounds");
+    assert.ok(!sounds.includes(3499), "3499 is not a pop sound");
+    plugin.config.xpSpritePopSounds = () => false;
+    sounds.length = 0;
+    xpStat(SkillId.Woodcutting, 100_150);
+    for (let i = 0; i < 200; i++) {
+        now += 20;
+        plugin.onClientTick();
+    }
+    assert.equal(plugin.xpSprites.length, 0, "sprites still fly and pop with the sounds off");
+    assert.equal(sounds.length, 0, "pop sounds off: silent");
     delete widgets[(122 << 16) | 4];
     delete widgets[(122 << 16) | 17];
     delete widgets[(122 << 16) | 20];
