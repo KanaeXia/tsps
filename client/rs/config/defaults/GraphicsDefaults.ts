@@ -80,6 +80,7 @@ export class GraphicsDefaults extends Type {
             case 2:
             // Rev 241 sends the sprites as opcode 6, with a twelfth (unnamed) sprite at the end
             // (zwyz/osrs-cache GraphicsDefaultsUnpacker).
+            // falls through
             case 6:
                 this.compass = buffer.readBigSmart();
                 this.mapEdge = buffer.readBigSmart();

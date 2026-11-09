@@ -109,6 +109,14 @@
       },
       {
         "files": [
+          "**/*.{ts,tsx}"
+        ],
+        "rules": {
+          "@typescript-eslint/no-redeclare": "off"
+        }
+      },
+      {
+        "files": [
           "common/utils/*.js"
         ],
         "rules": {

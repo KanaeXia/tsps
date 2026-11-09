@@ -2,7 +2,7 @@ import type { BasTypeLoader } from "../../rs/config/bastype/BasTypeLoader";
 import type { IdkTypeLoader } from "../../rs/config/idktype/IdkTypeLoader";
 import type { ObjTypeLoader } from "../../rs/config/objtype/ObjTypeLoader";
 import { PlayerAppearance } from "../../rs/config/player/PlayerAppearance";
-import { PLAYER_BODY_RECOLOR_TO_1, stepSkinColour } from "../../rs/config/player/PlayerDesignColors";
+import { PLAYER_BODY_RECOLOR_TO_1 } from "../../rs/config/player/PlayerDesignColors";
 import type { SeqTypeLoader } from "../../rs/config/seqtype/SeqTypeLoader";
 import type { VarManager } from "../../rs/config/vartype/VarManager";
 import type { ModelLoader } from "../../rs/model/ModelLoader";
@@ -12,9 +12,6 @@ import type { TextureLoader } from "../../rs/texture/TextureLoader";
 import type { WidgetManager } from "../../widgets/WidgetManager";
 import { sendPlayerDesignConfirm } from "../../network/ServerConnection";
 import type { PlayerEcs } from "../ecs/PlayerEcs";
-
-/** The skin row of the designer's five colour rows. */
-const SKIN_COLOUR_ROW = 4;
 
 export type PlayerDesignControllerDeps = {
     getIdkTypeLoader: () => IdkTypeLoader | undefined;

@@ -171,6 +171,8 @@ export class LoginState {
             if (!response.ok) return;
             const metadata = await response.json();
             const name = transport === "webrtc" ? metadata?.worlds?.find((world: any) => world.worldId === worldId)?.name : metadata?.name;
+            // Control characters are exactly what this rejects.
+            // eslint-disable-next-line no-control-regex
             if (typeof name !== "string" || !name.trim() || name.trim().length > 64 || /[\x00-\x1f\x7f<>]/.test(name)) return;
             // A slow response must not rename a different world selected in the meantime.
             if (this.serverAddress !== address || this.serverSecure !== secure || this.serverTransport !== transport

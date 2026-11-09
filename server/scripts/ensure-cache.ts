@@ -200,8 +200,13 @@ function writeCachesJson(directory: string, target: string, entry: OpenRS2CacheE
         size: entry.size ?? 0,
     };
 
+    const contents = JSON.stringify([cacheEntry]);
+    // Left alone when unchanged: `yarn start` runs this beside the server's nodemon, and a rewrite restarts it.
+    try {
+        if (fs.readFileSync(cachesJsonPath, "utf8") === contents) return;
+    } catch {}
     const temporary = `${cachesJsonPath}.${process.pid}.tmp`;
-    fs.writeFileSync(temporary, JSON.stringify([cacheEntry]), "utf8");
+    fs.writeFileSync(temporary, contents, "utf8");
     fs.renameSync(temporary, cachesJsonPath);
 }
 

@@ -283,8 +283,10 @@ function escapeJagex(text: string): string {
  * shows the text as it is, and the chat line the Notifier writes adds its own colour.
  */
 function unescapeJagex(text: string): string {
+    // \u0000 and \u0001 hold the escaped brackets while the tags are stripped.
     return text.replace(/<lt>/g, "\u0000").replace(/<gt>/g, "\u0001")
         .replace(/<[^>]*>/g, "")
+        // eslint-disable-next-line no-control-regex
         .replace(/\u0000/g, "<").replace(/\u0001/g, ">");
 }
 

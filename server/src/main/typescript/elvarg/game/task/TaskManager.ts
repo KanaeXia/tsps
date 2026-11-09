@@ -14,12 +14,19 @@ export class TaskManager {
     private static readonly SLOW_TASK_LOG_COOLDOWN_MS = 3000;
     private static readonly SLOW_TASK_WARN_ENABLED = (process.env.TASK_SLOW_WARN_ENABLED ?? "1") !== "0";
     private static lastSlowTaskLogAtByName = new Map<string, number>();
+    /**
+     * The first ticks after a start are slow once (cold code, the first region loads, every bot's
+     * first decisions): for this long they go to the freeze log only, not the console.
+     */
+    private static readonly SLOW_TASK_WARMUP_MS = 90_000;
+    private static firstProcessAt = 0;
     
     private constructor() {
         throw new Error("This class cannot be instantiated!");
     }
     
     public static process(): void {
+        if (TaskManager.firstProcessAt === 0) TaskManager.firstProcessAt = Date.now();
         try {
             TaskManager.tasksProcessedThisCycle = [];
             let t: Task;
@@ -41,7 +48,8 @@ export class TaskManager {
                     TaskManager.activeTasks[writeIndex++] = t;
                     continue;
                 }
-                const taskName = t?.constructor?.name ?? "UnknownTask";
+                // An anonymous task class (most plugin tasks) has no name: report its plugin instead.
+                const taskName = t?.constructor?.name || (t?.pluginName ? `${t.pluginName}:task` : "AnonymousTask");
                 const startedAt = Date.now();
                 const previousPlugin = PluginContext.enter(t.pluginName);
                 let keepRunning: boolean;
@@ -214,6 +222,9 @@ export class TaskManager {
             activeTasks: TaskManager.activeTasks.length,
             pendingTasks: TaskManager.pendingTasks.length,
         });
+        if (nowMs - TaskManager.firstProcessAt < TaskManager.SLOW_TASK_WARMUP_MS) {
+            return;
+        }
         console.warn(
             `[task] slow_task_tick task=${taskName} durationMs=${durationMs} ` +
             `active=${TaskManager.activeTasks.length} pending=${TaskManager.pendingTasks.length}`

@@ -174,7 +174,7 @@ export function formatFieldValue(value: unknown): string {
 export function parseFieldValue(field: CacheField, raw: string): unknown {
     const text = raw.trim();
     const parse = (type: string, value: unknown): boolean => {
-        if (type.endsWith("[]")) return Array.isArray(value) && value.every(entry => entry === null && field.name === "actions" || parse(type.slice(0, -2), entry));
+        if (type.endsWith("[]")) return Array.isArray(value) && value.every(entry => (entry === null && field.name === "actions") || parse(type.slice(0, -2), entry));
         if (type === "int") return typeof value === "number" && Number.isInteger(value);
         if (type === "number") return typeof value === "number" && Number.isFinite(value);
         if (type === "map") return value !== null && typeof value === "object" && !Array.isArray(value);

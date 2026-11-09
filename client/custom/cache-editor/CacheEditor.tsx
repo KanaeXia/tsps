@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchContent, getContentApiBase } from "../../network/serverConnection/contentApi";
 import type { OsrsClient } from "../../game/OsrsClient";
-import { createPreviewRenderer, previewSpec, sequenceFrameCount, shapeLabel, type PreviewRenderer } from "./CacheEditorPreview";
+import { createPreviewRenderer, previewSpec, sequenceFrameCount, type PreviewRenderer } from "./CacheEditorPreview";
 import { LocModelType } from "../../rs/config/loctype/LocModelType";
 import {
     type AssetKind, type AssetListing, type AssetRow,
     type CacheDefinition, type CacheField, type CacheKind, type CacheLink,
-    formatFieldValue, parseFieldValue, initialOverrides, assetFor, assetsPath, authoringBase, draftProblems, fieldsPath, inspectPath, kindsPath, labelRef, linksByField,
+    formatFieldValue, parseFieldValue, initialOverrides, assetsPath, authoringBase, draftProblems, fieldsPath, inspectPath, kindsPath, labelRef, linksByField,
 } from "./CacheEditorModel";
 
 /**
@@ -46,6 +46,9 @@ const styles = {
     tone: (state: string) => ({ color: state === "known" ? "#8fd18f" : state === "missing" ? "#e08a8a" : "#c9b06a" }) as const,
     footer: { borderTop: "1px solid #262a33", padding: 8, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" as const },
 };
+
+/** A button that looks like the inline links it replaces (an <a> without an href is not focusable). */
+const linkButton = { background: "none", border: "none", padding: 0, font: "inherit", cursor: "pointer", textAlign: "left" } as const;
 
 const label = (value: unknown) => (typeof value === "object" && value !== null ? JSON.stringify(value) : String(value));
 
@@ -588,9 +591,9 @@ export function CacheEditor({ client }: { client?: OsrsClient }) {
                                         <td style={styles.cell}>
                                             {group.entries.map((entry: CacheLink) => (
                                                 <div key={`${entry.kind}:${entry.id}`}>
-                                                    <a style={{ ...styles.tone(entry.exists), cursor: "pointer" }} onClick={() => void inspect(entry.kind, entry.id)}>
+                                                    <button type="button" style={{ ...linkButton, ...styles.tone(entry.exists) }} onClick={() => void inspect(entry.kind, entry.id)}>
                                                         {entry.kind} {entry.id}
-                                                    </a>{" "}
+                                                    </button>{" "}
                                                     <span style={{ color: "#9aa3b2" }}>{labelRef(entry.kind, entry.id, entry.name) === `${entry.kind} ${entry.id}` ? "" : entry.name ?? ""}</span>{" "}
                                                     <span style={styles.tone(entry.exists)}>{entry.exists}</span>
                                                     {entry.note ? <div style={{ color: "#6f7788" }}>{entry.note}</div> : null}
@@ -624,9 +627,9 @@ export function CacheEditor({ client }: { client?: OsrsClient }) {
                                 {shown.transforms.gatedBy ? (
                                     <p>
                                         gated by{" "}
-                                        <a style={{ cursor: "pointer", color: "#8ab4f8" }} onClick={() => void inspect(shown.transforms!.gatedBy!.kind, shown.transforms!.gatedBy!.id)}>
+                                        <button type="button" style={{ ...linkButton, color: "#8ab4f8" }} onClick={() => void inspect(shown.transforms!.gatedBy!.kind, shown.transforms!.gatedBy!.id)}>
                                             {shown.transforms.gatedBy.kind} {shown.transforms.gatedBy.id}
-                                        </a>{" "}
+                                        </button>{" "}
                                         {shown.transforms.gatedBy.name ?? ""}
                                     </p>
                                 ) : null}
@@ -635,7 +638,7 @@ export function CacheEditor({ client }: { client?: OsrsClient }) {
                                         {shown.transforms.children.map((child) => (
                                             <tr key={child.id}>
                                                 <td style={styles.cell}>
-                                                    <a style={{ cursor: "pointer", color: "#8ab4f8" }} onClick={() => void inspect(shown.kind, child.id)}>{child.id}</a>
+                                                    <button type="button" style={{ ...linkButton, color: "#8ab4f8" }} onClick={() => void inspect(shown.kind, child.id)}>{child.id}</button>
                                                 </td>
                                                 <td style={styles.cell}>{child.name ?? ""}</td>
                                                 <td style={styles.cell}>{child.fallback ? "fallback" : ""}</td>

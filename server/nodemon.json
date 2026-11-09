@@ -2,6 +2,7 @@
   "env": { "TSPS_RESTARTER": "nodemon" },
   "ignore": [
     "data/saves/**",
+    "caches/**",
     "plugins/world/data/**",
     "plugins/bots/data/**",
     "data/npc-spawns*.json",
