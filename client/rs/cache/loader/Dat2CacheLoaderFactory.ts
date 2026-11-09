@@ -7,8 +7,6 @@ import { LocType } from "../../config/loctype/LocType";
 import { NpcType } from "../../config/npctype/NpcType";
 import { ObjType } from "../../config/objtype/ObjType";
 import { SeqType } from "../../config/seqtype/SeqType";
-import { SpotAnimType } from "../../config/spotanimtype/SpotAnimType";
-import { CustomAnimationRegistry, withCustomTypes } from "../../../custom/animations/CustomAnimationRegistry";
 import {
     ArchiveBasTypeLoader,
     BasTypeLoader,
@@ -276,9 +274,7 @@ export class Dat2CacheLoaderFactory implements CacheLoaderFactory {
     getSeqTypeLoader(): SeqTypeLoader {
         if (this.seqTypeLoader) return this.seqTypeLoader;
         if (this.cacheInfo.game === "oldschool") {
-            // Custom animations (CustomAnimationRegistry) answer their ids first.
-            return this.seqTypeLoader = withCustomTypes(this.getArchivedLoaders().seq, SeqType, this.cacheInfo,
-                id => CustomAnimationRegistry.seq(id));
+            return this.seqTypeLoader = this.getArchivedLoaders().seq;
         }
         if (this.isIndexConfigs()) {
             const seqIndex = this.cacheSystem.getIndex(IndexType.RS2.seqs);
@@ -301,12 +297,9 @@ export class Dat2CacheLoaderFactory implements CacheLoaderFactory {
         } else {
             const configIndex = this.cacheSystem.getIndex(IndexType.DAT2.configs);
             const spotArchive = configIndex.getArchive(ConfigType.DAT2.spotAnims);
-            // Custom graphics (CustomAnimationRegistry) answer their ids first.
-            return (this.spotAnimTypeLoader = withCustomTypes(
-                new ArchiveSpotAnimTypeLoader(this.cacheInfo, spotArchive),
-                SpotAnimType,
+            return (this.spotAnimTypeLoader = new ArchiveSpotAnimTypeLoader(
                 this.cacheInfo,
-                id => CustomAnimationRegistry.spotanim(id),
+                spotArchive,
             ));
         }
     }
