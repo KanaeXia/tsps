@@ -372,4 +372,30 @@ export class CustomXpDropsPlugin extends Plugin {
     openSettings(): void {
         openConfiguration(CustomXpDropsPlugin);
     }
+
+    /**
+     * Where a new XP drop appears now (canvas pixels), for effects that start there: over the
+     * player or their target when the drops are attached, else in the drop box. Undefined while
+     * this plugin's drops are off or hidden.
+     */
+    dropOrigin(): { x: number; y: number } | undefined {
+        if (!this.isStarted() || !this.isLoggedIn() || !this.shouldDraw()) return undefined;
+        const c = this.config;
+        if (c.useCustomizableXpDrops() !== true) return undefined;
+        if (c.attachToPlayer() === true || c.attachToTarget() === true) {
+            // As a drop: over its target while there is one, else over the player.
+            const target = c.attachToTarget() === true ? this.currentTarget() : undefined;
+            const point = this.dropOverlay.actorPoint(target);
+            if (!point) return undefined;
+            // Up is positive for the offset, as the drops have it.
+            return { x: point[0] + (Number(c.attachToOffsetX()) || 0), y: point[1] - (Number(c.attachToOffsetY()) || 0) };
+        }
+        return this.dropOverlay.lastDropStart;
+    }
+
+    /** The middle of this plugin's XP tracker (canvas pixels), while it is drawn. */
+    trackerPoint(): { x: number; y: number } | undefined {
+        if (!this.isStarted() || this.config.useXpTracker() !== true) return undefined;
+        return this.trackerOverlay.lastCenter;
+    }
 }

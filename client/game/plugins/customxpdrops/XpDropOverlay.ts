@@ -41,6 +41,12 @@ export class XpDropOverlay implements WidgetOverlay {
         return this.attached() ? undefined : { name: "CustomizableXpDropOverlay", position: OverlayPosition.TOP_RIGHT };
     }
 
+    /**
+     * Where a new drop starts in the box drawn last frame (canvas pixels): the corner its
+     * direction settings start it from. Unset while the drops are attached or not drawn.
+     */
+    lastDropStart?: { x: number; y: number };
+
     constructor(private readonly plugin: CustomXpDropsPlugin) {}
 
     get drawBelowWidgets(): boolean {
@@ -77,6 +83,7 @@ export class XpDropOverlay implements WidgetOverlay {
     }
 
     draw(context: WidgetOverlayDrawContext): Rect[] {
+        this.lastDropStart = undefined;
         if (!this.active()) return [];
         return this.attached() ? this.drawAttached(context) : this.drawBox(context);
     }
@@ -103,6 +110,12 @@ export class XpDropOverlay implements WidgetOverlay {
         const down = c.yDirection() === VerticalDirection.DOWN;
         const X = (u: number) => at.x + u * at.scaleX;
         const Y = (u: number) => at.y + u * at.scaleY;
+        // A new drop's middle: across the box where its text starts, at the edge it moves away from.
+        const textHalf = measure.width("1,000") / 2;
+        this.lastDropStart = {
+            x: X(centered ? totalWidth / 2 : right ? textHalf : totalWidth - textHalf),
+            y: Y(down ? measure.height / 2 : totalHeight - measure.height / 2),
+        };
 
         for (const drop of plugin.state.inFlight) {
             if (drop.frame < 0) continue;
@@ -175,6 +188,16 @@ export class XpDropOverlay implements WidgetOverlay {
      * local player's, or the target's while it is in the scene (else none, as the plugin skips it).
      */
     private actorTextPoint(pen: Pen, target: TargetActor | undefined): readonly [number, number] | undefined {
+        const p = this.actorPoint(target);
+        if (!p) return undefined;
+        return [p[0] - pen.width("x") / 2, p[1] - pen.height / 2 + pen.ascent];
+    }
+
+    /**
+     * Where an attached drop is centred (canvas pixels): over the target while it is in the
+     * scene, else over the local player; the attach offsets are not applied.
+     */
+    actorPoint(target: TargetActor | undefined): readonly [number, number] | undefined {
         const client: any = this.plugin.getClient();
         const scene = client.sceneGeometry;
         if (!scene) return undefined;
@@ -199,7 +222,6 @@ export class XpDropOverlay implements WidgetOverlay {
         }
         const z = Math.min(Number(height) || 0, MAX_TEXT_HEIGHT) / 128;
         const p = scene.worldToScreen(x, scene.tileHeight(x, y, plane) - z, y);
-        if (!p) return undefined;
-        return [p[0] - pen.width("x") / 2, p[1] - pen.height / 2 + pen.ascent];
+        return p ? [p[0], p[1]] : undefined;
     }
 }

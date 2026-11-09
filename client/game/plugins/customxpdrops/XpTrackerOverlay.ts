@@ -23,6 +23,9 @@ function rgba(argb: number, alpha: number): Rgba {
 export class XpTrackerOverlay implements WidgetOverlay {
     readonly movable = { name: "CustomizableXpTrackerOverlay", position: OverlayPosition.TOP_RIGHT };
 
+    /** The middle of the tracker as drawn last frame (canvas pixels); unset while it isn't drawn. */
+    lastCenter?: { x: number; y: number };
+
     constructor(private readonly plugin: CustomXpDropsPlugin) {}
 
     menuEntries(): OverlayMenuEntry[] {
@@ -54,6 +57,7 @@ export class XpTrackerOverlay implements WidgetOverlay {
     }
 
     draw(context: WidgetOverlayDrawContext): Rect[] {
+        this.lastCenter = undefined;
         if (!this.active()) return [];
         const plugin = this.plugin;
         const c = plugin.config;
@@ -73,6 +77,7 @@ export class XpTrackerOverlay implements WidgetOverlay {
         if (!at) return [];
         const rects: Rect[] = [{ x: at.x, y: at.y, w: width * at.scaleX, h: height * at.scaleY }];
         if (!plugin.shouldDraw()) return rects;
+        this.lastCenter = { x: at.x + (width * at.scaleX) / 2, y: at.y + (lineHeight * at.scaleY) / 2 };
 
         const pen = new Pen(context, c.xpTrackerFontType() as FontType, at.scaleX);
         const alpha = this.alpha();

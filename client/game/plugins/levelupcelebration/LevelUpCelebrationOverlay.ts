@@ -5,6 +5,7 @@ import { drawTextGL } from "../../../widgets/components/TextRenderer";
 import type { WidgetOverlay, WidgetOverlayDrawContext } from "../ClientPluginManager";
 import type { LevelUpCelebrationPlugin } from "./LevelUpCelebrationPlugin";
 import { celebrationFrame, confettiCorners } from "./levelUpCelebration";
+import { POP_MS, type XpSprite } from "./xpSprites";
 
 type Rect = { x: number; y: number; w: number; h: number };
 
@@ -23,6 +24,14 @@ const RAYS_TURN = 0.12;
 const RAYS_COUNT = 18;
 const RAYS_TEXTURE_SIZE = 512;
 const RAYS_TEXTURE_KEY = "levelupcelebration:rays";
+const BUBBLE_TEXTURE_SIZE = 64;
+const BUBBLE_TEXTURE_KEY = "levelupcelebration:bubble";
+/** An XP sprite's size against the skill icon's own, and how fast it fades in. */
+const XP_SPRITE_SCALE = 0.9;
+const XP_SPRITE_FADE_IN_MS = 90;
+/** The bubble's size against the sprite's, as it pops (from, to). */
+const BUBBLE_FROM = 0.7;
+const BUBBLE_TO = 2.1;
 
 /** The skill's name as the game spells it. */
 export function skillName(skill: number): string {
@@ -71,6 +80,33 @@ function raysCanvas(): HTMLCanvasElement | undefined {
     return canvas;
 }
 
+/** A soap bubble: a clear middle, a pale blue rim and a white glint, drawn once to a canvas. */
+function bubbleCanvas(): HTMLCanvasElement | undefined {
+    if (typeof document === "undefined") return undefined;
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = BUBBLE_TEXTURE_SIZE;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return undefined;
+    const r = BUBBLE_TEXTURE_SIZE / 2;
+    const body = ctx.createRadialGradient(r, r, 0, r, r, r - 1);
+    body.addColorStop(0, "rgba(200,235,255,0.05)");
+    body.addColorStop(0.72, "rgba(180,225,255,0.18)");
+    body.addColorStop(0.9, "rgba(225,245,255,0.85)");
+    body.addColorStop(1, "rgba(225,245,255,0)");
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.arc(r, r, r - 1, 0, Math.PI * 2);
+    ctx.fill();
+    const glint = ctx.createRadialGradient(r * 0.62, r * 0.58, 0, r * 0.62, r * 0.58, r * 0.28);
+    glint.addColorStop(0, "rgba(255,255,255,0.9)");
+    glint.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = glint;
+    ctx.beginPath();
+    ctx.arc(r * 0.62, r * 0.58, r * 0.28, 0, Math.PI * 2);
+    ctx.fill();
+    return canvas;
+}
+
 function rgba(color: number, alpha: number): [number, number, number, number] {
     return [((color >> 16) & 0xff) / 255, ((color >> 8) & 0xff) / 255, (color & 0xff) / 255, alpha];
 }
@@ -85,7 +121,8 @@ export class LevelUpCelebrationOverlay implements WidgetOverlay {
 
     private active(): boolean {
         const p = this.plugin;
-        return p.isStarted() && p.isLoggedIn() && (p.queue.current !== undefined || p.confetti.length > 0);
+        return p.isStarted() && p.isLoggedIn() &&
+            (p.queue.current !== undefined || p.confetti.length > 0 || p.xpSprites.length > 0);
     }
 
     signature(): string {
@@ -111,6 +148,7 @@ export class LevelUpCelebrationOverlay implements WidgetOverlay {
         const height = Number(renderer?.canvas?.height) || 0;
         if (!(width > 0 && height > 0)) return [];
         const plugin = this.plugin;
+        plugin.hudScale = context.overlayTextScale?.().y ?? 1;
         const current = plugin.queue.current;
         if (current) {
             const elapsed = plugin.now() - current.start;
@@ -122,7 +160,46 @@ export class LevelUpCelebrationOverlay implements WidgetOverlay {
             if (plugin.config.showPopup() !== false) this.drawPopup(context, cx, cy, current.levelUp.skill, current.levelUp.level, frame);
         }
         this.drawConfetti(context, height);
+        this.drawXpSprites(context);
         return [{ x: 0, y: 0, w: width, h: height }];
+    }
+
+    /** Each XP sprite: its skill's icon, then a bubble that swells and fades where it popped. */
+    private drawXpSprites(context: WidgetOverlayDrawContext): void {
+        const sprites = this.plugin.xpSprites;
+        if (sprites.length === 0) return;
+        const renderer: any = context.renderer;
+        const now = this.plugin.now();
+        const scale = XP_SPRITE_SCALE * this.plugin.hudScale;
+        let bubble = renderer.getTexture?.(BUBBLE_TEXTURE_KEY);
+        if (!bubble) {
+            const canvas = bubbleCanvas();
+            bubble = canvas ? renderer.createTextureFromCanvas?.(BUBBLE_TEXTURE_KEY, canvas) : undefined;
+        }
+        for (const sprite of sprites) {
+            const icon = context.sprite(skillIconSprite(sprite.skill));
+            if (!icon) continue;
+            const w = icon.w * scale;
+            const h = icon.h * scale;
+            if (sprite.poppedAt === undefined) {
+                const alpha = Math.min(1, (now - sprite.born) / XP_SPRITE_FADE_IN_MS);
+                this.drawIcon(renderer, icon, sprite, w, h, alpha);
+                continue;
+            }
+            const t = Math.min(1, (now - sprite.poppedAt) / POP_MS);
+            // The icon is gone in the first third of the pop; the bubble swells as it fades.
+            if (t < 1 / 3) this.drawIcon(renderer, icon, sprite, w * (1 - t), h * (1 - t), 1 - t * 3);
+            if (bubble?.tex) {
+                const size = Math.max(w, h) * (BUBBLE_FROM + (BUBBLE_TO - BUBBLE_FROM) * (1 - (1 - t) * (1 - t)));
+                renderer.drawTexture(bubble, sprite.x - size / 2, sprite.y - size / 2, size, size,
+                    1, 1, 0, [0, 0, 0], false, false, 1 - t);
+            }
+        }
+    }
+
+    private drawIcon(renderer: any, icon: { w: number; h: number }, sprite: XpSprite, w: number, h: number, alpha: number): void {
+        if (!(alpha > 0)) return;
+        renderer.drawTexture(icon, sprite.x - w / 2, sprite.y - h / 2, w, h, 1, 1, 0, [0, 0, 0], false, false, alpha);
     }
 
     private drawRays(context: WidgetOverlayDrawContext, cx: number, cy: number, view: Rect, elapsed: number, alpha: number): void {

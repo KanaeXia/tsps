@@ -106,4 +106,47 @@ assert.equal(skillName(SkillId.Runecraft), "Runecraft");
     assert.equal(plugin.queue.current, undefined, "and the next login's values only record");
 }
 
+// --- XP sprites in the plugin: from the game's own XP drop to its XP counter --------------------
+{
+    assert.equal(LevelUpCelebrationPlugin.descriptor.name, "XP Fun Effects");
+    const widgets: Record<number, any> = {
+        [(122 << 16) | 4]: { _absX: 600, _absY: 0, _absWidth: 120, _absHeight: 30 },
+        [(122 << 16) | 17]: { _absX: 4, _absY: 30, _absWidth: 740, _absHeight: 240 },
+    };
+    const client: any = {
+        gameState: 30,
+        renderer: { canvas: { width: 1600, height: 900 } },
+        widgetManager: { getWidgetByUid: (uid: number) => widgets[uid], isEffectivelyHidden: () => false },
+    };
+    const plugin = new LevelUpCelebrationPlugin(client);
+    let now = 0;
+    plugin.now = () => now;
+    const xpStat = (skill: SkillId, xp: number) => plugin.onStatChanged(new StatChanged(skill, xp, 50, 50));
+    xpStat(SkillId.Woodcutting, 100_000);
+    plugin.onClientTick();
+    assert.equal(plugin.xpSprites.length, 0, "the login snapshot makes no sprites");
+    xpStat(SkillId.Woodcutting, 100_100);
+    plugin.onClientTick();
+    assert.equal(plugin.xpSprites.length, 10, "100 XP: ten sprites");
+    assert.ok(plugin.xpSprites.every((s) => s.skill === SkillId.Woodcutting));
+    assert.deepEqual(plugin.xpSpriteOrigin(), { x: 660, y: 260 }, "from the bottom of the drop area, under the counter");
+    assert.deepEqual(plugin.xpSpriteTarget(), { x: 660, y: 15 }, "to the counter's middle");
+    widgets[(122 << 16) | 20] = { _absX: 700, _absY: 200, _absWidth: 40, _absHeight: 20 };
+    assert.deepEqual(plugin.xpSpriteOrigin(), { x: 720, y: 210 }, "or the game's own drop while it shows");
+    for (let i = 0; i < 200; i++) {
+        now += 20;
+        plugin.onClientTick();
+    }
+    assert.equal(plugin.xpSprites.length, 0, "all popped at the counter within four seconds");
+    delete widgets[(122 << 16) | 4];
+    delete widgets[(122 << 16) | 17];
+    delete widgets[(122 << 16) | 20];
+    const fallback = plugin.xpSpriteTarget();
+    assert.ok(fallback.x > 1200 && fallback.y < 40, "the top right of the view without the game's counter");
+    plugin.config.showXpSprites = () => false;
+    xpStat(SkillId.Woodcutting, 100_200);
+    plugin.onClientTick();
+    assert.equal(plugin.xpSprites.length, 0, "off: no sprites");
+}
+
 console.log("level-up celebration tests passed");
