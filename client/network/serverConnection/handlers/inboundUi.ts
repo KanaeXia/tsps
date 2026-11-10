@@ -322,23 +322,30 @@ export function handleInboundUi(msg: any): boolean {
             loadFromPayload(msg.payload);
             const g: any = (typeof window !== "undefined" ? window : globalThis) as any;
             const mv = g?.__osrsClient;
+            const animations = datasets?.some((dataset: any) => dataset.key === "customAnimations");
+            if (animations) {
+                // Animations and graphics are only played by actors and graphics: clear what plays
+                // them, not every definition (on WebGPU that restarts the map load).
+                mv?.seqTypeLoader?.clearCache();
+                mv?.seqFrameLoader?.clearCache();
+                mv?.spotAnimTypeLoader?.clearCache();
+                mv?.renderer?.invalidateAnimationCaches?.();
+            }
             if (msg.payload?.datasets?.some((dataset: any) =>
-                dataset.key === "customItems" || dataset.key === "customModels" || dataset.key === "customAnimations" ||
+                dataset.key === "customItems" || dataset.key === "customModels" ||
                 (dataset.key === "definitionArchives" || dataset.key === "customDefinitions"))) {
                 mv?.objTypeLoader?.clearCache();
                 mv?.objModelLoader?.clearCache();
-                if (datasets?.some((dataset: any) => dataset.key === "customAnimations")) {
-                    mv?.seqTypeLoader?.clearCache();
-                    mv?.seqFrameLoader?.clearCache();
-                    mv?.spotAnimTypeLoader?.clearCache();
-                    mv?.renderer?.invalidateDefinitionCaches();
-                }
                 if (datasets?.some((dataset: any) => (dataset.key === "definitionArchives" || dataset.key === "customDefinitions"))) {
                     mv?.npcTypeLoader?.clearCache();
                     mv?.locTypeLoader?.clearCache();
                     mv?.seqTypeLoader?.clearCache();
                     mv?.renderer?.invalidateDefinitionCaches();
                 }
+            }
+            if (animations || msg.payload?.datasets?.some((dataset: any) =>
+                dataset.key === "customItems" || dataset.key === "customModels" ||
+                dataset.key === "definitionArchives" || dataset.key === "customDefinitions")) {
                 mv?.workerPool?.runAll((worker: any) => worker.setCustomContent(msg.payload))
                     .catch((error: unknown) => console.error("Custom worker content failed", error));
             }

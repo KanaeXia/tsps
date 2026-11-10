@@ -157,10 +157,16 @@ loads, each pointing at a folder here, as the add-ons export them:
   custom animation's name or id, or any cache animation's id or name. List the graphic's own
   animation (its `anim/` folder) under `animations`.
 
-At startup the server checks every folder, gives each animation's frames a frame group of their
-own (30000, 30001, ... in list order), points each graphic at its model and animation, and sends
-them all to players when they log in. A broken folder stops the server with a message saying what
-is wrong.
+At startup the server checks every folder (each frame is decoded, as the client will), gives each
+animation's frames a frame group of their own (30000, 30001, ... in list order), points each
+graphic at its model and animation, and sends them all to players when they log in, in one packet
+unless they are too many for one. A broken folder turns custom animations off with a message
+saying what is wrong; the server keeps running. A graphic whose model id another custom model
+already uses (a custom item's or a cache editor model asset's) is left out, with an error.
+
+Only the frame list (seq opcode 1) is moved to the animation's own frame group. Chat-head frames
+(opcode 12, which 87 cache animations have) still point at the cache's frames, so an edit to
+those frames in Blender doesn't show in game.
 
 Animations use the cache's skeletons (frame maps). The add-ons never change them, and the server
 refuses a `framemap-<id>.dat` that differs from the cache's.

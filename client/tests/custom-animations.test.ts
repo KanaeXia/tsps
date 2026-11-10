@@ -18,7 +18,9 @@ const seqBytes = read("player-anim", "seq.dat");
 const frameFiles = fs.readdirSync(path.join(root, "player-anim", "frames"));
 const GROUP = 30000;
 const frames: Record<string, string> = {};
-frameFiles.forEach((name, k) => { frames[k] = base64(read("player-anim", "frames", name)); });
+// Keyed as the plugin keys them: file <group>-<n>.dat is frame n - 1. readdirSync sorts by name
+// (1, 10, 11, ...), so the listing's order is not the frames' order.
+for (const name of frameFiles) frames[Number(name.split("-")[1].split(".")[0]) - 1] = base64(read("player-anim", "frames", name));
 
 CustomAnimationRegistry.register({ kind: "seq", id: 50000, name: "zgs_special_keep_weapon", data: base64(seqBytes), group: GROUP, frames });
 CustomAnimationRegistry.register({
@@ -50,6 +52,14 @@ for (let k = 0; k < frameFiles.length; k++) {
     const frame = loader.load((GROUP << 16) | k);
     assert.ok(frame && frame.transformCount > 0, `custom frame ${k}`);
 }
+
+// The whole set again, as the render workers get it: a reset row first, then every row.
+const rows = CustomAnimationRegistry.rows();
+assert.deepStrictEqual(rows.map((row) => row.kind), ["reset", "seq", "spotanim"]);
+CustomAnimationRegistry.register({ kind: "reset" });
+assert.strictEqual(CustomAnimationRegistry.seq(50000), undefined, "a reset row clears the set");
+for (const row of rows) CustomAnimationRegistry.register(row);
+assert.ok(CustomAnimationRegistry.seq(50000) && CustomAnimationRegistry.model(1900000), "and the rows bring it back");
 
 CustomAnimationRegistry.clear();
 assert.strictEqual(CustomAnimationRegistry.seq(50000), undefined);

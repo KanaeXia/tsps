@@ -24,7 +24,8 @@ const LAST_FRAME_GROUP = 32767;
 const FIRST_CUSTOM_MODEL = 1000000;
 const PACKET_LIMIT = 0xffff;
 
-let content = { rows: [], animations: [], graphics: [] };
+let content = { rows: [], animations: [], graphics: [], packets: [] };
+let encodeContentData = null;
 
 function fail(message) {
   throw new Error(`[custom-animations] ${message}`);
@@ -36,6 +37,12 @@ function folderOf(modelRoot, rel, what) {
   const dir = fs.realpathSync(path.resolve(modelRoot, rel));
   if (!dir.startsWith(`${modelRoot}${path.sep}`)) fail(`${what}: path escapes data/models: ${rel}`);
   return dir;
+}
+
+/** Just past a zero-terminated string at `o`; past the end (so "truncated") when it has no terminator. */
+function afterString(bytes, o) {
+  while (o < bytes.length && bytes[o] !== 0) o++;
+  return o + 1;
 }
 
 /** A sequence definition's opcodes (rev 226+), each with its raw payload. */
@@ -56,7 +63,7 @@ function readSeq(bytes, what) {
     else if (op === 13) fail(`${what} is a skeletal animation; only frame animations are supported`);
     else if (op === 14) o += 2 + u16(o) * 8;
     else if (op === 15) o += 4;
-    else if (op === 18) { while (bytes[o] !== 0) o++; o++; }
+    else if (op === 18) o = afterString(bytes, o);
     else fail(`${what}: unknown sequence opcode ${op}`);
     if (o > bytes.length) fail(`${what}: seq.dat is truncated`);
     ops.push({ op, payload: bytes.subarray(start, o) });
@@ -104,7 +111,8 @@ function loadAnimation(entry, index, modelRoot, CacheDefinitions) {
     const file = path.join(dir, "frames", name);
     if (!fs.existsSync(file)) fail(`${what} is missing frames/${name}`);
     const data = fs.readFileSync(file);
-    checkFrameMap(dir, (data[0] << 8) | data[1], what, CacheDefinitions);
+    const slots = checkFrameMap(dir, (data[0] << 8) | data[1], what, CacheDefinitions);
+    checkFrame(data, slots, `${what} frames/${name}`);
     fileOf.set(id, fileOf.size);
     frames[fileOf.get(id)] = data.toString("base64");
   }
@@ -112,14 +120,41 @@ function loadAnimation(entry, index, modelRoot, CacheDefinitions) {
   return { kind: "seq", id: entry.id, name: entry.name, data: encodeOps(ops).toString("base64"), group, frames };
 }
 
-/** Frames use the cache's frame maps (skeletons); an edited frame map isn't supported yet. */
+/**
+ * Frames use the cache's frame maps (skeletons); an edited frame map isn't supported yet. Returns
+ * the frame map's slot count (its first byte).
+ */
 function checkFrameMap(dir, id, what, CacheDefinitions) {
   const cached = CacheDefinitions.getFrameMapData(id);
-  if (!cached) fail(`${what} uses frame map ${id}, which the cache doesn't have`);
+  if (!cached || cached.length < 1) fail(`${what} uses frame map ${id}, which the cache doesn't have`);
   const file = path.join(dir, `framemap-${id}.dat`);
   if (fs.existsSync(file) && !Buffer.from(cached).equals(fs.readFileSync(file))) {
     fail(`${what}: framemap-${id}.dat differs from the cache's; custom frame maps aren't supported yet`);
   }
+  return cached[0] & 0xff;
+}
+
+/**
+ * A frame decodes as the client decodes it (rs/model/seq/SeqFrame.ts, Dat2SeqFrame): frame map id
+ * (u16), slot count (u8, at most the frame map's), one flag byte a slot (bits 0-2: x, y, z), then
+ * each flagged value as a smart (one byte under 128, else two), all within the file.
+ */
+function checkFrame(data, slots, what) {
+  if (data.length < 3) fail(`${what} is truncated`);
+  const count = data[2];
+  if (count > slots) fail(`${what} has ${count} slots; its frame map has ${slots}`);
+  let o = 3 + count;
+  if (o > data.length) fail(`${what} is truncated`);
+  for (let i = 0; i < count; i++) {
+    const flag = data[3 + i];
+    if (flag > 7) fail(`${what}: slot ${i} has an unknown flag ${flag}`);
+    for (let bit = 0; bit < 3; bit++) {
+      if ((flag & (1 << bit)) === 0) continue;
+      if (o >= data.length) fail(`${what} is truncated`);
+      o += data[o] < 128 ? 1 : 2;
+    }
+  }
+  if (o > data.length) fail(`${what} is truncated`);
 }
 
 /** A graphic definition's opcodes (rev 241), each with its raw payload. */
@@ -133,7 +168,7 @@ function readSpotanim(bytes, what) {
     if ([1, 2, 4, 5, 6, 42].includes(op)) o += 2;
     else if (op === 3) o += 4;
     else if (op === 7 || op === 8) o += 1;
-    else if (op === 9) { while (bytes[o] !== 0) o++; o++; }
+    else if (op === 9) o = afterString(bytes, o);
     else if (op === 10) { /* no payload */ }
     else if (op === 40 || op === 41) o += 1 + bytes[o] * 4;
     else fail(`${what}: unknown graphic opcode ${op}`);
@@ -223,18 +258,44 @@ function loadCustomAnimations(core) {
   return { rows, animations, graphics };
 }
 
-/** Graphic models must not share ids with custom item models (known once every plugin loaded). */
+/**
+ * Graphic models must not share ids with the other custom models: custom items' and the cache
+ * editor's model assets (CacheDefinitions.getCustomModels, complete once every plugin's startup ran;
+ * plugins/tools loads before plugins/world). The client would show the other model, so a graphic
+ * whose model id is taken is left out, with an error, rather than sent.
+ */
 function checkModelIds({ CacheDefinitions }) {
   const taken = new Set(CacheDefinitions.getCustomModels().map((model) => model.id));
-  for (const row of content.rows) {
-    if (row.model && taken.has(row.model.id)) fail(`graphic ${row.id}'s model id ${row.model.id} is already a custom item model`);
+  content.rows = content.rows.filter((row) => {
+    if (!row.model || !taken.has(row.model.id)) return true;
+    console.error(`[custom-animations] graphic ${row.id} (${row.name}) left out: its model id ${row.model.id} is already a custom model`);
+    return false;
+  });
+  content.packets = packetsOf(CacheDefinitions, content.rows);
+}
+
+/**
+ * The set as content packets: one, unless it is too big for one (0xffff after compression). The
+ * first starts with a reset row, so a client replaces what it had; it then invalidates once.
+ */
+function packetsOf(_CacheDefinitions, rows) {
+  const encode = (packetRows) => encodeContentData("server", [{ key: DATASET, rows: packetRows }]);
+  const packets = [];
+  let current = [{ kind: "reset" }];
+  for (const row of rows) {
+    if (current.length > 0 && encode([...current, row]).length > PACKET_LIMIT) {
+      packets.push(current);
+      current = [];
+    }
+    current.push(row);
   }
+  packets.push(current);
+  return packets;
 }
 
 function sendCustomAnimations({ player }) {
   const sender = player.getPacketSender();
-  sender.sendContentData("server", [{ key: DATASET, rows: [] }]);
-  for (const row of content.rows) sender.sendContentData("server", [{ key: DATASET, rows: [row] }]);
+  for (const rows of content.packets ?? packetsOf(null, content.rows)) sender.sendContentData("server", [{ key: DATASET, rows }]);
 }
 
 function customAnimationsResource() {
@@ -242,14 +303,20 @@ function customAnimationsResource() {
 }
 
 function loadInto(api) {
+  encodeContentData = api.core.encodeContentData;
   content = loadCustomAnimations(api.core);
+  content.packets = packetsOf(api.core.CacheDefinitions, content.rows);
   api.log("loaded", { animations: content.animations.length, graphics: content.graphics.length });
 }
 
 module.exports = {
   name: "CustomAnimations",
   description: "Loads custom animations and graphics (data/definitions/custom-animations.json) and sends them to players at login.",
-  _test: { loadCustomAnimations, readSeq, frameList, readSpotanim, FIRST_FRAME_GROUP },
+  _test: {
+    loadCustomAnimations, readSeq, frameList, readSpotanim, checkFrame, FIRST_FRAME_GROUP,
+    /** The plugin's state and hooks, for tests that register it. */
+    content: () => content, checkModelIds, sendCustomAnimations,
+  },
   register(api) {
     loadInto(api);
     api.onServerStartup?.(checkModelIds.bind(null, api.core));

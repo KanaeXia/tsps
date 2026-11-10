@@ -11,12 +11,16 @@ import type { TypeConstructor, TypeLoader } from "../../rs/config/TypeLoader";
  */
 export type CustomAnimationRow =
     | { kind: "seq"; id: number; name: string; data: string; group: number; frames: Record<string, string> }
-    | { kind: "spotanim"; id: number; name: string; data: string; model?: { id: number; data: string } };
+    | { kind: "spotanim"; id: number; name: string; data: string; model?: { id: number; data: string } }
+    /** Clears every animation and graphic: the first row of the set the server sends at login. */
+    | { kind: "reset" };
 
 const seqs = new Map<number, string>();
 const spotanims = new Map<number, string>();
 const frameGroups = new Map<number, Map<number, Int8Array>>();
 const models = new Map<number, Int8Array>();
+/** The registered rows by kind and id, to send the render workers again (rows()). */
+const registered = new Map<string, CustomAnimationRow>();
 
 function bytes(base64: string): Int8Array {
     const decoded = atob(base64);
@@ -29,8 +33,15 @@ function validId(id: unknown, max: number): id is number {
 
 export const CustomAnimationRegistry = {
     revision: 0,
-    /** One animation or graphic; an empty dataset clears them all (the server sends one first). */
+    /**
+     * One animation or graphic. A "reset" row (or an empty dataset, from older servers) clears them
+     * all: the server sends the whole set in one dataset, starting with a reset.
+     */
     register(row: CustomAnimationRow): void {
+        if (row?.kind === "reset") {
+            this.clear();
+            return;
+        }
         if (!row || typeof row.data !== "string" || !validId(row.id, 0xfffe)) throw new Error("Invalid custom animation");
         if (row.kind === "seq") {
             // Frame ids are group << 16 | file in a signed int: groups stay below 32768.
@@ -48,6 +59,7 @@ export const CustomAnimationRegistry = {
         } else {
             throw new Error("Unknown custom animation kind");
         }
+        registered.set(`${row.kind}:${row.id}`, row);
         this.revision++;
     },
     clear(): void {
@@ -55,7 +67,12 @@ export const CustomAnimationRegistry = {
         spotanims.clear();
         frameGroups.clear();
         models.clear();
+        registered.clear();
         this.revision++;
+    },
+    /** The whole set as rows (a reset first), as the server sends it: for the render workers. */
+    rows(): CustomAnimationRow[] {
+        return [{ kind: "reset" }, ...registered.values()];
     },
     seq(id: number): string | undefined { return seqs.get(id); },
     spotanim(id: number): string | undefined { return spotanims.get(id); },
