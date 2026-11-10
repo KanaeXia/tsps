@@ -1,5 +1,6 @@
 // Run after `yarn build`: node --test tests/sinister-offering.test.cjs
-// Wiki (Sinister Offering): up to three bones at 300% of their burying experience - bones 40.5 a cast, not 45 - from
+// Custom: up to 28 bones or ashes a cast (OFFERING_MAX_ITEMS; 3 in OSRS).
+// Wiki (Sinister Offering): bones at 300% of their burying experience - bones 40.5 a cast, not 45 - from
 // its table (wyrm, drake, hydra, superior dragon, monkey and frost dragon bones included; long and curved bones not
 // since 2023). One prayer point a set, two for ourg, dagannoth, hydra and superior dragon bones, and 70 Prayer only to
 // offer superior dragon bones. Real Player and inventory.
@@ -71,4 +72,17 @@ test("Demonic Offering pays its ashes too: three infernal ashes give 990 and six
   assert.equal(ArceuusOfferings.demonic(p), true);
   assert.equal(prayerXp(p), 990, "300% of 110 each");
   assert.equal(p.getSkillManager().getCurrentLevel(core.Skill.PRAYER), 7);
+});
+
+test("one cast offers up to 28 bones or ashes, of any kinds, in inventory order", () => {
+  const I = core.ItemIdentifiers;
+  const bones = caster(99, [...Array(14).fill(I.DRAGON_BONES), ...Array(14).fill(I.BIG_BONES)]);
+  assert.equal(ArceuusOfferings.sinister(bones), true);
+  assert.equal(bones.getInventory().getAmount(I.DRAGON_BONES) + bones.getInventory().getAmount(I.BIG_BONES), 0, "all 28 in one cast");
+  assert.equal(prayerXp(bones), 14 * 216 + 14 * 45);
+  assert.equal(bones.getSkillManager().getCurrentLevel(core.Skill.PRAYER), 29, "1 + one point a bone");
+  const ashes = caster(99, Array(28).fill(I.VILE_ASHES));
+  assert.equal(ArceuusOfferings.demonic(ashes), true);
+  assert.equal(ashes.getInventory().getAmount(I.VILE_ASHES), 0);
+  assert.equal(prayerXp(ashes), 28 * 75);
 });

@@ -21,6 +21,12 @@ const TWO_POINT_BONES = new Set<number>([
     ItemIds.OURG_BONES, ItemIds.DAGANNOTH_BONES, ItemIds.HYDRA_BONES, ItemIds.SUPERIOR_DRAGON_BONES,
 ]);
 
+/**
+ * Custom (not OSRS, where it is 3): how many bones or ashes one cast offers, in inventory order. A full
+ * inventory's worth, for one cast's runes, cooldown and Magic XP.
+ */
+export const OFFERING_MAX_ITEMS = 28;
+
 const ASH_XP = new Map<number, number>([
     [ItemIds.FIENDISH_ASHES, 10], [ItemIds.VILE_ASHES, 25], [ItemIds.MALICIOUS_ASHES, 65],
     [ItemIds.ABYSSAL_ASHES, 85], [ItemIds.INFERNAL_ASHES, 110], [ItemIds.ELDRITCH_ASHES, 200],
@@ -47,11 +53,11 @@ export class ArceuusOfferings {
     public static sinister(player: Player): boolean {
         const lowPrayer = player.getSkillManager().getMaxLevel(Skill.PRAYER) < 70;
         const offered = (id: number) => (id === ItemIds.SUPERIOR_DRAGON_BONES && lowPrayer ? 0 : BONE_XP.get(id) ?? 0);
-        return this.offer(player, offered, 3, 3, (id) => TWO_POINT_BONES.has(id) ? 2 : 1);
+        return this.offer(player, offered, OFFERING_MAX_ITEMS, 3, (id) => TWO_POINT_BONES.has(id) ? 2 : 1);
     }
 
     public static demonic(player: Player): boolean {
-        return this.offer(player, (id) => ASH_XP.get(id) ?? 0, 3, 3, (id) => id === ItemIds.INFERNAL_ASHES ? 2 : 1);
+        return this.offer(player, (id) => ASH_XP.get(id) ?? 0, OFFERING_MAX_ITEMS, 3, (id) => id === ItemIds.INFERNAL_ASHES ? 2 : 1);
     }
 
     private static offer(player: Player, experience: (id: number) => number, maxItems: number, multiplier: number, prayerRestore = (_id: number) => 1): boolean {
