@@ -318,12 +318,12 @@ test('Cabin Fever completes from stage 0 through the real route handlers', () =>
 
     // Patch and waterproof all three hull holes.
     for (const hole of HOLES) {
-      h.itemOnObject(I.REPAIR_PLANK, hole);
+      h.itemOnObject(I.REPAIR_PLANK_2, hole);
       h.itemOnObject(I.SWAMP_PASTE, hole);
     }
     assert.equal(h.varbit(1759), 3);
     assert.equal(h.varbit(1760), 3);
-    assert.equal(h.count(I.REPAIR_PLANK), 0);
+    assert.equal(h.count(I.REPAIR_PLANK_2), 0);
     assert.equal(h.count(I.TACKS), 0);
     assert.equal(h.count(I.SWAMP_PASTE), 0);
     h.variant(N.BILL_TEACH_3);
@@ -366,14 +366,14 @@ test('Cabin Fever completes from stage 0 through the real route handlers', () =>
     // Fire canister rounds until three pirates are hit, cleaning between shots.
     h.object(O.GUN_LOCKER, 'Open');
     assert.equal(h.count(I.RAMROD), 1);
-    assert.equal(h.count(I.CANISTER), 1);
+    assert.equal(h.count(I.CANISTER_2), 1);
     for (let hit = 1; hit <= 3; hit++) {
       h.itemOnObject(I.RAMROD, CANNON);
       h.object(O.POWDER_BARREL_2, 'Take-powder');
       h.itemOnObject(I.GUNPOWDER, CANNON);
       h.itemOnObject(I.RAMROD, CANNON);
-      if (h.count(I.CANISTER) === 0) h.object(O.GUN_LOCKER, 'Open');
-      h.itemOnObject(I.CANISTER, CANNON);
+      if (h.count(I.CANISTER_2) === 0) h.object(O.GUN_LOCKER, 'Open');
+      h.itemOnObject(I.CANISTER_2, CANNON);
       if (h.count(I.FUSE) === 0) h.object(O.GUN_LOCKER, 'Open');
       h.itemOnObject(I.FUSE, CANNON);
       assert.equal(h.varbit(1741), 3, 'cannon armed');
@@ -657,10 +657,65 @@ test('Cabin Fever named NPC, object, item and death handlers are wired', () => {
   const locker = h.namedObject('Repair Locker', O.REPAIR_LOCKER, 'Open');
   assert.equal(locker.handled, true);
   assert.equal(h.count(I.ROPE), 4);
+  // 7148 is the quest plank the Repair Locker gives in live; 7121 is the animation dummy
+  // the client wields while repairing, and Quest Helper's requirement is 7148 x6.
+  assert.equal(h.count(I.REPAIR_PLANK_2), 6, 'the locker hands out the real quest plank');
+  assert.equal(h.count(I.REPAIR_PLANK), 0, 'the animation dummy is never handed out');
   h.player.getInventory().adds(I.FUSE, 1);
   const fuse = h.namedItemOnObject('Fuse', 'Powder Barrel', I.FUSE, 11237);
   assert.equal(fuse.handled, true);
   assert.equal(h.varbit(1761), 1, 'named fuse use attaches to the barrel');
+});
+
+test('the gun locker hands out the real quest canister, not the animation dummy', () => {
+  const h = setup(['pirates_treasure', 'rum_deal', 'priest_in_peril']);
+  const I = core.ItemIdentifiers;
+  const O = core.ObjectIdentifiers;
+  h.quest.setStage(h.player, 7);
+  h.object(O.GUN_LOCKER, 'Open');
+  // 7149 is the quest canister the locker gives in live; 7118 is the animation dummy the client
+  // wields while loading the cannon, and Quest Helper's requirement is 7149.
+  assert.equal(h.count(I.CANISTER_2), 1, 'the locker hands out the real quest canister');
+  assert.equal(h.count(I.CANISTER), 0, 'the animation dummy is never handed out');
+
+  // The real canister still loads the cannon and is consumed.
+  h.itemOnObject(I.CANISTER_2, 11213);
+  assert.equal(h.varbit(1744), 2, 'the canister is loaded');
+  assert.equal(h.count(I.CANISTER_2), 0, 'the canister is consumed');
+
+  // A save from before the fix holds the animation dummy; the locker swaps it for the real one.
+  h.player.getInventory().adds(I.CANISTER, 1);
+  h.object(O.GUN_LOCKER, 'Open');
+  assert.equal(h.count(I.CANISTER_2), 1, 'the dummy is swapped for the real canister');
+  assert.equal(h.count(I.CANISTER), 0, 'the animation dummy is gone');
+});
+
+test('the hull\'s own Fill and Waterproof options repair the hole, as a plain click does in live', () => {
+  const h = setup(['pirates_treasure', 'rum_deal', 'priest_in_peril']);
+  const I = core.ItemIdentifiers;
+  const HOLES = [11221, 11222, 11223];
+  h.quest.setStage(h.player, 4);
+  h.player.getInventory().adds(I.REPAIR_PLANK_2, 6);
+  h.player.getInventory().adds(I.TACKS, 30);
+  h.player.getInventory().adds(I.HAMMER, 1);
+  h.player.getInventory().adds(I.SWAMP_PASTE, 3);
+
+  // Fill planks the hole with no item used on it: the visible transform's own option.
+  assert.equal(h.object(HOLES[0], 'Fill'), true, 'the Fill option is claimed');
+  assert.equal(h.varbit(1751), 1, 'the hole is planked');
+  assert.equal(h.count(I.REPAIR_PLANK_2), 4, 'two planks are used');
+  assert.equal(h.count(I.TACKS), 20, 'ten tacks are used');
+
+  // Waterproof pastes it.
+  assert.equal(h.object(HOLES[0], 'Waterproof'), true, 'the Waterproof option is claimed');
+  assert.equal(h.varbit(1751), 2, 'the hole is waterproofed');
+  assert.equal(h.count(I.SWAMP_PASTE), 2, 'one paste is used');
+  assert.equal(h.varbit(1759), 1, 'one hole patched');
+  assert.equal(h.varbit(1760), 1, 'one hole proofed');
+
+  // A second Fill on a finished hole answers instead of consuming anything.
+  assert.equal(h.object(HOLES[0], 'Fill'), true);
+  assert.equal(h.count(I.REPAIR_PLANK_2), 4, 'nothing is consumed on a finished hole');
 });
 
 test('the Book o\' Piracy is readable, recoverable once and cleaned up with the quest supplies', () => {

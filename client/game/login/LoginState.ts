@@ -170,6 +170,7 @@ export class LoginState {
             const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
             if (!response.ok) return;
             const metadata = await response.json();
+            const flags = transport === "webrtc" ? 0 : Number(metadata?.flags);
             const name = transport === "webrtc" ? metadata?.worlds?.find((world: any) => world.worldId === worldId)?.name : metadata?.name;
             // Control characters are exactly what this rejects.
             // eslint-disable-next-line no-control-regex
@@ -177,6 +178,7 @@ export class LoginState {
             // A slow response must not rename a different world selected in the meantime.
             if (this.serverAddress !== address || this.serverSecure !== secure || this.serverTransport !== transport
                 || this.serverSignalUrl !== signalUrl || this.serverWorldId !== worldId) return;
+            this.serverWorldFlags = Number.isInteger(flags) ? flags >>> 0 : 0;
             this.serverName = name.trim();
             // Renaming must not pin the build's default server as a chosen world.
             if (getClientPreference("lastServer")) this.saveLastServer();
@@ -376,6 +378,8 @@ export class LoginState {
     serverSignalUrl?: string;
     serverWorldId?: string;
     serverIceServers: RTCIceServer[] = [];
+    /** The selected world's type bits from its `/api/world-info` (live's world-list flags: 0x800 a Hardcore world). */
+    serverWorldFlags: number = 0;
 
     /** Persist the last selected server to localStorage */
     // ========== Remembered login ==========
