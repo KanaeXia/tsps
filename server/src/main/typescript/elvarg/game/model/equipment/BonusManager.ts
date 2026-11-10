@@ -40,9 +40,9 @@ export class BonusManager {
     //private static readonly attackBonusQ: number[] = [0, 0, 0, 0, 0];
     //private static readonly defenceBonusQ: number[] = [0, 0, 0, 0, 0];
     //private static readonly otherBonusQ: number[] = [0, 0, 0, 10];
-    private static readonly bonusQ: number[] = [33, 33, 71, 80, 90,
-												175, 143, 190, 125, 100,
-												38, 5, 13, 15+10];
+    private static readonly bonusQ: number[] = [33, 33, 71, 91, 97,
+												180, 151, 197, 133, 110,
+												40, 8, 15, 15+10];
 
     public static update(player: Player) {
         const bonuses = new Array(BonusManager.BONUS_COUNT).fill(0);
