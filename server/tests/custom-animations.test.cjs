@@ -62,6 +62,17 @@ test("the other godsword specials keep the player's weapon and shield too", () =
   assert.equal(CacheDefinitions.getSeqId("ags_special_keep_weapon"), 50003);
 });
 
+test("combat sees a custom animation's length and priorities, not an empty cache entry", () => {
+  const { getSequenceStall, getSequenceForcedPriority, getSequencePriority } = require("../dist/game/cache/NpcAnimationScanner");
+  for (const [id, cacheId] of [[50000, 7638], [50003, 7644], [50004, 7642]]) {
+    assert.deepEqual(getSequenceStall(id), getSequenceStall(cacheId), `${id}: as long as ${cacheId}`);
+    assert.ok(getSequenceStall(id).ticks > 0, `${id}: lasts at least a tick`);
+    assert.equal(getSequenceForcedPriority(id), getSequenceForcedPriority(cacheId), `${id}: same interrupt priority`);
+    assert.equal(getSequencePriority(id), getSequencePriority(cacheId), `${id}: same standing priority`);
+  }
+  assert.equal(getSequenceForcedPriority(50000), 6, "a block (5) can't cut the swing short");
+});
+
 test("custom graphics point at their model and animation, and names resolve", () => {
   const gfx = CacheDefinitions.getSpotanim(50000);
   assert.equal(gfx.modelId, 1900000);
