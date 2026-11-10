@@ -30,7 +30,7 @@ reference mesh and no `.qc`. So:
 In Blender (see `../README.md`): File > Import > OSRS model (.dat) on `player.dat`, then with it
 selected File > Import > OSRS animation on `player-anim/seq.dat` (the rig `dancemoves rig`, 18 bones).
 
-It isn't in `server/data/definitions/custom-animations.json`. Its 320 frame files are about 94 KB,
-more than one content packet (64 KB) carries, so as it is it can't be sent to the client; it needs
-about half as many frames (one every 5 cycles is about 50 KB once encoded) or the dataset split
-over packets.
+In game it is custom animation 50100 (`dancemoves`, in `server/data/definitions/custom-animations.json`):
+try `::anim 50100`. The cache's Jig (2106) is unchanged. Its 320 frame files are about 94 KB, but
+content packets are deflated: the whole animation goes to the client in about 18 KB of the packet's
+64 KB.

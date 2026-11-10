@@ -5,7 +5,8 @@
     { "id": 50002, "name": "ngs_special_keep_weapon", "path": "ancient-godsword-special/player-anim" },
     { "id": 50003, "name": "ags_special_keep_weapon", "path": "armadyl-godsword-special/player-anim" },
     { "id": 50004, "name": "bgs_special_keep_weapon", "path": "bandos-godsword-special/player-anim" },
-    { "id": 50005, "name": "sgs_special_keep_weapon", "path": "saradomin-godsword-special/player-anim" }
+    { "id": 50005, "name": "sgs_special_keep_weapon", "path": "saradomin-godsword-special/player-anim" },
+    { "id": 50100, "name": "dancemoves", "path": "jig-emote/player-anim" }
   ],
   "graphics": [
     {
