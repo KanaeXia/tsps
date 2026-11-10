@@ -48,6 +48,20 @@ test("custom animations get their own frame group, with the cache's frames", () 
   assert.equal(CacheDefinitions.getSeq(50001).frameIds.every((id) => id >> 16 === FIRST_FRAME_GROUP + 1), true);
 });
 
+test("the other godsword specials keep the player's weapon and shield too", () => {
+  const specials = { 50002: 9171, 50003: 7644, 50004: 7642, 50005: 7640 };
+  Object.entries(specials).forEach(([id, cacheId], k) => {
+    const seq = CacheDefinitions.getSeq(Number(id));
+    const original = CacheDefinitions.getSeq(cacheId);
+    assert.deepEqual(seq.frameLengths, original.frameLengths, `${id}: same timing as ${cacheId}`);
+    assert.ok(seq.frameIds.every((frame) => frame >> 16 === FIRST_FRAME_GROUP + 2 + k), `${id}: its own frame group`);
+    assert.equal(seq.rightHandItem, -1, `${id}: keeps the weapon`);
+    assert.equal(seq.leftHandItem, -1, `${id}: keeps the shield`);
+    assert.ok(original.rightHandItem > 512 && original.leftHandItem === 0, `${cacheId}: the cache's shows the godsword`);
+  });
+  assert.equal(CacheDefinitions.getSeqId("ags_special_keep_weapon"), 50003);
+});
+
 test("custom graphics point at their model and animation, and names resolve", () => {
   const gfx = CacheDefinitions.getSpotanim(50000);
   assert.equal(gfx.modelId, 1900000);

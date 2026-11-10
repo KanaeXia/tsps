@@ -1,7 +1,11 @@
 {
   "animations": [
     { "id": 50000, "name": "zgs_special_keep_weapon", "path": "zamorak-godsword-special/player-anim" },
-    { "id": 50001, "name": "zgs_special_trail_spotanim", "path": "zamorak-godsword-special/graphic/anim" }
+    { "id": 50001, "name": "zgs_special_trail_spotanim", "path": "zamorak-godsword-special/graphic/anim" },
+    { "id": 50002, "name": "ngs_special_keep_weapon", "path": "ancient-godsword-special/player-anim" },
+    { "id": 50003, "name": "ags_special_keep_weapon", "path": "armadyl-godsword-special/player-anim" },
+    { "id": 50004, "name": "bgs_special_keep_weapon", "path": "bandos-godsword-special/player-anim" },
+    { "id": 50005, "name": "sgs_special_keep_weapon", "path": "saradomin-godsword-special/player-anim" }
   ],
   "graphics": [
     {

@@ -1,0 +1,34 @@
+{
+  "seq": 7642,
+  "name": "bgs_special_player",
+  "frames": 23,
+  "frameLengths": [
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+  ],
+  "framemaps": [
+    0
+  ],
+  "handItems": "removed: the animation keeps the player's own weapon and shield (the cache's sequence 7642 shows item 11804 in the right hand and empties the left hand)"
+}
