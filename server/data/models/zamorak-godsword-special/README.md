@@ -31,3 +31,9 @@ In game, these are custom animation 50000 (`zgs_special_keep_weapon`, the player
 custom animation 50001 (`zgs_special_trail_spotanim`) and custom graphic 50000
 (`zgs_special_trail`, the trail, model 1900000), listed in
 `server/data/definitions/custom-animations.json`. Try them with `::anim 50000` and `::gfx 50000`.
+
+Blending with movement: the cache's sequence hands only the newer player skeleton's legs, cape and
+body to the walk or run animation (its interleave list, opcode 3). Walk and run animations on the
+older skeleton (the default 819/824, the Exalted Spring's 14252/14254) move none of those, so the
+legs froze. This copy's list also names the older skeleton's whole body, legs and cape (slots 1, 2,
+9, 11, 13, 15, 17, 19, 37, 39, 41, 43, 45), as the Ancient godsword special already does.

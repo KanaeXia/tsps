@@ -14,3 +14,9 @@ animation on `player-anim/seq.dat`.
 
 In game, this is custom animation 50005 (`sgs_special_keep_weapon`), listed in
 `server/data/definitions/custom-animations.json`. Try it with `::anim 50005`.
+
+Blending with movement: the cache's sequence hands only the newer player skeleton's legs, cape and
+body to the walk or run animation (its interleave list, opcode 3). Walk and run animations on the
+older skeleton (the default 819/824, the Exalted Spring's 14252/14254) move none of those, so the
+legs froze. This copy's list also names the older skeleton's whole body, legs and cape (slots 1, 2,
+9, 11, 13, 15, 17, 19, 37, 39, 41, 43, 45), as the Ancient godsword special already does.

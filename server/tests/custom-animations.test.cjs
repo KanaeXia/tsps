@@ -62,6 +62,20 @@ test("the other godsword specials keep the player's weapon and shield too", () =
   assert.equal(CacheDefinitions.getSeqId("ags_special_keep_weapon"), 50003);
 });
 
+test("the godsword swings hand the older skeleton's body, legs and cape to walk and run animations too", () => {
+  // As the Ancient godsword special (9171) does itself; 819/824 and 14252/14254 move only those slots.
+  const older = [1, 2, 9, 11, 13, 15, 17, 19, 37, 39, 41, 43, 45];
+  for (const [id, cacheId] of [[50000, 7638], [50003, 7644], [50004, 7642], [50005, 7640]]) {
+    const masks = CacheDefinitions.getSeq(id).masks;
+    const original = CacheDefinitions.getSeq(cacheId).masks;
+    assert.deepEqual(masks.filter((slot) => !older.includes(slot)), original, `${id}: the cache's list is kept`);
+    assert.ok(older.every((slot) => masks.includes(slot)), `${id}: hands over the older slots`);
+    assert.deepEqual([...masks].sort((a, b) => a - b), masks, `${id}: in slot order, as the client walks it`);
+  }
+  for (const slot of older) assert.ok(CacheDefinitions.getSeq(9171).masks.includes(slot), `9171 lists ${slot}`);
+  assert.deepEqual(CacheDefinitions.getSeq(50002).masks, CacheDefinitions.getSeq(9171).masks, "the Ancient one is unchanged");
+});
+
 test("combat sees a custom animation's length and priorities, not an empty cache entry", () => {
   const { getSequenceStall, getSequenceForcedPriority, getSequencePriority } = require("../dist/game/cache/NpcAnimationScanner");
   for (const [id, cacheId] of [[50000, 7638], [50003, 7644], [50004, 7642]]) {
