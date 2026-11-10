@@ -27,7 +27,7 @@ const EMOTES = [
     { sequence: 2109, loop: 12051 },
     { sequence: 2111, loop: 12053 },
     { sequence: 866, loop: 10048 },
-    { sequence: 2106, loop: 10049 },
+    { sequence: 51000, loop: 51000 }, //{ sequence: 2106, loop: 10049 },
     { sequence: 2107, loop: 12085 },
     { sequence: 2108, loop: 10050 },
     { sequence: 860, loop: 194 },

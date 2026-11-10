@@ -70,7 +70,7 @@
       "placeholderTemplate": -1
     },
     "specialAttack": { "energy": 50 },
-    "itemDef": { "tradeable": false,"weaponInterface":"EXASPR","equipmentType":"WEAPON","doubleHanded":false,"stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":9645142,"bloodMoneyValue":8000,"highAlch":750000,"lowAlch":500000,"dropValue":1250000,"blockAnim":14257,"standAnim":14251,"walkAnim":14252,"runAnim":14254,"standTurnAnim":14252,"turn180Anim":14252,"turn90CWAnim":14252,"turn90CCWAnim":14252,"attackAnim":{"stab":11222,"slash":14253,"crush":14255},"attackSound":{"stab":[{"id":11874,"frame":5},{"id":11875,"frame":8},{"id":11997,"frame":11}]},"weight":10,"bonuses":[127,162,141,20,0,44,20,31,39,0,81,0,0,15],"requirements":[90,0,90,80,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] },
+    "itemDef": { "tradeable": false,"weaponInterface":"EXASPR","equipmentType":"WEAPON","doubleHanded":false,"stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":9645142,"bloodMoneyValue":8000,"highAlch":750000,"lowAlch":500000,"dropValue":1250000,"blockAnim":14257,"standAnim":14251,"walkAnim":14252,"runAnim":14254,"standTurnAnim":14252,"turn180Anim":14252,"turn90CWAnim":14252,"turn90CCWAnim":14252,"attackAnim":{"stab":50000,"slash":50002,"crush":14255},"attackSound":{"stab":[{"id":11874,"frame":5},{"id":11875,"frame":8},{"id":3881,"frame":8}],"slash":[{"id":11874,"frame":5},{"id":11875,"frame":8},{"id":2540,"frame":8}]},"weight":10,"bonuses":[127,162,141,20,0,44,20,31,39,0,81,0,0,15],"requirements":[90,0,90,80,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] },
     "models": {
       "1500010": "exalted-spring/drop.dat",
       "1500011": "exalted-spring/equip.dat"
