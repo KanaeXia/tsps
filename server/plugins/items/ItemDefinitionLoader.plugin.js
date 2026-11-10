@@ -40,6 +40,23 @@ const { CacheDefinitions } = requireGameModule("game/cache/CacheDefinitions");
  * it, a plugin registers the weapon's own (plugins/combat/specials). `energy` is its cost in
  * percent, else what its special costs (for `from` when borrowed).
  */
+const ATTACK_TYPES = ["stab", "slash", "crush", "magic", "range"];
+
+/**
+ * attackSound: one sound id, or a list of sound ids and { "id", "frame" } entries (frame: frames
+ * into the attack animation), for every style or per attack type ({ "stab": 2933, "slash": [...] }).
+ */
+function validAttackSound(value) {
+  const id = (n) => Number.isInteger(n) && n >= 0;
+  const sounds = (v) => id(v) || (Array.isArray(v) && v.length > 0 && v.every((entry) => id(entry) ||
+    (entry && typeof entry === "object" && !Array.isArray(entry) && id(entry.id) &&
+      (entry.frame === undefined || id(entry.frame)) &&
+      Object.keys(entry).every((key) => key === "id" || key === "frame"))));
+  if (sounds(value)) return true;
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length > 0 &&
+    Object.entries(value).every(([type, v]) => ATTACK_TYPES.includes(type) && sounds(v));
+}
+
 function validateSpecialAttack(row) {
   const special = row.specialAttack;
   const isObject = special && typeof special === "object" && !Array.isArray(special);
@@ -341,10 +358,13 @@ function loadItemDefinitions() {
         if (!Array.isArray(value) || !value.every(Number.isFinite)) throw new Error(`[custom-items] invalid ${key} for item ${row.id}`);
       } else if (["doubleHanded", "stackable", "tradeable", "dropable", "sellable"].includes(key)) {
         if (typeof value !== "boolean") throw new Error(`[custom-items] invalid ${key} for item ${row.id}`);
-      } else if (["attackAnim", "attackSoundAnim"].includes(key) && value && typeof value === "object") {
+      } else if (key === "attackSoundAnim") {
+        throw new Error(`[custom-items] item ${row.id}: attackSoundAnim was replaced by attackSound, which takes sound ids (see server/docs/weapon-data.md)`);
+      } else if (key === "attackSound") {
+        if (!validAttackSound(value)) throw new Error(`[custom-items] invalid attackSound for item ${row.id}`);
+      } else if (key === "attackAnim" && value && typeof value === "object") {
         // By attack type, as item-gameplay.json's attackAnim: { "stab": 2890, "slash": 14255 }.
-        const types = ["stab", "slash", "crush", "magic", "range"];
-        if (Array.isArray(value) || !Object.entries(value).every(([type, id]) => types.includes(type) && Number.isFinite(id))) {
+        if (Array.isArray(value) || !Object.entries(value).every(([type, id]) => ATTACK_TYPES.includes(type) && Number.isFinite(id))) {
           throw new Error(`[custom-items] invalid ${key} for item ${row.id}`);
         }
       } else if (!Number.isFinite(value)) {
@@ -406,7 +426,7 @@ function sendCustomItems({ player }) {
 module.exports = {
   name: "ItemDefinitionLoader",
   description: "Loads custom item definitions and models from the custom-items and custom-models content files and sends the custom items to players at login.",
-  _test: { loadItemPrices, loadItemAlch, applyItemOverrides, validateSpecialAttack },
+  _test: { loadItemPrices, loadItemAlch, applyItemOverrides, validateSpecialAttack, validAttackSound },
   register(api) {
     const startedAt = Date.now();
     const result = loadItemDefinitions();

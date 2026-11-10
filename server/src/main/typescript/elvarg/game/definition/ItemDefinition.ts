@@ -10,6 +10,11 @@ const SHIELD_WEAR_POS = 5;
 
 export type AttackTypeName = "stab" | "slash" | "crush" | "magic" | "range";
 
+/** One attack sound: a sound id, played `frame` frames into the attack animation (0 or none: as it starts). */
+export type AttackSoundEntry = { id: number; frame?: number };
+/** An attack's sounds: one sound id, or a list of them (ids or entries with a frame). */
+export type AttackSoundValue = number | ReadonlyArray<number | AttackSoundEntry>;
+
 export class ItemDefinition {
     /** The cache's item param for a weapon's attack speed in ticks (the "attack rate"). */
     public static readonly ATTACK_SPEED_PARAM = 14;
@@ -60,7 +65,7 @@ export class ItemDefinition {
             "tradeable", "dropable", "sellable", "value", "grandExchangeValue", "grandExchangeSellValue",
             "highAlch", "lowAlch", "dropValue",
             "bloodMoneyValue", "blockAnim", "standAnim", "walkAnim", "runAnim", "standTurnAnim",
-            "turn180Anim", "turn90CWAnim", "turn90CCWAnim", "attackAnim", "attackSoundAnim", "equipSound", "bonuses",
+            "turn180Anim", "turn90CWAnim", "turn90CCWAnim", "attackAnim", "attackSound", "equipSound", "bonuses",
             "requirements", "combatRequirement"]) {
             const value = raw[key];
             if (value !== undefined) {
@@ -105,10 +110,10 @@ export class ItemDefinition {
      */
     private attackAnim: number | Partial<Record<AttackTypeName, number>> = -1;
     /**
-     * An animation whose sounds play with the attack in place of the attack animation's own, by
-     * attack type like `attackAnim` (custom weapons swinging an animation without sounds).
+     * The attack's own sounds, played instead of its weapon type's swing sound: for every style, or
+     * per attack type like `attackAnim` ({ "stab": 2933, "slash": [{ "id": 11874, "frame": 5 }] }).
      */
-    private attackSoundAnim: number | Partial<Record<AttackTypeName, number>> = -1;
+    private attackSound: AttackSoundValue | Partial<Record<AttackTypeName, AttackSoundValue>> | null = null;
     /** The sound for wearing or removing it, recorded from live OSRS (-1: by its kind, EquipmentSounds). */
     private equipSound: number = -1;
     /** Tradeable items it splits into when lost to a player in the Wilderness (an upgraded staff: staff and orb). */
@@ -315,9 +320,19 @@ export class ItemDefinition {
         return (attackType && this.attackAnim?.[attackType]) || -1;
     }
 
-    public getAttackSoundAnim(attackType?: AttackTypeName): number {
-        if (typeof this.attackSoundAnim === "number") return this.attackSoundAnim;
-        return (attackType && this.attackSoundAnim?.[attackType]) || -1;
+    /**
+     * This weapon's own sounds for an attack of `attackType` (`attackSound`), each with the frame of
+     * the attack animation it plays at, or null for its weapon type's swing sound.
+     */
+    public getAttackSounds(attackType?: AttackTypeName): { id: number; frame: number }[] | null {
+        const value = this.attackSound;
+        if (value == null) return null;
+        const sounds = typeof value === "number" || Array.isArray(value)
+            ? value as AttackSoundValue
+            : attackType ? (value as Partial<Record<AttackTypeName, AttackSoundValue>>)[attackType] : undefined;
+        if (sounds === undefined) return null;
+        return (typeof sounds === "number" ? [sounds] : sounds).map((sound) =>
+            typeof sound === "number" ? { id: sound, frame: 0 } : { id: sound.id, frame: sound.frame ?? 0 });
     }
 
     public getEquipSound(): number {

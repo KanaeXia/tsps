@@ -119,15 +119,15 @@ export class WeaponProfiles {
     }
 
     /**
-     * The animation whose sounds the attack plays instead of its own animation's (`attackSoundAnim`
-     * in the item's data, by the style's attack type), or -1.
+     * The sounds the attack plays instead of its weapon type's swing sound (`attackSound` in the
+     * item's data, by the style's attack type), each with its frame, or null.
      */
-    public static attackSoundAnimation(player: Player): number {
+    public static attackSounds(player: Player): { id: number; frame: number }[] | null {
         // Scripted attackers (and some test doubles) have no equipment to read.
         const weapon = player.getEquipment?.()?.getItems?.()?.[Equipment.WEAPON_SLOT];
-        if (!weapon || weapon.getId() <= 0) return -1;
+        if (!weapon || weapon.getId() <= 0) return null;
         const attackType = ATTACK_TYPE_NAMES[FightType.resolve(player.getFightType())?.getBonusType() ?? -1];
-        return weapon.getDefinition().getAttackSoundAnim(attackType);
+        return weapon.getDefinition().getAttackSounds(attackType);
     }
 
     /**

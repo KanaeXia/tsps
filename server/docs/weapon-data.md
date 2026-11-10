@@ -83,6 +83,22 @@ From the most specific source to the least:
 4. the attack style's animation.
 
 - **Per attack type:** `attackAnim` is one animation for every style, or one per attack type: the Soulreaper axe has `{"slash": 10171, "crush": 10172}` (`ancient_axe_slash` / `ancient_axe_crush`).
+
+## Attack sounds
+
+A melee attack plays its weapon type's swing sound. An item's own **`attackSound`** (in
+`custom-items.json` or `item-gameplay.json`) plays instead:
+
+- one sound id: `"attackSound": 2933`;
+- several sounds, each `frame` frames into the attack animation (no `frame`: as it starts), as the
+  client plays an animation's own sounds:
+  `"attackSound": [{"id": 11874, "frame": 5}, {"id": 11875, "frame": 8}, {"id": 11997, "frame": 11}]`
+  (the sounds of `human_weapons_crimson_kisten_special`, 14255);
+- either of those per attack type, like `attackAnim`: `"attackSound": {"stab": 2933, "slash": [...]}`.
+  A type without one plays the swing sound.
+
+Frames count in the animation the attack plays, so the same entries land at different times on a
+faster or slower animation. Sounds an animation carries in the cache play with it anyway.
 - **Against NPCs:** the cache has separate animations for some ranged attacks on NPCs, named `..._pvn`. A style's `npcAnimation`, or a profile's `npcAttackAnimation`, is used when the target is an NPC; the plain one when it's a player. The captures (all on NPCs) show the `_pvn` ones. There's no capture of these attacks on players, so the plain ones stay there.
 
 Every weapon's resolved animation, and every type's style animations, were reviewed against the

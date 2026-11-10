@@ -42,20 +42,17 @@ export class Sounds {
     }
 
     /**
-     * The sounds an animation carries in the cache (per-frame sounds), each delayed to its frame as
-     * the client would play them with the animation. For an animation that is played without its
-     * own sounds, such as a custom weapon swinging another animation (ItemDefinition.attackSoundAnim).
+     * Sounds that play with animation `sequenceId`, each `frame` frames in: delayed by the lengths of
+     * the frames before it, as the client plays them (ItemDefinition.attackSound). A frame past the
+     * animation's end plays as it ends.
      */
-    public static sendSequenceSounds(entity: unknown, sequenceId: number): void {
+    public static sendFrameSounds(entity: unknown, sequenceId: number, sounds: readonly { id: number; frame: number }[]): void {
         const { CacheDefinitions } = require("./cache/CacheDefinitions") as typeof import("./cache/CacheDefinitions");
-        const seq = CacheDefinitions.getSeq(sequenceId);
-        const lengths = seq?.frameLengths ?? [];
-        for (const [frame, effects] of seq?.frameSounds ?? []) {
+        const lengths = sequenceId >= 0 ? CacheDefinitions.getSeq(sequenceId)?.frameLengths ?? [] : [];
+        for (const sound of sounds) {
             let delay = 0;
-            for (let i = 0; i < frame && i < lengths.length; i++) delay += lengths[i];
-            for (const effect of effects) {
-                Sounds.sendSound(entity, new Sound(effect.id, 1, delay, effect.loops ?? 1));
-            }
+            for (let i = 0; i < sound.frame && i < lengths.length; i++) delay += lengths[i];
+            Sounds.sendSound(entity, new Sound(sound.id, 1, delay, 1));
         }
     }
 
