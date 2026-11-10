@@ -163,3 +163,72 @@ test("a 2x2 creature is caught from beside its far (north) side", async (t) => {
   await click(f, npc, "Tease");
   assert.equal(f.p.getInventory().getAmount(I.LARUPIA_FUR) + f.p.getInventory().getAmount(I.TATTY_LARUPIA_FUR), 1);
 });
+
+/** Uses an inventory item on the NPC (the item_on_npc packet), then runs the walk and the catch. */
+async function useOn(f, npc, itemId, ticks = 12) {
+  const slot = f.p.getInventory().getItems().findIndex((item) => item?.getId() === itemId);
+  assert.ok(slot >= 0, "the item is carried");
+  await f.c.dispatch([{ type: "item_on_npc", widgetId: 149 << 16, targetIndex: npc.getIndex(), itemId, slot }]);
+  f.c.processTurnPackets();
+  for (let i = 0; i < ticks; i++) {
+    core.TaskManager.processWalkTo(f.p.getIndex());
+    f.p.getMovementQueue().process();
+    core.TaskManager.process();
+  }
+}
+
+function withKnife(f) {
+  f.p.getInventory().adds(core.ItemIdentifiers.HUNTING_KNIFE, 1);
+  return f;
+}
+
+test("a hunting knife catches a creature with no options to click (a crimson swift)", async (t) => {
+  const N = core.NpcIdentifiers, I = core.ItemIdentifiers;
+  const f = withKnife(actor(t, "Qunai", 1)), npc = spawn(t, N.CRIMSON_SWIFT);
+  assert.deepEqual(npc.getDefinition().getActions().filter(Boolean), [], "no option to click");
+  const xpBefore = f.p.getSkillManager().getExperience(core.Skill.HUNTER);
+  await useOn(f, npc, I.HUNTING_KNIFE);
+  assert.equal(f.p.getInventory().getAmount(I.RAW_BIRD_MEAT), 1, "the bird snare's loot");
+  assert.equal(f.p.getInventory().getAmount(I.HUNTING_KNIFE), 1, "the knife is kept");
+  assert.equal(f.p.getSkillManager().getExperience(core.Skill.HUNTER) - xpBefore, trapXp(t, N.CRIMSON_SWIFT, 34));
+  assert.equal(npc.isVisible(), false, "caught");
+});
+
+test("a hunting knife catches a creature that has options too (a chinchompa)", async (t) => {
+  const N = core.NpcIdentifiers, I = core.ItemIdentifiers;
+  const f = withKnife(actor(t, "Qunai", 53)), npc = spawn(t, N.CHINCHOMPA, 3);
+  await useOn(f, npc, I.HUNTING_KNIFE);
+  assert.equal(f.p.getInventory().getAmount(I.CHINCHOMPA_2), 1);
+  assert.equal(f.p.getCombat().getTarget(), null, "no fight started");
+});
+
+test("a hunting knife on an impling makes its own barehanded catch, into a jar", async (t) => {
+  const N = core.NpcIdentifiers, I = core.ItemIdentifiers;
+  const f = withKnife(actor(t, "Qunai", 99)), npc = spawn(t, N.BABY_IMPLING);
+  f.p.getInventory().adds(I.IMPLING_JAR, 1);
+  const random = Math.random;
+  Math.random = () => 0;
+  t.after(() => { Math.random = random; });
+  await useOn(f, npc, I.HUNTING_KNIFE);
+  assert.equal(f.p.getInventory().getAmount(I.BABY_IMPLING_JAR), 1);
+  assert.equal(f.p.getInventory().getAmount(I.IMPLING_JAR), 0);
+});
+
+test("anyone else's hunting knife does nothing to a Hunter creature", async (t) => {
+  const N = core.NpcIdentifiers, I = core.ItemIdentifiers;
+  const f = withKnife(actor(t, "Someone", 99)), npc = spawn(t, N.CRIMSON_SWIFT);
+  await useOn(f, npc, I.HUNTING_KNIFE);
+  assert.equal(f.p.getInventory().getAmount(I.RAW_BIRD_MEAT), 0);
+  assert.equal(npc.isVisible(), true);
+});
+
+test("below the creature's level the knife says so and catches nothing", async (t) => {
+  const N = core.NpcIdentifiers, I = core.ItemIdentifiers;
+  const f = withKnife(actor(t, "Qunai", 52)), npc = spawn(t, N.CHINCHOMPA);
+  const messages = [];
+  const send = f.p.sendMessage.bind(f.p);
+  f.p.sendMessage = (m) => { messages.push(m); return send(m); };
+  await useOn(f, npc, I.HUNTING_KNIFE);
+  assert.equal(f.p.getInventory().getAmount(I.CHINCHOMPA_2), 0);
+  assert.ok(messages.includes("You need a Hunter level of at least 53 to catch that."), messages.join(" | "));
+});

@@ -4,10 +4,14 @@
 // with no trap, net or falcon. Any option on one (Attack included) catches it instead, once they
 // have the creature's Hunter level; without it the option does what it normally does.
 // Butterflies, moths and implings keep their own barehanded catches (Catching.Hunter.js).
+// The same player may also use a hunting knife on any Hunter creature to catch it: that reaches
+// the creatures with no option to click (birds, ferrets, kebbits, salamanders) as well, and on a
+// butterfly, moth or impling it makes that creature's own barehanded catch.
 
 const C = require("./Context.Hunter");
 const { H, ANIM, level, available, exchange, xp, begin } = C;
 const Traps = require("./Traps.Hunter");
+const Catching = require("./Catching.Hunter");
 
 /** Who may catch barehanded: every condition must hold. */
 const BAREHANDED_CONDITIONS = [
@@ -148,9 +152,31 @@ function interaction(event) {
   catchCreature(event.player, event.npc, creature);
 }
 
+/**
+ * A hunting knife used on a Hunter creature: the player has already walked up to it, so catch it
+ * as Attack would. Butterflies, moths and implings get their own barehanded catch (and its level
+ * check and jar). For anyone else, or anything else, the use falls through.
+ */
+function knifeOnCreature(event) {
+  const { player, target: npc, npcId } = event;
+  if (event.itemId !== H.core.ItemIdentifiers.HUNTING_KNIFE || !H.data || !eligible(player)) return;
+  const creature = creatureFor(npcId);
+  if (creature) {
+    event.handled = true;
+    if (level(player) < creature.level) {
+      player.sendMessage(`You need a Hunter level of at least ${creature.level} to catch that.`);
+      return;
+    }
+    catchCreature(player, npc, creature);
+    return;
+  }
+  const own = H.data.butterflies.some(c => c.npc === npcId) || H.data.implings.some(c => c.npcs.includes(npcId));
+  if (own && Catching.catchNpc({ player, npc, npcId })) event.handled = true;
+}
+
 /** Barehanded catches are made from beside the creature, not from a falcon's range. */
 function route(event) {
   if (catchable(event.player, event.npcId)) event.range = CATCH_RANGE;
 }
 
-module.exports = { BAREHANDED_CONDITIONS, eligible, creatureFor, catchable, attackOption, interaction, route };
+module.exports = { BAREHANDED_CONDITIONS, eligible, creatureFor, catchable, attackOption, interaction, knifeOnCreature, route };

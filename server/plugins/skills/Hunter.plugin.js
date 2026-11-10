@@ -53,6 +53,7 @@ module.exports = {
     api.onNpcRoute(Barehanded.route);
     api.onNpcAttackOption(Barehanded.attackOption);
     api.onBeforeNpcInteraction(Barehanded.interaction);
+    api.onItemOnNpc(Barehanded.knifeOnCreature, { noted: false });
     api.onAnyNpcInteraction({ Catch: Runtime.catchNpc, Tease: Pitfalls.tease, Retrieve: Catching.retrieve });
     api.onNpcInteraction("Matthias", { "Quick-falcon": Catching.hire, Falconry: Catching.hire });
     api.onNpcInteraction("Alry the Angler", { "Get bird": Aerial.borrow, "Talk-to": Aerial.talk });
