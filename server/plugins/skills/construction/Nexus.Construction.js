@@ -118,7 +118,7 @@ function teleport(event) {
   const player = event.player;
   const state = stateOf(player, found.furniture);
   if (!state.left) return openMenu(player, found), true;
-  player.setPositionToFace(event.location);
+  player.setPositionToFace(event.object.getLocation());
   TaskManager.submit(new CountdownTask(player.getIndex(), LEFT_CLICK_DELAY_TICKS, () => {
     if (House.houseFor(player) !== found.house) return;
     player.getPacketSender().sendVarbit(NEXUS_ID, found.tier.id);
