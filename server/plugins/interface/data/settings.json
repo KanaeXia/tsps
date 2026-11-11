@@ -57,6 +57,7 @@
     "86": { "name": "Modern Layout - Side panel visual appearance", "varbit": 12135 },
     "111": { "name": "Show normal health overlay", "varbit": 12390 },
     "114": { "name": "Show mouseover tooltips", "varbit": 12344 },
+    "115": { "name": "Anti Drag", "varbit": 12345 },
     "119": { "name": "Chat timestamps", "varbit": 12384, "script": 4586 },
     "123": { "name": "Show attack style", "varbit": 12352 },
     "124": { "name": "Display buff bar", "varbit": 9528 },
@@ -112,6 +113,25 @@
     "208": { "name": "Desert - Heat damage", "varbit": 13134 },
     "209": { "name": "Show number of options in mouseover tooltips", "varbit": 13133 },
     "213": { "name": "Cannon ammo", "varbit": 13667 },
+    "234": { "name": "Examine price info - Grand Exchange", "varbit": 13826, "default": 1 },
+    "235": { "name": "Examine price info - Alchemy", "varbit": 13827, "default": 1 },
+    "236": { "name": "Anti Drag - Delay", "varbit": 13830 },
+    "237": {
+      "name": "Anti Drag - Enable Key",
+      "options": [
+        { "varbits": { "13828": 0 } },
+        { "varbits": { "13828": 81 } },
+        { "varbits": { "13828": 82 } }
+      ]
+    },
+    "238": {
+      "name": "Anti Drag - Disable Key",
+      "options": [
+        { "varbits": { "13829": 0 } },
+        { "varbits": { "13829": 81 } },
+        { "varbits": { "13829": 82 } }
+      ]
+    },
     "244": { "name": "Desert - Water available", "varbit": 14166 },
     "246": { "name": "Cannon decay", "varbit": 14173 },
     "248": { "name": "Cannon low on ammo notification", "varbit": 14175 },
@@ -145,6 +165,7 @@
     "301": { "name": "Health overlay display type", "varbit": 14708 },
     "302": { "name": "Disable Phantom Muspah messages", "varbit": 14711 },
     "305": { "name": "Ammo-picking behaviour", "varbit": 5697 },
+    "306": { "name": "Rune-picking behaviour", "varbit": 5698 },
     "307": { "name": "Wilderness cave decay", "varbit": 14691 },
     "308": { "name": "Show warning on exiting Ferox Enclave on a High Risk world", "varbit": 14803 },
     "309": { "name": "Show warning on taking a canoe to the Wilderness on a High Risk world", "varbit": 14804 },
@@ -183,6 +204,7 @@
     "378": { "name": "Elite clue scroll warning", "varbit": 10724 },
     "379": { "name": "Master clue scroll warning", "varbit": 10725 },
     "385": { "name": "Deadman blighted overload", "varbit": 10946 },
+    "386": { "name": "Death protection from cosmetics", "varbit": 10987 },
     "388": { "name": "Prayer Regeneration Duration", "varbit": 11032 },
     "390": { "name": "Goading Potion Duration", "varbit": 10068 },
     "418": { "name": "Leagues: Display Combat Masteries", "varbit": 11562 },

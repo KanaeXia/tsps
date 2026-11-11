@@ -51,7 +51,7 @@ The client only reports the click. The server sets the variable and sends it bac
 | Scroll wheel can change zoom distance | 13 | varbit 6357 `camera_zoom_mouse_disabled` |
 | Enable profanity filter | 37 | varp 1074 `option_chatfilter_disabled` |
 | Shift click to drop items | 51 | varbit 11556 `desktop_shiftclickdrop_enabled`; a fresh account starts with it on (live sent 1 at login in all 8 transcribed rsprox recordings). The login script (876, via 7431) passes it to `setshiftclickdrop` on desktop; with Shift held the inventory item's shift-click op is its top entry |
-| Ammo-picking behaviour | 305 | varbit 5697 `take_ammo_toggle`; the Ranged combat tutor's toggle writes the same setting, which is authoritative. A pre-Settings tutor choice saved on the old `ranged:equip-ammo-on-pickup` attribute is migrated into this row at login unless a setting is already saved |
+| Ammo-picking behaviour | 305 | varbit 5697 `take_ammo_toggle`; see [Pickups into containers](#pickups-into-containers) |
 | Sailing side panel (dropdown: Always show, Only show on boat) | 454 | varbit 18131 `settings_sailing_side_panel_onlyonboat` = option; off a boat, Sailing sets 19153 `sailing_sidepanel_visible_from_combat_tab` from it (see below) |
 | Level-up pop-up notifications (dropdown) | 315 | see below |
 | Level-up chatbox list | 493 | varbit 20158 `option_level_up_chatbox_list` |
@@ -125,7 +125,6 @@ These rows only needed wiring: the cache's own scripts (or our client and server
 - **Not done**:
   - Show data orbs (8, varbit 4084 `orbs_disabled`): live also leaves the orbs interface (160) closed while it is set and opens it when the player turns them back on (rsprox 229/2375 tick 8), which needs server work.
   - Disable colourful fade effects does not change Guardians of the Rift, which keeps its own `gotr_colourful_fade_disabled` (the barrier's Visual-effects option).
-  - Cache scripts 518, 2518 and 3231 (the buff bar's own toggles) also flip the relic and mastery varbits, in the client alone, so a change made there is not saved.
 
 ## Buff Bar
 
@@ -154,7 +153,6 @@ Poison and venom already go out on varp 102 `poison` (the hitpoints orb's), whic
 - **Not done**:
   - Freeze: live sends no var for it (the freeze message comes alone), so the bar's freeze buff isn't driven from the server; the infobox timer (7998/7999) still shows it.
   - The other effects' vars are in [Buff timers read from a var](#buff-timers-read-from-a-var). Still not drawn: Mark of Darkness, the active Shadow Veil, Ward of Arceuus and Resurrection, the Staff of the dead special, the Sire stun, cannon decay and the Tombs of Amascut effects (no var: see that section), and the surge potion (no surge potion).
-  - The buff bar's own toggle scripts (4607 for freeze, 4611 for antipoison and the like) flip their varbits in the client alone, so a change made there is not saved.
   - Modified stats overlay (148-151): now wired, see "Health and modified stats overlays" below.
 
 ## Rows owned by other plugins
@@ -504,6 +502,48 @@ These rows are in `data/settings.json` and are read by the Sailing helm plugins 
   - **Cargo hold access privacy** (470, varbit 19614: Navigators, All players, No players): a guest can't open another player's cargo hold at all yet, and no capture or Wiki text gives the refusal line.
   - Ours: with the catcher switched off, the orb's Release does nothing, as Release-mote does.
 
+## Pickups into containers
+
+Rows 305 and 306 are `data/settings.json` toggles, off for a new account. While one is on, a ground stack goes somewhere other than the inventory when the cache's row text says so; otherwise the ordinary pickup runs. These pickups pass the same Ironman guard and take checks, report `ground-items:taken` and play the pickup sound, as an ordinary pickup does (`plugins/items/TakeInto.js`). All or nothing: a stack that doesn't fit whole goes to the inventory. Tests: `tests/pickup-containers.test.cjs`, `tests/tutors-ammo-pickup.test.cjs`.
+
+| Setting | Id | Variable | Where the stack goes |
+| --- | --- | --- | --- |
+| Ammo-picking behaviour | 305 | varbit 5697 `take_ammo_toggle` | Ammo matching the worn ammo slot stacks there (`npcs/Tutors.plugin.js`); otherwise ammo matching a worn Dizana's quiver goes into it (`items/DizanasQuiver.plugin.js`) |
+| Rune-picking behaviour | 306 | varbit 5698 `take_runes_toggle` | Runes picked up, or made at an altar, go into the carried rune pouch when a slot already holds that rune with room for all of them (`items/runepouch/Pickup.RunePouch.js`, [rune-pouch.md](rune-pouch.md)) |
+
+The tutors write the same rows: the Ranged combat tutor's "Can you toggle my ammo to equip when I pick it up please?" sets 305, and the Magic combat tutor's "Let's discuss how my runes act when I pick them up." sets 306. A pre-Settings Ranged tutor choice saved on the old `ranged:equip-ammo-on-pickup` attribute is migrated into row 305 at login unless a setting is already saved.
+
+- **Not done**: the bolt pouch, the row's other target for ammo, is not in tsps yet (see row 356).
+
+## Settings the client changes itself
+
+The cache's toggle script (3965) flips some rows' varbits in the browser before the row click is sent, and the client transmits the whole varp (`TRANSMIT_VARPS` in `client/common/vars.ts`). `Settings.plugin.js` keeps the bits of its own `settings.json` rows from varps 1224, 1734 and 2856 (other bits, like the collection log's on 2856, stay with their plugins), asking `refuseLockedSetting` first. The row click that follows takes the transmitted value (`SettingVarpTransmit`) instead of flipping it back; with no transmit (the official client) the click toggles it on the server as before.
+
+| Setting | Id | Var | Notes |
+| --- | --- | --- | --- |
+| Anti Drag | 115 | varbit 12345 (varp 2856) | toggle; the cache's inventory scripts apply it |
+| Anti Drag - Delay (number) | 236 | varbit 13830, 8 bits | `AntiDragDelay.plugin.js` asks for milliseconds and keeps them in 20 ms steps, up to 5000 ms (the row's description) |
+| Anti Drag - Enable Key / Disable Key | 237, 238 | varbits 13828, 13829 | the option's key code, which script 3962 reads back through enum 4302: 0 none, 81 Shift, 82 Ctrl |
+| Esc closes the current interface | 57 | varbit 4681 (varp 1224, bit 31) | saved in its keybind (`keybind_4681`), as the keybindings panel's toggle; both share one toggle |
+| Display Relics | 127 | varbit 12383 (varp 1734) | the buff bar's relic op (script 3231) flips it with no click; varp 1734 is transmitted for it |
+
+Scripts 518, 2518, 4607 and 4611 are only called by the toggle script for their All Settings rows, which are saved from the click. Live logins send varp 3416 as 1 (no delay, no keys). Tests: `tests/settings-client-saves.test.cjs`, `client/tests/buff-bar-settings-varps.test.ts`.
+
+- **Not done**: the official client transmits no varps, so a relic change made on its buff bar is still not saved. Ours: the delay prompt's wording (no capture of it).
+
+## Examine price info
+
+Rows 234 (Grand Exchange, varbit 13826 `examine_price_ge_enabled`) and 235 (Alchemy, varbit 13827 `examine_price_alch_enabled`) are `data/settings.json` toggles, on by default. Examining an item adds a line after its examine text:
+
+- `Price of Steel scimitar: GE 67  HA 240  LA 160` for one item, `Price of 100 x Feather: GE 300 (3ea)  HA 100 (1ea)` for a stack, with the numbers in red. Grand Exchange adds the GE part, Alchemy the HA and LA parts.
+- A part whose value is 0 is left out, and so is the whole line when nothing is left. Untradeable items have no line. A note is priced and named as the item it notes.
+- The GE part is the world's guide price (the one `/api/item-prices` serves); HA and LA are what the alchemy spells pay (none for an item they refuse, such as a bond).
+
+The server's item examines all go through `examineItem` (`game/content/ExaminePrice.ts`): the inventory and ground items (`net/NetworkBuilder.ts`), the worn equipment tab, the bank and its worn-items view (`Bank.ts`), the shop's stock and side inventory (`ShopManager.ts`) and the equipment stats screen (`EquipmentStats.plugin.js`). The trade window's items are examined in the client (`OsrsClient.examineWidgetItem`, `client/game/examinePrice.ts`), with the guide prices from `/api/item-prices` and the alchemy values from `/api/item-alchemy` (`ItemDefinitionLoader.plugin.js`), so both sides show the same values. A shop prices its whole stock, as the bank prices the banked stack (ours). The format is from screenshots of the official client. Defaults: the Alchemy varbit is 1 in all 3,239 rsprox logins that send it, and the Grand Exchange one in all 2,244 non-Ironman ones. Tests: `tests/examine-price.test.cjs`, `tests/examine-price-routes.test.cjs` (each server route), `client/tests/examine-price.test.ts`.
+
+- **Ours**: the exact red (`<col=ff0000>`) and the two spaces between parts, read off the screenshots.
+- **Not done**: item examines that plugins send themselves (the looting bag, death and boss retrieval chests, the farming vault and similar) have no price line yet. Live sends the Grand Exchange varbit as 0 in 777 of the 995 Ironman logins, so Ironman accounts probably start with it off. Here every account starts with it on.
+
 ## Containers on death
 
 Rows 354-359 are `data/settings.json` toggles, saved and sent back at login. Each is off by default: no rsprox capture ever sets its varbit. With a row on, a PvM death empties that container into the grave even when it is kept, as the row's cache text says ("its contents will be emptied into your grave, even if the pouch itself is not lost"). The storage items' death hook applies them; what each death does is in [storage-items.md](storage-items.md#death) (cases in `tests/container-death.test.cjs`).
@@ -518,3 +558,14 @@ Rows 354-359 are `data/settings.json` toggles, saved and sent back at login. Eac
 | Always empty herb sacks on death | 359 | varbit 15316 `emptyondeath_herbsack` | herb sack and silklined herb sack |
 
 - **Not done:** a seed box lost above level 20 Wilderness is destroyed on live with its seeds kept for the next box (Wiki: Seed box, 14 April 2021); here its seeds go to the bank and the killer like any other PvP death.
+
+### Death protection from cosmetics (row 386)
+
+Row 386 is a `data/settings.json` toggle on varbit 10987 `death_waivecosmeticsprotection`, saved and sent back at login. The varbit is 1 when the player turns protection off, so a fresh account (0) has it on; no rsprox capture ever sets it to 1. Its cache text: "When enabled, cosmetic upgrades such as ornament kits may cause certain items to be protected during a non-PvP death, rather than falling to a grave."
+
+- **What it protects** (Wiki: Items Kept on Death, the Mechanics table; Ornament kit; Bounty hunter ornament kit; Volcanic abyssal whip): an item in `items/data/ornament-kits.json` made with a tradeable ornament kit, mix or paint, or with the untradeable Bounty Hunter ornament kit (`OrnamentKits.plugin.js` answers `player-death:cosmetic`). Not protected: untradeable modifications (the Wiki's example is the twisted ancestral colour kit) and recolours made at an NPC (Deadman imbued capes), which go to the grave. Ours: the other untradeable kits (dark dye, the Theatre of Blood holy and sanguine kits, the cursed phalanx, Vorkath's head) are treated the same way; their Wiki pages give no PvM rule. The death ranks a protected item like any other. If it is among the kept ones it takes that slot; if not, it is kept on top of them, skulled or not (`PlayerDeathTask.getKeptItems`).
+- **When:** not on a death to another player, and not in the Wilderness (`PlayerDeathTask.protectsCosmetics`). With the row off the item ranks normally and, unkept, goes to the grave.
+- **Items Kept on Death** keeps its three (or four) kept slots for the ranked items and lists a protected item with the others, marked kept. Its PvP and Wilderness toggles show the death without the protection.
+- Tests: `tests/cosmetic-death-protection.test.cjs`.
+- **Evidence:** the cache has no per-item flag for this; only the settings scripts (3965, 6716) read the varbit. In the 24 Items Kept on Death opens with full item lists in the rsprox captures (recordings 430 to 4291, revisions 230-239), no ornamented item sits outside the kept slots, so none confirms the protection directly; none of the items live marks lost there is one this protects (tests/cosmetic-death-protection.test.cjs checks a sample).
+- **Not done:** the Tombs of Amascut retrieval chest and Bounty Hunter risk skulls still rank without the protection.
