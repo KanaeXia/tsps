@@ -45,7 +45,7 @@ type OsrsMusicSong = {
     pcmVolume: number; // OSRS: MusicSong.currentVolume/current stream volume
     loadPromise: Promise<boolean> | null;
     /** A player's song (a lyre performance): its MIDI bytes, played instead of a cache track. */
-    custom?: { id: number; midi: Uint8Array; offsetMs: number; requestedAt: number; cancelled: boolean };
+    custom?: { id: number; midi: Uint8Array; offsetMs: number; requestedAt: number; cancelled: boolean; program?: number };
 };
 
 type OsrsSongTask = {
@@ -559,13 +559,13 @@ export class MusicSystem {
     /**
      * Plays a player's song (a lyre performance's MIDI file) through the music synth, `offsetMs`
      * into it. Like a jingle, it cuts the area track and gives it back when it ends or is stopped.
-     * Nothing plays while music is muted.
+     * Nothing plays while music is muted. `program` plays every melodic channel on that instrument.
      */
-    public playCustomSong(id: number, midi: Uint8Array, offsetMs: number): boolean {
+    public playCustomSong(id: number, midi: Uint8Array, offsetMs: number, program?: number): boolean {
         if (!(this.outputVolume() > 0)) return false;
         const [entry] = this.createOsrsSongEntries([0], "jingle");
         entry.trackId = -1;
-        entry.custom = { id, midi, offsetMs: Math.max(0, offsetMs), requestedAt: performance.now(), cancelled: false };
+        entry.custom = { id, midi, offsetMs: Math.max(0, offsetMs), requestedAt: performance.now(), cancelled: false, program };
         this.queueOsrsSongs([entry], { fadeOutDelayTicks: 0, fadeOutDurationTicks: 0, fadeInDelayTicks: 0, fadeInDurationTicks: 0 }, true);
         this._playingJingle = true;
         return true;
@@ -1559,7 +1559,7 @@ export class MusicSystem {
                 if (!song.loadPromise) {
                     const trackId = song.trackId | 0;
                     const load = song.custom
-                        ? song.synth.loadMidi(song.custom.midi)
+                        ? song.synth.loadMidi(song.custom.midi, { program: song.custom.program })
                         : song.kind === "jingle"
                             ? song.synth.loadJingle(trackId)
                             : song.synth.loadTrack(trackId);

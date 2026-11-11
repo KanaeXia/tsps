@@ -4,8 +4,9 @@
  * - { type: "choose", token, maxBytes }: the player chose Play on a lyre. A file picker opens; the
  *   chosen MIDI file goes back in chunks ({ type: "upload", token, part, parts, data }, base64),
  *   or { type: "cancel" } / { type: "too-big" }.
- * - { type: "song", id, part, parts, data, offsetMs }: a song being played nearby (or by the
- *   player). Once every part is in, it plays through the music synth, offsetMs into it.
+ * - { type: "song", id, part, parts, data, offsetMs, program? }: a song being played nearby (or by
+ *   the player). Once every part is in, it plays through the music synth, offsetMs into it, on
+ *   instrument `program` (a General MIDI program) when given, else on the file's own instruments.
  * - { type: "stop", id }: that song stopped, or the player walked out of earshot.
  */
 import type { PluginMessagePayload } from "../../common/network/PluginMessage";
@@ -16,7 +17,7 @@ export const UPLOAD_CHUNK_BYTES = 9000;
 
 /** What a lyre song needs from the music system. */
 export type LyreMusic = {
-    playCustomSong(id: number, midi: Uint8Array, offsetMs: number): boolean;
+    playCustomSong(id: number, midi: Uint8Array, offsetMs: number, program?: number): boolean;
     stopCustomSong(id: number): void;
 };
 
@@ -27,7 +28,7 @@ export type LyreSongsDeps = {
     pickFile: () => Promise<Uint8Array | null>;
 };
 
-type Incoming = { parts: (string | null)[]; received: number; offsetMs: number; arrivedAt: number };
+type Incoming = { parts: (string | null)[]; received: number; offsetMs: number; arrivedAt: number; program?: number };
 
 export function toBase64(bytes: Uint8Array): string {
     let binary = "";
@@ -91,7 +92,8 @@ export class LyreSongs {
             || !Number.isInteger(part) || part < 0 || part >= parts || typeof data.data !== "string") return;
         let song = this.incoming.get(id);
         if (!song || song.parts.length !== parts) {
-            song = { parts: new Array(parts).fill(null), received: 0, offsetMs: Number(data.offsetMs) || 0, arrivedAt: Date.now() };
+            const program = Number.isInteger(data.program) && data.program >= 0 && data.program < 128 ? data.program : undefined;
+            song = { parts: new Array(parts).fill(null), received: 0, offsetMs: Number(data.offsetMs) || 0, arrivedAt: Date.now(), program };
             this.incoming.set(id, song);
         }
         if (song.parts[part] === null) song.received++;
@@ -105,7 +107,7 @@ export class LyreSongs {
             midi.set(chunk, at);
             at += chunk.length;
         }
-        this.deps.music()?.playCustomSong(id, midi, song.offsetMs + (Date.now() - song.arrivedAt));
+        this.deps.music()?.playCustomSong(id, midi, song.offsetMs + (Date.now() - song.arrivedAt), song.program);
     }
 }
 

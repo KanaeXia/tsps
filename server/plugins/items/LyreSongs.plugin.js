@@ -20,8 +20,15 @@ const { readMidi, MidiError } = require("./lyre/Midi.Lyre");
 const CHANNEL = "lyre-song";
 const LYRE = 3689;
 const PLAY_ANIMATION = 1321;
-/** Sequence 1321 loops ten times (65 client cycles each, 13 seconds): played again before it ends. */
-const ANIMATION_REPEAT_TICKS = 20;
+/**
+ * Sequence 1321 is 1.3 seconds (65 client cycles) and, when it ends, only holds its last frame
+ * (frameStep 1). It restarts when sent again (restart mode 1), so it is sent every 2 ticks.
+ */
+const ANIMATION_REPEAT_TICKS = 2;
+/** World setting: the General MIDI program songs are played on (-1: each file's own instruments). */
+const INSTRUMENT_CONFIG = "LyreSongs:instrument";
+/** Orchestral harp: the bank's nearest plucked string to a lyre. */
+const DEFAULT_INSTRUMENT = 46;
 const TICK_MS = 600;
 /** Nobody may start a song within this many tiles of another; songs are heard within it too. */
 const RADIUS = 32;
@@ -67,6 +74,13 @@ function holdsLyre(player) {
   return player.getInventory().contains(LYRE) || player.getEquipment?.()?.contains?.(LYRE) === true;
 }
 
+/** The program every song plays on, or undefined for each file's own instruments. */
+function instrument() {
+  const value = Number(api?.getPluginConfig?.(INSTRUMENT_CONFIG, DEFAULT_INSTRUMENT));
+  if (!Number.isInteger(value)) return DEFAULT_INSTRUMENT;
+  return value >= 0 && value < 128 ? value : undefined;
+}
+
 function chunk(bytes) {
   const parts = [];
   for (let at = 0; at < bytes.length; at += CHUNK_BYTES) parts.push(Buffer.from(bytes.subarray(at, at + CHUNK_BYTES)).toString("base64"));
@@ -101,6 +115,7 @@ function defineTask() {
 
     start() {
       this.id = nextId++;
+      this.program = instrument();
       this.startedAt = Date.now();
       this.location = this.player.getLocation().clone();
       performances.set(this.player, this);
@@ -147,7 +162,10 @@ function defineTask() {
         if (this.listeners.has(listener) || !listener.isRegistered?.() || listener.isPlayerBot?.()) continue;
         if (!sameSpace(listener, performer) || !listener.getLocation().isWithinDistance(where, RADIUS)) continue;
         this.listeners.add(listener);
-        this.parts.forEach((data, part) => send(listener, { type: "song", id: this.id, part, parts: this.parts.length, data, offsetMs }));
+        this.parts.forEach((data, part) => send(listener, {
+          type: "song", id: this.id, part, parts: this.parts.length, data, offsetMs,
+          ...(this.program !== undefined ? { program: this.program } : {}),
+        }));
       }
     }
 
@@ -243,6 +261,13 @@ function onLogout({ player }) {
 module.exports = {
   name: "LyreSongs",
   description: "Play on the Lyre plays a MIDI file the player uploads, through the game's instruments, for everyone within 32 tiles.",
+  config: {
+    [INSTRUMENT_CONFIG]: {
+      type: "number", label: "Lyre song instrument", default: DEFAULT_INSTRUMENT, min: -1, max: 127,
+      help: "The General MIDI program every lyre song plays on: 46 harp (default), 24 nylon guitar, 25 steel guitar, "
+        + "104 sitar, 105 banjo, 107 koto. -1 keeps each file's own instruments.",
+    },
+  },
   register(pluginApi) {
     api = pluginApi;
     core = pluginApi.core;
@@ -252,5 +277,5 @@ module.exports = {
     api.onPlayerLogout(onLogout);
   },
   _test: { play, receive, upload, onPluginMessage, onLogout, nearbyPerformer, performances, chunk,
-    CHANNEL, LYRE, PLAY_ANIMATION, RADIUS, MAX_BYTES, CHUNK_BYTES },
+    CHANNEL, LYRE, PLAY_ANIMATION, RADIUS, MAX_BYTES, CHUNK_BYTES, ANIMATION_REPEAT_TICKS, DEFAULT_INSTRUMENT, INSTRUMENT_CONFIG },
 };

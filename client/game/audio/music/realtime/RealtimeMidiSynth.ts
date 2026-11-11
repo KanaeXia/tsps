@@ -81,6 +81,30 @@ type MidiEvent = (
 ) &
     MidiEventBase;
 
+/**
+ * Every melodic channel played on one instrument (`program`, bank 0): its program changes become
+ * that program, its bank selects are dropped, and channels that never change program get one at
+ * the start. The percussion channel (10) keeps its drums.
+ */
+export function forceProgram<T extends { type: string; tick: number; channel?: number; _seq?: number }>(events: T[], program: number): T[] {
+    const PERCUSSION = 9;
+    const melodic = (event: T) => typeof event.channel === "number" && event.channel !== PERCUSSION;
+    const out: T[] = [];
+    const channels = new Set<number>();
+    for (const event of events) {
+        if (!melodic(event)) {
+            out.push(event);
+            continue;
+        }
+        const anyEvent = event as any;
+        if (event.type === "controlChange" && (anyEvent.controller === 0 || anyEvent.controller === 32)) continue;
+        if (event.type === "noteOn") channels.add(event.channel as number);
+        out.push(event.type === "programChange" ? ({ ...event, program } as T) : event);
+    }
+    const starts = [...channels].map((channel) => ({ type: "programChange", tick: 0, channel, program, _seq: -1 }) as unknown as T);
+    return [...starts, ...out];
+}
+
 export class RealtimeMidiSynth {
     private static warnedUnsupported = false;
 
@@ -1172,14 +1196,14 @@ registerProcessor("music-worklet-processor", MusicWorkletProcessor);
      * Load a Standard MIDI File (format 0 or 1, ticks per quarter note) and prepare for playback:
      * a song a player plays on a lyre. It plays through the same instruments as the music.
      */
-    async loadMidi(midiBytes: Uint8Array): Promise<boolean> {
+    async loadMidi(midiBytes: Uint8Array, options: { program?: number } = {}): Promise<boolean> {
         if (!this.workletReady) {
             const ok = await this.initialize();
             if (!ok) return false;
         }
         this.stop();
         try {
-            return await this.prepareMidi(midiBytes, "custom song");
+            return await this.prepareMidi(midiBytes, "custom song", options.program);
         } catch (error) {
             console.error("[RealtimeMidiSynth] Custom song could not be read", error);
             return false;
@@ -1187,7 +1211,7 @@ registerProcessor("music-worklet-processor", MusicWorkletProcessor);
     }
 
     /** Parses MIDI bytes into events and loads the instruments they use. */
-    private async prepareMidi(midiBytes: Uint8Array, label: string): Promise<boolean> {
+    private async prepareMidi(midiBytes: Uint8Array, label: string, program?: number): Promise<boolean> {
         // Parse MIDI
         this.events = [];
         this.parseMidi(midiBytes);
@@ -1195,6 +1219,9 @@ registerProcessor("music-worklet-processor", MusicWorkletProcessor);
         if (this.events.length === 0) {
             console.error(`[RealtimeMidiSynth] No events in ${label}`);
             return false;
+        }
+        if (program !== undefined && Number.isInteger(program) && program >= 0 && program < 128) {
+            this.events = forceProgram(this.events, program);
         }
 
         // FIX A2: Sort events by tick, then by sequence number to preserve original emission order

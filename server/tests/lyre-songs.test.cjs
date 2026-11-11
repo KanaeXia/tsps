@@ -111,6 +111,18 @@ test("Play asks for a file; the song plays for the player and everyone within 32
     assert.ok(parts[0].offsetMs < 1000, "from the start");
   }
   assert.equal(far.of("song").length, 0, "40 tiles away: not heard");
+  assert.equal(bard.of("song")[0].program, Lyre._test.DEFAULT_INSTRUMENT, "played on the harp by default");
+});
+
+test("the animation is played again every 2 ticks while the song lasts", (t) => {
+  const bard = player(t);
+  clickPlay(bard.p);
+  upload(bard.p, bard.of("choose")[0].token, midi({ notes: 32 }));
+  assert.deepEqual(bard.animations, [Lyre._test.PLAY_ANIMATION]);
+  tick(Lyre._test.ANIMATION_REPEAT_TICKS);
+  assert.deepEqual(bard.animations, [Lyre._test.PLAY_ANIMATION, Lyre._test.PLAY_ANIMATION]);
+  tick(Lyre._test.ANIMATION_REPEAT_TICKS * 3);
+  assert.equal(bard.animations.filter((id) => id === Lyre._test.PLAY_ANIMATION).length, 5, "1.3 seconds each, so it never stands still");
 });
 
 test("someone walking into range hears the rest; walking away stops it", (t) => {

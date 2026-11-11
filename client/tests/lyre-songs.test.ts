@@ -1,6 +1,26 @@
 import { strict as assert } from "node:assert";
 
 import { LYRE_CHANNEL, LyreSongs, UPLOAD_CHUNK_BYTES, fromBase64, toBase64, uploadMessages } from "../game/audio/LyreSongs";
+import { forceProgram } from "../game/audio/music/realtime/RealtimeMidiSynth";
+
+// --- One instrument for a song: every melodic channel's programs and banks, drums kept ----
+const events = [
+    { type: "controlChange", tick: 0, channel: 0, controller: 0, value: 1 },
+    { type: "programChange", tick: 0, channel: 0, program: 23 },
+    { type: "noteOn", tick: 0, channel: 0, key: 60, velocity: 100 },
+    { type: "noteOn", tick: 10, channel: 1, key: 64, velocity: 100 },
+    { type: "programChange", tick: 20, channel: 0, program: 40 },
+    { type: "programChange", tick: 0, channel: 9, program: 0 },
+    { type: "noteOn", tick: 5, channel: 9, key: 36, velocity: 100 },
+    { type: "controlChange", tick: 0, channel: 0, controller: 7, value: 90 },
+];
+const forced = forceProgram(events, 46);
+assert.deepEqual(forced.filter((e: any) => e.type === "programChange").map((e: any) => [e.channel, e.program, e.tick]),
+    [[0, 46, 0], [1, 46, 0], [0, 46, 0], [0, 46, 20], [9, 0, 0]], "channels 1-16 on the harp; drums keep theirs");
+assert.ok(!forced.some((e: any) => e.type === "controlChange" && e.controller === 0), "bank selects dropped");
+assert.ok(forced.some((e: any) => e.type === "controlChange" && e.controller === 7), "other controllers kept (volume)");
+assert.equal(forced.filter((e) => e.type === "noteOn").length, 3, "every note kept");
+assert.equal((events[1] as any).program, 23, "the song's own events aren't changed");
 
 const bytes = (length: number, seed = 1) => Uint8Array.from({ length }, (_, i) => (i * 31 + seed) & 0xff);
 
@@ -15,12 +35,12 @@ assert.ok(messages.every((m) => JSON.stringify({ channel: LYRE_CHANNEL, data: m 
 
 async function checks(): Promise<void> {
     const sent: Record<string, unknown>[] = [];
-    const played: { id: number; midi: Uint8Array; offsetMs: number }[] = [];
+    const played: { id: number; midi: Uint8Array; offsetMs: number; program?: number }[] = [];
     const stopped: number[] = [];
     let picked: Uint8Array | null = null;
     const songs = new LyreSongs({
         music: () => ({
-            playCustomSong: (id, midi, offsetMs) => { played.push({ id, midi, offsetMs }); return true; },
+            playCustomSong: (id, midi, offsetMs, program) => { played.push({ id, midi, offsetMs, program }); return true; },
             stopCustomSong: (id) => { stopped.push(id); },
         }),
         send: (data) => sent.push(data),
@@ -51,11 +71,19 @@ async function checks(): Promise<void> {
     songs.handle({ channel: LYRE_CHANNEL, data: { type: "song", id: 5, part: 1, parts: 3, data: parts[1], offsetMs: 4000 } });
     songs.handle({ channel: LYRE_CHANNEL, data: { type: "song", id: 5, part: 0, parts: 3, data: parts[0], offsetMs: 4000 } });
     assert.equal(played.length, 0, "not until every part is in");
-    songs.handle({ channel: LYRE_CHANNEL, data: { type: "song", id: 5, part: 2, parts: 3, data: parts[2], offsetMs: 4000 } });
+    songs.handle({ channel: LYRE_CHANNEL, data: { type: "song", id: 5, part: 2, parts: 3, data: parts[2], offsetMs: 4000, program: 46 } });
     assert.equal(played.length, 1);
+    assert.equal(played[0].program, undefined, "the program comes with a song's first part");
     assert.equal(played[0].id, 5);
     assert.deepEqual(played[0].midi, midi);
     assert.ok(played[0].offsetMs >= 4000 && played[0].offsetMs < 4500, "from where the performance is");
+
+    // A one-part song on the harp; a program out of range is ignored.
+    songs.handle({ channel: LYRE_CHANNEL, data: { type: "song", id: 8, part: 0, parts: 1, data: toBase64(midi), offsetMs: 0, program: 46 } });
+    assert.equal(played.at(-1)?.program, 46);
+    songs.handle({ channel: LYRE_CHANNEL, data: { type: "song", id: 9, part: 0, parts: 1, data: toBase64(midi), offsetMs: 0, program: 400 } });
+    assert.equal(played.at(-1)?.program, undefined);
+    played.length = 1;
 
     // Stop, other channels and malformed parts.
     songs.handle({ channel: LYRE_CHANNEL, data: { type: "stop", id: 5 } });
