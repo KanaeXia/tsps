@@ -37,10 +37,10 @@ before(async () => {
   core.RegionManager.loadMapFiles(2611, 3295);
   PM.emitServerStartup({});
   directory = fs.mkdtempSync(path.join(os.tmpdir(), "custom-pets-"));
-  // A chathead to point at: the Fennec fox's drop model stands in for one.
+  // A chathead to point at: any model will do, so the Dragonic katana's stands in for one.
   models = fs.mkdtempSync(path.join(os.tmpdir(), "custom-pet-models-"));
   fs.mkdirSync(path.join(models, "fox"));
-  fs.copyFileSync(path.resolve(__dirname, "../data/models/fennec-fox/drop.dat"), path.join(models, "fox/chathead.dat"));
+  fs.copyFileSync(path.resolve(__dirname, "../data/models/dragonic-katana/drop.dat"), path.join(models, "fox/chathead.dat"));
   load([{ npcId: FOX, itemId: ITEM, name: "Fennec fox", scale: 70, lines: LINES }]);
 });
 
