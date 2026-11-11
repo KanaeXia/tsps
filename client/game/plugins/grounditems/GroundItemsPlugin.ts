@@ -35,8 +35,8 @@ import {
     splitList,
     itemValue,
     orderByTier,
+    priorityRank,
     tierValue,
-    valueTierRank,
 } from "./groundItemRules";
 import { type LootbeamHost, Lootbeams } from "./lootbeams";
 
@@ -392,14 +392,16 @@ export class GroundItemsPlugin extends Plugin {
     }
 
     /**
-     * Value priority: a tile's stacks in the order its menu is built (the last on top), so a
-     * higher value tier's options always sit above a lower one's, left-click included.
+     * Value and highlight priority: a tile's stacks in the order its menu is built (the last on
+     * top), so highlighted items' options (with "Prioritize highlighted items") and then a higher
+     * value tier's (with "Prioritize by value tier") always sit above the rest, left-click included.
      */
     orderGroundItemStacks<T extends ClientGroundItemStack>(stacks: T[]): T[] {
-        if (!this.isStarted() || this.config.valuePriority() !== true || stacks.length < 2) return stacks;
+        const by = { value: this.config.valuePriority() === true, highlighted: this.config.highlightedPriority() === true };
+        if (!this.isStarted() || (!by.value && !by.highlighted) || stacks.length < 2) return stacks;
         return orderByTier(stacks, (stack) => {
             const item = this.groundItemAt(stack.tile.x, stack.tile.y, stack.tile.level, stack.itemId);
-            return item ? valueTierRank(item, this.evaluate(item).listResult, this.settings) : 0;
+            return item ? priorityRank(item, this.evaluate(item).listResult, this.settings, by) : 0;
         });
     }
 

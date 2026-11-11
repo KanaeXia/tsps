@@ -59,6 +59,12 @@ in one tier keep the game's order (the last to land on top), and hidden-list ite
 everything. Only the value decides the tier, not the highlight list or an item's own colour.
 It also orders touch controls' item options.
 
+**Prioritize highlighted items** (off by default, not in RuneLite): on a tile, items on the
+"Highlighted items" list always come above everything else, whatever their value, so the
+left-click takes a highlighted item first. With "Prioritize by value tier" on too, highlighted
+items come first, each group ordered by tier. Only the list counts, not an item's own colour.
+It also orders touch controls' item options.
+
 ## Other features
 
 - **Despawn timer:** shows, for items whose despawn time is known, the time left in ticks or

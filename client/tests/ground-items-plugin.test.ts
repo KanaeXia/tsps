@@ -286,6 +286,13 @@ async function main(): Promise<void> {
     assert.deepEqual(ids(plugin.orderGroundItemStacks(tile)).slice(-1), [WHIP]);
     assert.equal(plugin.evaluate(plugin.groundItemAt(3220, 3220, 0, WHIP)!).highlighted !== undefined, true);
     set("stackableAwareValue", false);
+    // Highlight priority: the highlighted Rune scimitars go above the higher-tier whip.
+    set("highlightedPriority", true);
+    assert.deepEqual(ids(plugin.orderGroundItemStacks(tile)), [BONES, WHIP, SCIM, SCIM], "with value priority: highlighted on top, tiers below");
+    set("valuePriority", false);
+    assert.deepEqual(ids(plugin.orderGroundItemStacks(tile)).slice(-2), [SCIM, SCIM], "highlight priority alone: the scimitars on top");
+    assert.deepEqual(ids(plugin.orderGroundItemStacks(tile)).slice(0, 2), ids(tile).filter((id) => id !== SCIM), "the rest keep the game's order");
+    set("highlightedPriority", false);
     set("valuePriority", false);
     store.update({ kind: "delta", serial: 31, upserts: [], removes: tile.map((s: any) => s.id) } as any);
 

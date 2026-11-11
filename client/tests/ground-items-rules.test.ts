@@ -19,6 +19,7 @@ import {
     quantityToStackSize,
     itemValue,
     orderByTier,
+    priorityRank,
     shouldDisplayItem,
     tierValue,
     valueTierRank,
@@ -70,6 +71,16 @@ const settings: RuleSettings = {
     assert.equal(valueTierRank(item({ gePrice: 200_000 }), HIDDEN, s), -1, "hidden items rank lowest");
     assert.deepEqual(orderByTier(["a", "b", "c", "d"], (x) => ({ a: 2, b: 0, c: 2, d: 1 })[x]!), ["b", "d", "a", "c"],
         "lowest first (built first, so on the bottom); equal tiers keep their order");
+
+    // Highlight priority: highlighted items above every tier, with or without value priority.
+    const cheap = item({ gePrice: 5 }), rich = item({ gePrice: 200_000 });
+    const both = { value: true, highlighted: true }, onlyHighlighted = { value: false, highlighted: true };
+    assert.ok(priorityRank(cheap, HIGHLIGHTED, s, both) > priorityRank(rich, NONE, s, both), "a 5gp highlighted item beats the top tier");
+    assert.ok(priorityRank(rich, HIGHLIGHTED, s, both) > priorityRank(cheap, HIGHLIGHTED, s, both), "highlighted items keep their tier order");
+    assert.equal(priorityRank(cheap, HIGHLIGHTED, s, onlyHighlighted), 3, "highlight priority alone: highlighted above...");
+    assert.equal(priorityRank(rich, NONE, s, onlyHighlighted), 0, "...and every other item level, whatever its value");
+    assert.equal(priorityRank(rich, HIDDEN, s, onlyHighlighted), 0, "hidden items only sink with value priority");
+    assert.equal(priorityRank(rich, NONE, s, { value: true, highlighted: false }), valueTierRank(rich, NONE, s), "value priority alone is unchanged");
 }
 
 // --- ItemList: thresholds, wildcards, quoted exact names; exact beats wildcard ----------------

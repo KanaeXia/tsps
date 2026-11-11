@@ -126,6 +126,12 @@ export const GroundItemsConfig = ConfigGroup(
             position: 12,
             default: false,
         }),
+        highlightedPriority: ConfigItem({
+            name: "Prioritize highlighted items",
+            description: "Puts items on the highlighted list above every other item on the same tile, whatever their value, in the right-click menu and for left-click.",
+            position: 12,
+            default: false,
+        }),
         stackableAwareValue: ConfigItem({
             name: "Stackable-aware value",
             description: "Values items that don't stack in the inventory one at a time, so several on a tile don't reach a higher tier. Stackable and noted items count the whole stack.",

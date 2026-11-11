@@ -170,6 +170,22 @@ export function valueTierRank(item: GroundItem, listResult: number, s: RuleSetti
 }
 
 /**
+ * A stack's menu rank under the priority options: with "Prioritize highlighted items", items on
+ * the highlighted list rank above every value tier; with "Prioritize by value tier", by tier
+ * (hidden-list items lowest). With both, highlighted items come first and each group keeps its
+ * tier order.
+ */
+export function priorityRank(
+    item: GroundItem,
+    listResult: number,
+    s: RuleSettings,
+    by: { value: boolean; highlighted: boolean },
+): number {
+    const tier = by.value ? valueTierRank(item, listResult, s) : 0;
+    return by.highlighted && listResult === HIGHLIGHTED ? tier + s.priceChecks.length + 1 : tier;
+}
+
+/**
  * Value priority: the stacks in the order the menu is built (the last added is on top), lower
  * tiers first so the highest tier ends on top. Equal tiers keep the game's order.
  */
