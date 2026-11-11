@@ -24,6 +24,7 @@ const CatchUp = require("./pets/CatchUp.Pets");
 const Dialogue = require("./pets/Dialogue.Pets");
 const RiftGuardian = require("./pets/RiftGuardian.Pets");
 const TombsOfAmascut = require("./pets/TombsOfAmascut.Pets");
+const Custom = require("./pets/Custom.Pets");
 
 const CURRENT_PET_ATTRIBUTE = "pets:current";
 /** The item of the follower the player logged out with; re-summoned on login. */
@@ -797,6 +798,31 @@ function awardDroppedPets({ player, npc, npcId, drops, claim }) {
     if (!getPetForItemId(itemId)) continue;
     drops.splice(index, 1);
     awardPet(player, itemId);
+  }
+}
+
+/**
+ * The pets from custom-pets.json (pets/Custom.Pets.js) join the table before its NPC ids are
+ * hooked; a second register (tests) replaces the previous set.
+ */
+function addCustomPets(core, options = {}) {
+  for (let index = PETS.length - 1; index >= 0; index--) {
+    const pet = PETS[index];
+    if (!pet.custom) continue;
+    PETS.splice(index, 1);
+    PET_BY_ID.delete(pet.petId);
+    PET_BY_NAME.delete(pet.enumName);
+    if (PET_BY_ITEM_ID.get(pet.itemId) === pet) PET_BY_ITEM_ID.delete(pet.itemId);
+  }
+  for (const pet of Custom.load(core, options)) {
+    if (PET_BY_ID.has(pet.petId) || PET_BY_ITEM_ID.has(pet.itemId)) {
+      console.error(`[custom-pets] ${pet.custom.name}: NPC ${pet.petId} or item ${pet.itemId} is already a pet's; skipped`);
+      continue;
+    }
+    PETS.push(pet);
+    PET_BY_ID.set(pet.petId, pet);
+    PET_BY_NAME.set(pet.enumName, pet);
+    PET_BY_ITEM_ID.set(pet.itemId, pet);
   }
 }
 
@@ -2183,6 +2209,8 @@ module.exports = {
     NPCRespawnTaskRef = api.core?.NPCRespawnTask ?? null;
     ItemDefinitionClass = api.core?.ItemDefinition ?? null;
     fillSkillPetVariants(api.core);
+    addCustomPets(api.core);
+    Custom.attach(api, {getOwnedPetItems, holdsPetItem});
     api.persistAttribute(OWNED_ATTRIBUTE);
     api.persistAttribute(LAST_PET_ATTRIBUTE);
     api.persistAttribute(ACTIVE_PET_ATTRIBUTE, null);
@@ -2234,6 +2262,7 @@ module.exports = {
   // Exposed for tests/pets.test.cjs; nothing else reads them.
   __internals: {
     PETS,
+    addCustomPets,
     onSkill,
     skillingPetMultiplier,
     PET_BY_ID,

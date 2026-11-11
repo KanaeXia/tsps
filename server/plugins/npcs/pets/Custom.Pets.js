@@ -1,0 +1,241 @@
+/**
+ * Custom pets: a pet version of any NPC, from data/definitions/custom-pets.json.
+ *
+ *   { "version": 1, "pets": [
+ *     { "npcId": 12980, "itemId": 50020, "name": "Fennec fox", "scale": 70,
+ *       "lines": ["Yip!", "*The fox's ears twitch.*"] }
+ *   ] }
+ *
+ * - npcId: the NPC whose look the pet takes (its models, recolours, idle and walk animations).
+ * - itemId: the pet's item, a row of custom-items.json. Its objType.inventoryActions must be
+ *   [null, null, null, null, "Drop"] (as a real pet item's): Drop summons the pet.
+ * - name: the follower's name.
+ * - scale: its size, in percent of the NPC's (default 100).
+ * - lines: what it says when talked to, one picked at random each time.
+ * - petNpcId (optional): the follower's own NPC id; the item id by default.
+ *
+ * Each pet becomes a follower NPC: a custom definition (CacheDefinitions, source "custom-pets")
+ * cloned from npcId, with a pet's options (Talk-to, Pick-up), no combat level, one tile, and the
+ * scale applied. It then joins the Pets plugin's table, so summoning, following, Pick-up, the bank,
+ * relogging and ownership all work as for real pets. Probita's own window can't list them (it is
+ * the cache's interface over its 72 pets), so she reclaims them through an extra dialogue option.
+ */
+const fs = require("fs");
+const path = require("path");
+
+const SOURCE = "custom-pets";
+const FILE = "custom-pets.json";
+/** A follower's options, as real followers have them (Scurry: Talk-to, then Pick-up as the fourth). */
+const FOLLOWER_ACTIONS = ["Talk-to", null, null, "Pick-up", null];
+/** A pet item's options: Drop summons it (Pets.onPetItemDropPolicy). */
+const ITEM_ACTIONS = [null, null, null, null, "Drop"];
+const MIN_SCALE = 10, MAX_SCALE = 400;
+const PROBITA_LOST_OPTION = "I've lost a pet. Have you got it?";
+const RECLAIM_OPTION = "Can I reclaim my custom pets?";
+
+let api = null;
+let core = null;
+let services = null;
+/** The loaded pets, as rows of the Pets plugin's table (with `custom` set). */
+let pets = [];
+
+function definitionsDirectory(coreApi) {
+  return coreApi?.GameConstants?.DEFINITIONS_DIRECTORY ?? path.resolve(__dirname, "../../../data/definitions");
+}
+
+function read(directory) {
+  const file = path.join(directory, FILE);
+  if (!fs.existsSync(file)) return [];
+  const document = JSON.parse(fs.readFileSync(file, "utf8"));
+  if (!document || !Array.isArray(document.pets)) throw new Error(`${FILE}: expected { "version": 1, "pets": [...] }`);
+  return document.pets;
+}
+
+/** Every problem with one row, against the cache and custom-items.json. */
+function problemsOf(row, index, { npcCount, customItems, seenItems, seenNpcs }) {
+  const where = `${FILE} pets[${index}]`;
+  const problems = [];
+  if (!row || typeof row !== "object") return [`${where}: not an object`];
+  if (!Number.isInteger(row.npcId) || row.npcId < 0 || row.npcId >= npcCount) problems.push(`${where}: npcId must be an NPC id in the cache (0-${npcCount - 1})`);
+  const item = customItems.get(row.itemId);
+  if (!Number.isInteger(row.itemId)) problems.push(`${where}: itemId must be a custom item id`);
+  else if (!item) problems.push(`${where}: item ${row.itemId} is not in custom-items.json`);
+  else {
+    const actions = item.objType?.inventoryActions ?? [];
+    if (actions[4] !== "Drop") problems.push(`${where}: item ${row.itemId}'s inventoryActions must be ${JSON.stringify(ITEM_ACTIONS)} (Drop summons the pet)`);
+  }
+  if (seenItems.has(row.itemId)) problems.push(`${where}: item ${row.itemId} is already another custom pet's`);
+  if (typeof row.name !== "string" || !row.name.trim()) problems.push(`${where}: name must be a non-empty string`);
+  if (row.scale !== undefined && (!Number.isInteger(row.scale) || row.scale < MIN_SCALE || row.scale > MAX_SCALE)) {
+    problems.push(`${where}: scale must be a whole percent from ${MIN_SCALE} to ${MAX_SCALE}`);
+  }
+  if (!Array.isArray(row.lines) || row.lines.length === 0 || !row.lines.every((line) => typeof line === "string" && line.trim())) {
+    problems.push(`${where}: lines must be a non-empty list of strings`);
+  }
+  const petNpcId = row.petNpcId ?? row.itemId;
+  if (!Number.isInteger(petNpcId) || petNpcId < Math.max(50000, npcCount) || petNpcId >= 65535) {
+    problems.push(`${where}: the follower's NPC id ${petNpcId} must be from ${Math.max(50000, npcCount)} to 65534 (set petNpcId)`);
+  } else if (seenNpcs.has(petNpcId)) problems.push(`${where}: NPC id ${petNpcId} is already another custom pet's`);
+  return problems;
+}
+
+/** The follower's custom NPC definition: the NPC's look with a pet's options, size and scale. */
+function followerDefinition(row, base) {
+  const scale = (row.scale ?? 100) / 100;
+  const scaled = (value) => Math.max(1, Math.round((Number.isFinite(value) && value > 0 ? value : 128) * scale));
+  return {
+    kind: "npc",
+    id: row.petNpcId ?? row.itemId,
+    baseId: row.npcId,
+    fields: {
+      name: row.name.trim(),
+      actions: FOLLOWER_ACTIONS.slice(),
+      combatLevel: 0,
+      size: 1,
+      isFollower: true,
+      drawMapDot: false,
+      isClickable: true,
+      widthScale: scaled(base?.widthScale),
+      heightScale: scaled(base?.heightScale),
+    },
+  };
+}
+
+/**
+ * Reads custom-pets.json, registers each follower's NPC definition and returns the pets as
+ * rows of the Pets plugin's table. A bad file loads no custom pets, with every problem logged.
+ */
+function load(coreApi, { directory = definitionsDirectory(coreApi), log = console } = {}) {
+  core = coreApi;
+  pets = [];
+  let rows;
+  try {
+    rows = read(directory);
+  } catch (error) {
+    log.error?.(`[custom-pets] ${error.message}; no custom pets loaded`);
+    return [];
+  }
+  if (rows.length === 0) return [];
+  const CacheDefinitions = coreApi?.CacheDefinitions;
+  if (!CacheDefinitions) {
+    log.error?.("[custom-pets] the cache definitions aren't loaded; no custom pets loaded");
+    return [];
+  }
+  const npcCount = CacheDefinitions.getBaseCounts().npcs;
+  const customItems = new Map(CacheDefinitions.getCustomItems().map((item) => [item.id, item]));
+  const seenItems = new Set(), seenNpcs = new Set();
+  const problems = [];
+  rows.forEach((row, index) => {
+    problems.push(...problemsOf(row, index, { npcCount, customItems, seenItems, seenNpcs }));
+    if (row && typeof row === "object") {
+      seenItems.add(row.itemId);
+      seenNpcs.add(row.petNpcId ?? row.itemId);
+    }
+  });
+  if (problems.length) {
+    for (const problem of problems) log.error?.(`[custom-pets] ${problem}`);
+    log.error?.("[custom-pets] no custom pets loaded");
+    return [];
+  }
+  const definitions = rows.map((row) => followerDefinition(row, CacheDefinitions.getNpc(row.npcId)));
+  try {
+    CacheDefinitions.registerCustomDefinitions(definitions, SOURCE);
+  } catch (error) {
+    log.error?.(`[custom-pets] ${error.message}; no custom pets loaded`);
+    return [];
+  }
+  pets = rows.map((row, index) => ({
+    enumName: `CUSTOM_${definitions[index].id}`,
+    petId: definitions[index].id,
+    morphId: 0,
+    itemId: row.itemId,
+    dialogue: -1,
+    custom: { name: row.name.trim(), lines: row.lines.slice() },
+  }));
+  if (pets.length) log.log?.(`[custom-pets] loaded ${pets.length} custom pet(s)`);
+  return pets;
+}
+
+/** Talk-to: one of the pet's lines, at random. */
+function talk(request) {
+  const { player, npc, pet, action } = request;
+  if (request.handled || !pet?.custom || String(action).toLowerCase() !== "talk-to") return;
+  if (!player?.isRegistered?.() || player.busy?.() || !npc?.isRegistered?.()) return;
+  const lines = pet.custom.lines;
+  const line = lines[Math.floor(Math.random() * lines.length)];
+  const { DialogueChainBuilder, NpcDialogue, EndDialogue } = core;
+  player.getDialogueManager().startDialogues(new DialogueChainBuilder().add(
+    new NpcDialogue(0, npc.getId(), line),
+    new EndDialogue(1),
+  ));
+  request.handled = true;
+}
+
+/** The custom pets the player owns but has nowhere: not following, carried, banked, housed or in a grave. */
+function lostPets(player) {
+  const owned = new Set(services.getOwnedPetItems(player));
+  const storage = { player, grave: null, office: [] };
+  api.emitCustomEvent("gravestones:state", storage);
+  const stored = [...(storage.grave?.items ?? []), ...(storage.office ?? [])];
+  return pets.filter((pet) => owned.has(pet.itemId) && !services.holdsPetItem(player, pet.itemId)
+    && !stored.some((entry) => entry && entry.id === pet.itemId && entry.amount > 0));
+}
+
+/** Probita's extra option, before "More options...": shown when any custom pets exist. */
+function probitaMenu(notice) {
+  if (pets.length === 0 || notice.npcId !== core.NpcIdentifiers.PROBITA || !Array.isArray(notice.options)) return;
+  if (!notice.options.some((option) => option?.text === PROBITA_LOST_OPTION)) return;
+  if (notice.options.some((option) => option?.text === RECLAIM_OPTION)) return;
+  const more = notice.options.findIndex((option) => /^More options/i.test(String(option?.text ?? "")));
+  const option = { text: RECLAIM_OPTION, steps: [] };
+  notice.options = more < 0 ? [...notice.options, option] : [...notice.options.slice(0, more), option, ...notice.options.slice(more)];
+}
+
+/** Gives back every lost custom pet there is room for. */
+function reclaimAll(player) {
+  const lost = lostPets(player);
+  const inventory = player.getInventory();
+  const given = [];
+  for (const pet of lost) {
+    if (inventory.isFull()) break;
+    inventory.adds(pet.itemId, 1);
+    given.push(pet);
+  }
+  if (given.length) inventory.refreshItems?.();
+  for (const pet of given) player.sendMessage(`You reclaim your ${pet.custom.name}.`);
+  const left = lost.length - given.length;
+  let reply;
+  if (lost.length === 0) reply = "You haven't lost any of your custom pets. They're all safe with you!";
+  else if (left === 0) reply = given.length === 1 ? "Here you go, your pet is back with you." : "Here you go, all your pets are back with you.";
+  else reply = `I've given you what you have room for. Come back with ${left === 1 ? "a free inventory space" : `${left} free inventory spaces`} for the rest.`;
+  return { given, left, reply };
+}
+
+function probitaChoice(choice) {
+  if (choice.npcId !== core.NpcIdentifiers.PROBITA || choice.option !== RECLAIM_OPTION) return;
+  choice.end = true;
+  const { player } = choice;
+  const { reply } = reclaimAll(player);
+  const { DialogueChainBuilder, NpcDialogue, PlayerDialogue, EndDialogue } = core;
+  player.getDialogueManager().startDialogues(new DialogueChainBuilder().add(
+    new PlayerDialogue(0, RECLAIM_OPTION),
+    new NpcDialogue(1, core.NpcIdentifiers.PROBITA, reply),
+    new EndDialogue(2),
+  ));
+}
+
+/** `helpers`: the Pets plugin's getOwnedPetItems and holdsPetItem. */
+function attach(pluginApi, helpers) {
+  api = pluginApi;
+  core = pluginApi.core;
+  services = helpers;
+  api.onCustomEvent("pets:interact", talk);
+  api.onCustomEvent("npc-dialogue:menu", probitaMenu);
+  api.onCustomEvent("npc-dialogue:choice", probitaChoice);
+}
+
+module.exports = {
+  load, attach,
+  _test: { problemsOf, followerDefinition, lostPets, reclaimAll, probitaMenu, probitaChoice, talk, pets: () => pets,
+    SOURCE, FOLLOWER_ACTIONS, ITEM_ACTIONS, RECLAIM_OPTION },
+};
