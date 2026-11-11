@@ -341,6 +341,81 @@
     }
   },
   {
+    "id": 52002,
+    "baseItemId": 2412,
+    "objType": {
+      "name": "Twisted Coat (t1)(h)",
+      "examine": "Rather cozy when hanged from your shoulders.",
+      "model": 1520020,
+      "maleModel": 1520021,
+      "femaleModel": 1520021,
+      "maleModel1": -1,
+      "maleModel2": -1,
+      "femaleModel1": -1,
+      "femaleModel2": -1,
+      "zoom2d": 1400,
+      "xan2d": 512,
+      "yan2d": 0,
+      "zan2d": 0,
+      "offsetX2d": 0,
+      "offsetY2d": 0,
+      "recolorFrom": [],
+      "recolorTo": [],
+      "retextureFrom": [],
+      "retextureTo": [],
+      "inventoryActions": ["Wear", null, null, null, "Drop"],
+      "isTradable": false,
+      "note": -1,
+      "noteTemplate": -1,
+      "unnotedId": -1,
+      "notedId": -1,
+      "placeholder": 53001,
+      "placeholderTemplate": -1
+    },
+    "itemDef": { "tradeable": false,"equipmentType":"CAPE","doubleHanded":false,"stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":84,"highAlch":12,"lowAlch":8,"dropValue":2,"blockAnim":424,"weight":0,"bonuses":[0,0,0,0,0,9,9,9,9,9,0,0,0,4],"equipSound":2238 },
+    "models": {
+      "1520010": "twisted-coat-hang/drop.dat",
+      "1520011": "twisted-coat-hang/equip.dat"
+    }
+  },
+  {
+    "id": 53002,
+    "baseItemId": 1,
+    "objType": {
+      "name": "Twisted Coat (t1)(h)",
+      "examine": "Rather cozy when hanged from your shoulders.",
+      "model": 1530020,
+      "maleModel": -1,
+      "femaleModel": -1,
+      "maleModel1": -1,
+      "maleModel2": -1,
+      "femaleModel1": -1,
+      "femaleModel2": -1,
+      "zoom2d": 1400,
+      "xan2d": 512,
+      "yan2d": 0,
+      "zan2d": 0,
+      "offsetX2d": 0,
+      "offsetY2d": 0,
+      "recolorFrom": [],
+      "recolorTo": [],
+      "retextureFrom": [],
+      "retextureTo": [],
+      "inventoryActions": ["Wear", null, null, null, "Drop"],
+      "isTradable": false,
+      "note": -1,
+      "noteTemplate": -1,
+      "unnotedId": -1,
+      "notedId": -1,
+      "placeholder": 52002,
+      "placeholderTemplate": 14401
+    },
+    "itemDef": { "tradeable": false,"equipmentType":"CAPE","doubleHanded":false,"stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":84,"highAlch":12,"lowAlch":8,"dropValue":2,"blockAnim":424,"weight":0,"bonuses":[0,0,0,0,0,9,9,9,9,9,0,0,0,4],"equipSound":2238 },
+    "models": {
+      "1530010": "twisted-coat-hang/drop.dat"
+    }
+  },
+  {
     "id": 52100,
     "baseItemId": 25593,
     "objType": {
