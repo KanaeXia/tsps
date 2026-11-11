@@ -62,7 +62,7 @@ function twoHandedSwordTab() {
     assert.deepEqual(invalidated, []);
 }
 
-const SANGUINE_ATLATL = 50002;
+const BLOODMOON_ATLATL = 50002;
 
 /** The cache redrawing slot 0 for another weapon category (a shortbow's Accurate). */
 function redrawAsShortbow(widgets: Map<number, any>) {
@@ -90,7 +90,7 @@ function redrawAsShortbow(widgets: Map<number, any>) {
     redrawAsShortbow(widgets);
     applyCustomCombatStyleLabels(manager, EXALTED_SPRING);
     assert.equal(widgets.get(uid(9)).text, "Stab", "the old weapon still shows as worn");
-    assert.equal(applyCustomCombatStyleLabels(manager, SANGUINE_ATLATL), true);
+    assert.equal(applyCustomCombatStyleLabels(manager, BLOODMOON_ATLATL), true);
     assert.equal(widgets.get(uid(9)).text, "Accurate");
     assert.deepEqual(widgets.get(uid(6)).actions, ["Accurate"]);
     assert.equal(widgets.get(uid(6)).onMouseRepeat[4], "(Accurate)<br>(Ranged XP)");
@@ -101,7 +101,7 @@ function redrawAsShortbow(widgets: Map<number, any>) {
     const { widgets, manager } = twoHandedSwordTab();
     applyCustomCombatStyleLabels(manager, EXALTED_SPRING);
     redrawAsShortbow(widgets);
-    assert.equal(applyCustomCombatStyleLabels(manager, SANGUINE_ATLATL), false);
+    assert.equal(applyCustomCombatStyleLabels(manager, BLOODMOON_ATLATL), false);
     assert.equal(widgets.get(uid(9)).text, "Accurate");
 }
 

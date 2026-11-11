@@ -117,7 +117,7 @@
     "id": 50002,
     "baseItemId": 29000,
     "objType": {
-      "name": "Sanguine atlatl",
+      "name": "Bloodmoon atlatl",
       "examine": "A powerful thrown weapon forged from a bloodmoon.",
       "model": 1500020,
       "maleModel": 1500021,
@@ -148,16 +148,16 @@
     "specialAttack": { "energy": 25 },
     "itemDef": { "tradeable": false,"equipmentType":"WEAPON","weaponInterface":"SHORTBOW","doubleHanded":false,"bonuses":[0,0,0,0,127,0,0,0,0,0,78,0,0,0],"requirements":[70,0,70,0,85,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"blockAnim":424,"standAnim":813,"walkAnim":1205,"runAnim":1210,"standTurnAnim":823,"turn180Anim":820,"turn90CWAnim":821,"turn90CCWAnim":821,"value":1723645142,"bloodMoneyValue":4272433,"highAlch":1292733856,"lowAlch":861822571,"dropValue":1723645142 },
     "models": {
-      "1500020": "sanguine-atlatl/drop.dat",
-      "1500021": "sanguine-atlatl/equip.dat",
-      "1500022": "sanguine-atlatl/equip-female.dat"
+      "1500020": "bloodmoon-atlatl/drop.dat",
+      "1500021": "bloodmoon-atlatl/equip.dat",
+      "1500022": "bloodmoon-atlatl/equip-female.dat"
     }
   },
   {
     "id": 51002,
     "baseItemId": 1,
     "objType": {
-      "name": "Sanguine atlatl",
+      "name": "Bloodmoon atlatl",
       "examine": "A powerful thrown weapon forged from a bloodmoon.",
       "model": 1510020,
       "maleModel": -1,
@@ -187,7 +187,7 @@
     },
     "itemDef": { "tradeable": false },
     "models": {
-      "1510020": "sanguine-atlatl/drop.dat"
+      "1510020": "bloodmoon-atlatl/drop.dat"
     }
   },
   {
@@ -1092,80 +1092,6 @@
     "itemDef": { "tradeable": false },
     "models": {
       "1540010": "fennec-fox/drop.dat"
-    }
-  },
-  {
-    "id": 54002,
-    "baseItemId": 1,
-    "objType": {
-      "name": "Hans",
-      "examine": "Guy!",
-      "model": 1540020,
-      "maleModel": -1,
-      "femaleModel": -1,
-      "maleModel1": -1,
-      "maleModel2": -1,
-      "femaleModel1": -1,
-      "femaleModel2": -1,
-      "zoom2d": 1100,
-      "xan2d": 512,
-      "yan2d": 0,
-      "zan2d": 0,
-      "offsetX2d": 0,
-      "offsetY2d": 0,
-      "recolorFrom": [],
-      "recolorTo": [],
-      "retextureFrom": [],
-      "retextureTo": [],
-      "inventoryActions": [null, null, null, null, "Drop"],
-      "isTradable": false,
-      "note": -1,
-      "noteTemplate": -1,
-      "unnotedId": -1,
-      "notedId": -1,
-      "placeholder": 54003,
-      "placeholderTemplate": -1
-    },
-    "itemDef": { "tradeable": false },
-    "models": {
-      "1540020": "fennec-fox/drop.dat"
-    }
-  },
-  {
-    "id": 54003,
-    "baseItemId": 1,
-    "objType": {
-      "name": "Fennec fox",
-      "examine": "Guy!",
-      "model": 1540030,
-      "maleModel": -1,
-      "femaleModel": -1,
-      "maleModel1": -1,
-      "maleModel2": -1,
-      "femaleModel1": -1,
-      "femaleModel2": -1,
-      "zoom2d": 1100,
-      "xan2d": 512,
-      "yan2d": 0,
-      "zan2d": 0,
-      "offsetX2d": 0,
-      "offsetY2d": 0,
-      "recolorFrom": [],
-      "recolorTo": [],
-      "retextureFrom": [],
-      "retextureTo": [],
-      "inventoryActions": [null, null, null, null, "Drop"],
-      "isTradable": false,
-      "note": -1,
-      "noteTemplate": -1,
-      "unnotedId": -1,
-      "notedId": -1,
-      "placeholder": 54002,
-      "placeholderTemplate": 14401
-    },
-    "itemDef": { "tradeable": false },
-    "models": {
-      "1540030": "fennec-fox/drop.dat"
     }
   }
 ]

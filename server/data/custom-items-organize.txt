@@ -7,10 +7,11 @@
 
 50000 : Dragonic Katana
 50001 : Exalted Spring
-50002 : Sanguine Atlatl
+50002 : Bloodmoon Atlatl
 
 52000 : Elven Tassets
 52001 : Void cape
+52002 : Twisted Coat (t1)(h)
 
 52100 : Desert Shawl
 52101 : Dusty Satchel
@@ -18,3 +19,6 @@
 52103 : Desert Sarong
 52104 : Desert Shinguard
 52105 : Desert Wristguards
+52106 : Desert Panties
+
+54000 : Fennec Fox (pet)

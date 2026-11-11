@@ -6,7 +6,7 @@ const { test, before } = require("node:test");
 require("../dist/Server").Server.installProductionPathResolver();
 const { PluginManager } = require("../dist/plugins/PluginManager");
 
-const EXALTED_SPRING = 50001, SANGUINE_ATLATL = 50002, WHIP = 4151;
+const EXALTED_SPRING = 50001, BLOODMOON_ATLATL = 50002, WHIP = 4151;
 let core, listener, inTombs = false;
 
 before(() => {
@@ -38,9 +38,9 @@ test("Exalted Spring's missed melee roll gets a second attack roll against the s
   assert.equal(missed(t, wielding(EXALTED_SPRING), core.CombatType.MELEE, 0.5), false, "rolls 50, not above 60");
 });
 
-test("the Sanguine atlatl's second roll is for its ranged attacks only", (t) => {
-  assert.equal(missed(t, wielding(SANGUINE_ATLATL), core.CombatType.RANGED, 0.99), true);
-  assert.equal(missed(t, wielding(SANGUINE_ATLATL), core.CombatType.MAGIC, 0.99), false, "its magic special rolls once");
+test("the Bloodmoon atlatl's second roll is for its ranged attacks only", (t) => {
+  assert.equal(missed(t, wielding(BLOODMOON_ATLATL), core.CombatType.RANGED, 0.99), true);
+  assert.equal(missed(t, wielding(BLOODMOON_ATLATL), core.CombatType.MAGIC, 0.99), false, "its magic special rolls once");
 });
 
 test("an accurate roll, another weapon or an NPC is left alone", (t) => {

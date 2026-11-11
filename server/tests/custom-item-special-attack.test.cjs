@@ -37,7 +37,7 @@ test("a borrow made before the special is registered still resolves", () => {
   assert.equal(CombatSpecial.getForWeaponId(59005), later);
 });
 
-// The Sanguine atlatl case: its own bar at 50% and its own special from a plugin, not the Eclipse
+// The Bloodmoon atlatl case: its own bar at 50% and its own special from a plugin, not the Eclipse
 // atlatl's. Registered after the settings, as plugins/combat/specials loads after the items.
 test("a bar-only weapon uses the special a plugin registers for it, at its energy", () => {
   CombatSpecial.setItemSpecial(59006, { drainAmount: 50 });

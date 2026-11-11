@@ -103,7 +103,7 @@ To borrow a special, name it in `from`:
 {
   "id": 50002,
   "baseItemId": 29000,
-  "objType": { "name": "Sanguine atlatl" },
+  "objType": { "name": "Bloodmoon atlatl" },
   "itemDef": { "equipmentType": "WEAPON" },
   "specialAttack": { "from": 29000, "energy": 50 }
 }
@@ -117,7 +117,7 @@ id in a plugin, as the files in `server/plugins/combat/specials/` do:
 ```
 
 ```js
-api.registerCombatSpecial({ id: "sanguine_atlatl", itemIds: [50002], drainAmount: 50, ... });
+api.registerCombatSpecial({ id: "bloodmoon_atlatl", itemIds: [50002], drainAmount: 50, ... });
 ```
 
 A special registered for the weapon's own id is always the one it uses, even with `from` set. The

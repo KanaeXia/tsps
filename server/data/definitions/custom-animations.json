@@ -6,6 +6,7 @@
     { "id": 50004, "name": "ags_special_keep_weapon", "path": "armadyl-godsword-special/player-anim" },
     { "id": 50006, "name": "bgs_special_keep_weapon", "path": "bandos-godsword-special/player-anim" },
     { "id": 50008, "name": "sgs_special_keep_weapon", "path": "saradomin-godsword-special/player-anim" },
+    { "id": 50010, "name": "bm_atlatl_keep_weapon", "path": "bloodmoon-atlatl-attack" },
     { "id": 51000, "name": "dancemoves", "path": "jig-emote/player-anim" }
   ],
   "graphics": [

@@ -221,12 +221,19 @@ test("range is 6 or 8 on Longrange; Rapid is 3 ticks PvM, 4 PvP, or 3 PvP with t
   }
 });
 
-test("the Sanguine atlatl (50002) is 3 ticks on Rapid against NPCs and players, without the set", () => {
+test("the Bloodmoon atlatl (50002) is 3 ticks on Rapid against NPCs and players, without the set", () => {
   const p = player({ weapon: 50002 }), method = normalMethod(p);
   p.style = FightType.SHORTBOW_RAPID;
   for (const target of [npc(), player()]) {
     const event = { attacker: p, target, combatType: CombatType.RANGED, speed: method.attackSpeed(p) };
     hooks.onAttackSpeed.forEach(fn => fn(event)); assert.equal(event.speed, 3);
+  }
+});
+
+test("the Bloodmoon atlatl attacks with its own animation (custom 50010); the Eclipse atlatl keeps 11057", () => {
+  for (const [weapon, animation] of [[50002, 50010], [I.ECLIPSE_ATLATL, 11057], [I.ECLIPSE_ATLATL_4, 11057]]) {
+    const p = player({ weapon });
+    for (const target of [npc(), player()]) assert.equal(WeaponProfiles.attackAnimation(p, -1, target.isNpc()), animation, `item ${weapon}`);
   }
 });
 

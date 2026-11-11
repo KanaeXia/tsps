@@ -55,7 +55,7 @@ module.exports = function registerEclipseAtlatlSpecialAttack(api) {
   }
 
   api.registerCombatSpecial({
-    id: "sanguine_atlatl",
+    id: "bloodmoon_atlatl",
     itemIds: [50002],
     drainAmount: DRAIN,
     strengthMultiplier: 1,

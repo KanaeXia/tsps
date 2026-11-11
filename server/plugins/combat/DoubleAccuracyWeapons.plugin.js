@@ -1,6 +1,6 @@
 // Custom weapons given Osmumten's fang's accuracy passive (https://oldschool.runescape.wiki/w/Osmumten%27s_fang),
 // listed in data/double-accuracy-weapons.json: a hit that misses makes a second attack roll against the
-// same defence roll and lands if that one beats it. Exalted Spring (50001) and the Sanguine atlatl (50002),
+// same defence roll and lands if that one beats it. Exalted Spring (50001) and the Bloodmoon atlatl (50002),
 // custom items (data/definitions/custom-items.json), with every attack style of their combat type; a
 // server design, not OSRS. The fang's own passive is plugins/combat/effects/OsmumtensFang.EquipmentEffects.js;
 // both answer combat:accuracy-rolled, which AccuracyFormulasDpsCalc.rollAccuracy sends after each roll.

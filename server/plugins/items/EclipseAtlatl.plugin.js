@@ -1,6 +1,8 @@
 // Wiki: Eclipse atlatl / Atlatl dart. IDs checked against the revision 241 cache.
-/** The custom Sanguine atlatl (custom-items.json): an atlatl, without the PvP slowdown. */
-const SANGUINE_ATLATL = 50002;
+/** The custom Bloodmoon atlatl (custom-items.json): an atlatl, without the PvP slowdown. */
+const BLOODMOON_ATLATL = 50002;
+/** Its own attack animation: custom-animations.json's bm_atlatl_keep_weapon, from 11057. */
+const BLOODMOON_ATTACK_ANIMATION = 50010;
 let core;
 let pluginApi;
 let atlatlIds;
@@ -14,7 +16,7 @@ function usingAtlatl(player) {
 function hasFullSet(player) {
   const { Equipment: E, ItemIdentifiers: I } = core;
   const equipment = player.getEquipment();
-  return equipment.get(core.Equipment.WEAPON_SLOT).getId() === SANGUINE_ATLATL || 
+  return equipment.get(core.Equipment.WEAPON_SLOT).getId() === BLOODMOON_ATLATL || 
 	[I.ECLIPSE_MOON_HELM, I.ECLIPSE_MOON_HELM_4, I.ECLIPSE_MOON_HELM_6].includes(equipment.get(E.HEAD_SLOT).getId())
     && [I.ECLIPSE_MOON_CHESTPLATE, I.ECLIPSE_MOON_CHESTPLATE_4, I.ECLIPSE_MOON_CHESTPLATE_6].includes(equipment.get(E.BODY_SLOT).getId())
     && [I.ECLIPSE_MOON_TASSETS, I.ECLIPSE_MOON_TASSETS_4, I.ECLIPSE_MOON_TASSETS_6].includes(equipment.get(E.LEG_SLOT).getId());
@@ -24,11 +26,11 @@ function fullSetQuery(query) {
   query.fullSet = hasFullSet(query.player);
 }
 
-/** Against players an atlatl is a tick slower without the full Eclipse moon set; the Sanguine atlatl never is. */
+/** Against players an atlatl is a tick slower without the full Eclipse moon set; the Bloodmoon atlatl never is. */
 function attackSpeed(event) {
   if (event.combatType === core.CombatType.RANGED && event.attacker.isPlayer() && event.target.isPlayer()
       && usingAtlatl(event.attacker.getAsPlayer()) && !hasFullSet(event.attacker.getAsPlayer())
-      && event.attacker.getAsPlayer().getEquipment().get(core.Equipment.WEAPON_SLOT).getId() !== SANGUINE_ATLATL) {
+      && event.attacker.getAsPlayer().getEquipment().get(core.Equipment.WEAPON_SLOT).getId() !== BLOODMOON_ATLATL) {
     event.speed++;
   }
 }
@@ -65,16 +67,16 @@ function registerAtlatlProfile(api) {
   core = api.core;
   pluginApi = api;
   const { Ammunition, FightType, ItemIdentifiers: I, RangedWeapon, RangedWeaponType, Sound } = core;
-  atlatlIds = new Set([I.ECLIPSE_ATLATL, I.ECLIPSE_ATLATL_4, SANGUINE_ATLATL]);
+  atlatlIds = new Set([I.ECLIPSE_ATLATL, I.ECLIPSE_ATLATL_4, BLOODMOON_ATLATL]);
   const type = new RangedWeaponType(6, 8, FightType.SHORTBOW_LONGRANGE);
   // Both atlatls fire both darts: the normal one (28991) and the LMS one (29852).
   const darts = [
     new Ammunition(I.ATLATL_DART, null, 2795, 0),
     new Ammunition(I.ATLATL_DART_3, null, 2795, 0),
   ];
-  new RangedWeapon([I.ECLIPSE_ATLATL, I.ECLIPSE_ATLATL_4, SANGUINE_ATLATL], darts, type);
-  api.registerWeaponProfile({
-    itemIds: [...atlatlIds],
+  new RangedWeapon([I.ECLIPSE_ATLATL, I.ECLIPSE_ATLATL_4, BLOODMOON_ATLATL], darts, type);
+  const profile = {
+    itemIds: [I.ECLIPSE_ATLATL, I.ECLIPSE_ATLATL_4],
     attackAnimation: 11057, // human_atlatl_attack_ranged_01
     attackSpeed: 4,
     attackDistance: 6,
@@ -88,7 +90,10 @@ function registerAtlatlProfile(api) {
     hitDelays: [{ base: 1, distanceOffset: 3, divisor: 6 }],
     // RSProx 4014/4021: launch 41, heights 163 -> 146, angle 15, progress 11.
     projectiles: [{ delay: 41, lengthAdjustment: 5, stepMultiplier: 5, startHeight: 40.75, endHeight: 36.5, angle: 15, progress: 11 }],
-  });
+  };
+  api.registerWeaponProfile(profile);
+  // The Bloodmoon atlatl throws the same way, with its own animation.
+  api.registerWeaponProfile({ ...profile, itemIds: [BLOODMOON_ATLATL], attackAnimation: BLOODMOON_ATTACK_ANIMATION });
   method = createMethod();
 }
 
