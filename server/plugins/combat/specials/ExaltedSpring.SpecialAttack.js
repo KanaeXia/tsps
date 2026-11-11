@@ -24,8 +24,8 @@ module.exports = function registerExaltedSpringSpecialAttack(api) {
   const DEFAULT_DRAIN = 50;
   /** Tiles from the player in each direction: a 5x5 square (Sol Slam's is 7x7). */
   const RADIUS = 3;
-  const MIN_DAMAGE = 1.0;
-  const MAX_DAMAGE = 1.5;
+  const MIN_DAMAGE = 0.5;
+  const MAX_DAMAGE = 1.0;
   const PRAYER_BONUS_DAMAGE = 0.03;
   const HEAL_FRACTION = 0.25;
   const BURN_DAMAGE = 30;
@@ -176,8 +176,9 @@ module.exports = function registerExaltedSpringSpecialAttack(api) {
         // Each hit is capped by what the target has left after the hits before it.
         let remaining = target.getHitpoints();
         let landsIn = HIT_DELAY;
-        for (let i = 0; i < Math.max(1, target.getSize()); i++) {
-          const damage = rollDamage(player);
+		let size = Math.max(1, target.getSize());
+        for (let i = 0; i < size; i++) {
+          const damage = rollDamage(player) * (0.5 + 1 / size);
           const hit = new PendingHit(player, target, this, {
             damage, rollAccuracy: false, bypassProtectionPrayer: true, delay: HIT_DELAY,
           });
