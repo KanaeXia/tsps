@@ -44,6 +44,8 @@ type OsrsMusicSong = {
     musicTrackVolumeInt: number; // 0..255 (OSRS: MusicSong.musicTrackVolume)
     pcmVolume: number; // OSRS: MusicSong.currentVolume/current stream volume
     loadPromise: Promise<boolean> | null;
+    /** A player's song (a lyre performance): its MIDI bytes, played instead of a cache track. */
+    custom?: { id: number; midi: Uint8Array; offsetMs: number; requestedAt: number; cancelled: boolean };
 };
 
 type OsrsSongTask = {
@@ -552,6 +554,35 @@ export class MusicSystem {
         this._playingJingle = true;
         console.log(`[MusicSystem] Playing jingle ${jingleId}`);
         return true;
+    }
+
+    /**
+     * Plays a player's song (a lyre performance's MIDI file) through the music synth, `offsetMs`
+     * into it. Like a jingle, it cuts the area track and gives it back when it ends or is stopped.
+     * Nothing plays while music is muted.
+     */
+    public playCustomSong(id: number, midi: Uint8Array, offsetMs: number): boolean {
+        if (!(this.outputVolume() > 0)) return false;
+        const [entry] = this.createOsrsSongEntries([0], "jingle");
+        entry.trackId = -1;
+        entry.custom = { id, midi, offsetMs: Math.max(0, offsetMs), requestedAt: performance.now(), cancelled: false };
+        this.queueOsrsSongs([entry], { fadeOutDelayTicks: 0, fadeOutDurationTicks: 0, fadeInDelayTicks: 0, fadeInDurationTicks: 0 }, true);
+        this._playingJingle = true;
+        return true;
+    }
+
+    /** Stops a player's song, if it is the one playing or loading; the area track comes back. */
+    public stopCustomSong(id: number): void {
+        for (const song of [...this.osrsSongs, ...this.osrsRequests]) {
+            if (song?.custom?.id !== id) continue;
+            song.custom.cancelled = true;
+            if (song.started) song.synth?.stop();
+        }
+    }
+
+    /** The id of the player's song playing or loading now, if any. */
+    public customSongId(): number | undefined {
+        return [...this.osrsSongs, ...this.osrsRequests].find((song) => song?.custom && !song.custom.cancelled)?.custom?.id;
     }
 
     /**
@@ -1527,12 +1558,15 @@ export class MusicSystem {
                 }
                 if (!song.loadPromise) {
                     const trackId = song.trackId | 0;
-                    const load =
-                        song.kind === "jingle"
+                    const load = song.custom
+                        ? song.synth.loadMidi(song.custom.midi)
+                        : song.kind === "jingle"
                             ? song.synth.loadJingle(trackId)
                             : song.synth.loadTrack(trackId);
                     song.loadPromise = load
-                        .then((ok) => {
+                        .then((loaded) => {
+                            // A song stopped while it loaded fails, so the area music comes back.
+                            const ok = loaded === true && song.custom?.cancelled !== true;
                             song.loaded = ok === true;
                             song.failed = ok !== true;
                             song.loadPromise = null;
@@ -1588,7 +1622,13 @@ export class MusicSystem {
                     song.pcmVolume = 0;
                     song.isFading = false;
                     song.synth.setOutputGain(0);
-                    song.synth.play();
+                    if (song.custom?.cancelled) {
+                        // Stopped between loading and starting: it ends at once.
+                        song.started = true;
+                        continue;
+                    }
+                    // A player's song starts where its performance is now, loading time included.
+                    song.synth.play(song.custom ? song.custom.offsetMs + (performance.now() - song.custom.requestedAt) : 0);
                     song.started = true;
                 } catch (e: unknown) {
                     task.error = `StartSongTask failed: ${errorToString(e)}`;

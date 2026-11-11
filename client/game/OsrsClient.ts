@@ -288,6 +288,9 @@ import {
 } from "./TransmitCycles";
 import { AudioVarpController } from "./audio/AudioVarpController";
 import { MusicSystem } from "./audio/MusicSystem";
+import { LYRE_CHANNEL, LyreSongs, pickMidiFile } from "./audio/LyreSongs";
+import { subscribePluginMessages } from "../network/serverConnection/domain/pluginMessages";
+import { send as sendToServer } from "../network/serverConnection/connection/send";
 import { AmbientSoundCollector } from "./audio/AmbientSoundCollector";
 import { type SequenceSoundContext, SoundEffectSystem } from "./audio/SoundEffectSystem";
 import { ChatTextMetrics } from "./chat/ChatTextMetrics";
@@ -588,6 +591,8 @@ export class OsrsClient {
         () => this.varManager,
     );
     musicSystem?: MusicSystem;
+    /** Lyre songs (LyreSongs): its plugin-message subscription, while the music system exists. */
+    private lyreSongsUnsubscribe?: () => void;
 
     // Master volume multiplier (0-1, from deviceoption 19)
     // Individual volumes are multiplied by this value
@@ -6937,6 +6942,14 @@ export class OsrsClient {
                 ? new SoundEffectSystem(this.soundEffectLoader)
                 : undefined;
             this.musicSystem = new MusicSystem(this.cacheSystem);
+            if (!this.lyreSongsUnsubscribe) {
+                const lyreSongs = new LyreSongs({
+                    music: () => this.musicSystem,
+                    send: (data) => sendToServer({ type: "plugin_message", payload: { channel: LYRE_CHANNEL, data } } as any),
+                    pickFile: pickMidiFile,
+                });
+                this.lyreSongsUnsubscribe = subscribePluginMessages((message) => lyreSongs.handle(message));
+            }
 
             this._musicVolume = 1.0;
             this._sfxVolume = 1.0;
@@ -9008,6 +9021,8 @@ export class OsrsClient {
             this.musicSystem.dispose();
             this.musicSystem = undefined;
         }
+        this.lyreSongsUnsubscribe?.();
+        this.lyreSongsUnsubscribe = undefined;
         if (this.soundEffectSystem) {
             this.soundEffectSystem.dispose();
             this.soundEffectSystem = undefined;

@@ -1165,12 +1165,35 @@ registerProcessor("music-worklet-processor", MusicWorkletProcessor);
             return false;
         }
 
+        return this.prepareMidi(midiBytes, `track ${trackId}`);
+    }
+
+    /**
+     * Load a Standard MIDI File (format 0 or 1, ticks per quarter note) and prepare for playback:
+     * a song a player plays on a lyre. It plays through the same instruments as the music.
+     */
+    async loadMidi(midiBytes: Uint8Array): Promise<boolean> {
+        if (!this.workletReady) {
+            const ok = await this.initialize();
+            if (!ok) return false;
+        }
+        this.stop();
+        try {
+            return await this.prepareMidi(midiBytes, "custom song");
+        } catch (error) {
+            console.error("[RealtimeMidiSynth] Custom song could not be read", error);
+            return false;
+        }
+    }
+
+    /** Parses MIDI bytes into events and loads the instruments they use. */
+    private async prepareMidi(midiBytes: Uint8Array, label: string): Promise<boolean> {
         // Parse MIDI
         this.events = [];
         this.parseMidi(midiBytes);
 
         if (this.events.length === 0) {
-            console.error(`[RealtimeMidiSynth] No events in track ${trackId}`);
+            console.error(`[RealtimeMidiSynth] No events in ${label}`);
             return false;
         }
 
@@ -1725,9 +1748,11 @@ registerProcessor("music-worklet-processor", MusicWorkletProcessor);
     }
 
     /**
-     * Start playback
+     * Start playback; `offsetMs` starts a fresh play that far into the song (a listener joining a
+     * song already being played): the instrument and controller changes before it are applied,
+     * its notes are skipped.
      */
-    play(): void {
+    play(offsetMs = 0): void {
         if (!this.workletReady || !this.context || this.events.length === 0) return;
 
         resumeAudioContextIfNeeded(this.context);
@@ -1757,6 +1782,17 @@ registerProcessor("music-worklet-processor", MusicWorkletProcessor);
 
             // Reset channel state
             this.workletNode?.port.postMessage({ type: "stopAll" });
+
+            if (offsetMs > 0) {
+                this.startTime -= offsetMs / 1000;
+                const offsetTick = this.msToTick(offsetMs);
+                const now = this.context.currentTime;
+                while (this.eventIndex < this.events.length && this.events[this.eventIndex].tick < offsetTick) {
+                    const event = this.events[this.eventIndex++];
+                    if (event.type !== "noteOn" && event.type !== "noteOff") this.processEvent(event, now);
+                }
+                this.lastScheduledTick = offsetTick;
+            }
         }
 
         this.isPlaying = true;
