@@ -15,9 +15,11 @@ enabled state. The `enabled` field, when present, must be a boolean.
 ```json
 {
   "plugins": {
+    "BountyHunter": { "levelDifference": 10 },
     "Characters": { "maxPerAccount": 6 },
     "Prayer": { "enabled": true, "sequentialBurying": true },
-    "PlayerBots": { "ai": { "enabled": false } }
+    "PlayerBots": { "ai": { "enabled": false } },
+    "Wilderness": { "pvpWorldLevelDifference": 10 }
   }
 }
 ```
@@ -28,6 +30,9 @@ the equivalent `pluginConfig` keys. Then the local file overrides the shipped fi
 individual switches and settings, with nested values replaced in full. For example, a local
 `"Prayer": false` disables the plugin and keeps its shipped settings. Plugins can read
 their options by short name, such as `api.getPluginConfig("sequentialBurying", false)`.
+
+On PvP worlds, `plugins.Wilderness.pvpWorldLevelDifference` sets the server's attack limit
+on unlevelled ground. The client overlay still displays the standard 15-level range there.
 
 The existing `pluginConfig` form still works. The Characters, LeagueMode, Quests and
 RandomEvents entries map to the existing `characters`, `league`, `quests` and `random-events`
@@ -270,6 +275,7 @@ After changing a plugin's `description` or `config`, run `yarn --cwd server worl
 | Key | Type | Default | Description |
 | --- | --- | --- | --- |
 | `TutorialIsland:allowSkip` | boolean | `true` | **Allow skipping Tutorial Island.** The Gielinor Guide offers new players to skip the island, which misses some starter items and steps. Turn off to make everyone complete it. |
+| `Wilderness:pvpWorldLevelDifference` | number (integer, >= 0) | `15` | **Unlevelled PvP combat level difference.** Maximum combat level difference on unlevelled PvP ground on PvP worlds. Levelled Wilderness tiles keep their usual range. |
 
 #### Plugin area `bosses` (`pluginConfig`)
 
@@ -304,6 +310,7 @@ After changing a plugin's `description` or `config`, run `yarn --cwd server worl
 
 | Key | Type | Default | Description |
 | --- | --- | --- | --- |
+| `BountyHunter:levelDifference` | number (integer, >= 0) | `5` | **Rogue combat level difference.** Maximum combat level difference for attacks on players who are not your assigned target. |
 | `CastleWars:seedBots` | boolean | `false` | **Seed Castle Wars with bots.** Development aid: fills the lobby with bots. Leave off so production lobbies are players only. |
 | `DuelArena:pvpArenaWorld` | boolean | `false` | **PvP Arena world.** Makes this a PvP Arena world: Challenge in the Emir's Arena always starts an unranked duel, with no Legacy Duel choice. |
 | `LastManStanding:highStakes` | boolean | `false` | **High Stakes mode.** Opens the High Stakes mode, which costs 500,000 from the coffer to start. Closed when off. |
@@ -318,7 +325,7 @@ After changing a plugin's `description` or `config`, run `yarn --cwd server worl
 | --- | --- | --- | --- |
 | `league:end` | date | *Not set* | **League end date.** When the league ends, as YYYY-MM-DD. The welcome message then shows how many days remain. |
 | `league:start` | date | *Not set* | **League start date.** When the league began, as YYYY-MM-DD. Sets the client's league clock. |
-| `league:type` | enum: `0` (Not a league world), `1` (Leagues I - Twisted), `2` (Leagues II - Trailblazer), `3` (Leagues III - Shattered Relics), `4` (Leagues IV - Trailblazer Reloaded), `5` (Leagues V - Raging Echoes), `6` (Leagues VI - Demonic Pacts) | `0` | **League.** Runs this world as a league: every login is the account's league character, kept apart from its main save. Not a league world is a normal world. The list follows data/leagues.json. Also read by LeagueAreaUnlocks. Restart to change. |
+| `league:type` | enum: `0` (Not a league world), `1` (Leagues I - Twisted), `2` (Leagues II - Trailblazer), `3` (Leagues III - Shattered Relics), `4` (Leagues IV - Trailblazer Reloaded), `5` (Leagues V - Raging Echoes), `6` (Leagues VI - Demonic Pacts) | `0` | **League.** Runs this world as a league: every login is the account's league character, kept apart from its main save. Not a league world is a normal world. The list follows data/leagues.json. Restart to change. |
 
 #### Plugin area `npcs` (`pluginConfig`)
 
@@ -358,61 +365,11 @@ This table lists bundled plugins that have a description. The world config page 
 | `Characters` | Characters | accounts | no | Lets one account hold several characters and choose between them at login. Off unless the world turns it on. |
 | `AchievementDiaries` | AchievementDiaries | achievements | yes | Achievement diaries: task lists, progress, tier reward claims and lamps, plus the ::diary command to inspect, complete or reset tiers. (members only) |
 | `AdventurePaths` | AdventurePaths | achievements | yes | Adventure Paths with Adventurer Jon: the Combat and Gatherer paths, task claims, starter kits, the Combat voucher and the Lamp of the Gatherer. |
-| `ArdougneAleckHunterEmporiumDiary` | ArdougneAleckHunterEmporiumDiary | achievements | yes | Credits the Ardougne diary task for viewing Aleck's Hunter Emporium in Yanille. (members only) |
-| `ArdougneBalloonDiary` | ArdougneBalloonDiary | achievements | yes | Credits the Ardougne diary task for travelling to Castle Wars by hot air balloon. (members only) |
-| `ArdougneBertSandDiary` | ArdougneBertSandDiary | achievements | yes | Credits the Ardougne diary task for claiming buckets of sand from Bert in Yanille. (members only) |
-| `ArdougneCastleChestDiary` | ArdougneCastleChestDiary | achievements | yes | Credits the Ardougne diary task for stealing from a chest in Ardougne Castle. (members only) |
-| `ArdougneCombatTrainingCampDiary` | ArdougneCombatTrainingCampDiary | achievements | yes | Credits the Ardougne diary task for entering the Combat Training Camp north of West Ardougne. (members only) |
-| `ArdougneDeathRunesDiary` | ArdougneDeathRunesDiary | achievements | yes | Credits the Ardougne diary task for crafting death runes from essence. (members only) |
-| `ArdougneEliteMantaDiary` | ArdougneEliteMantaDiary | achievements | yes | Credits the Ardougne elite diary task for catching a manta ray in the Fishing Trawler and cooking it. (members only) |
-| `ArdougneEliteRuneCrossbowDiary` | ArdougneEliteRuneCrossbowDiary | achievements | yes | Credits the Ardougne elite diary task for making a rune crossbow from scratch within Yanille. (members only) |
-| `ArdougneEliteTaskProgress` | ArdougneEliteTaskProgress | achievements | yes | Tracks per-session step progress for the Ardougne elite manta ray and rune crossbow tasks, which other diary plugins query. (members only) |
-| `ArdougneFishingPlatformDiary` | ArdougneFishingPlatformDiary | achievements | yes | Credits the Ardougne diary task for catching any fish on the Fishing Platform. (members only) |
-| `ArdougneHeroDiary` | ArdougneHeroDiary | achievements | yes | Credits the Ardougne diary task for pickpocketing a Hero. (members only) |
-| `ArdougneIbanStaffDiary` | ArdougneIbanStaffDiary | achievements | yes | Credits the Ardougne diary task for equipping Iban's upgraded staff or upgrading an Iban's staff. (members only) |
-| `ArdougneIceBarrageDiary` | ArdougneIceBarrageDiary | achievements | yes | Credits the Ardougne diary task for casting Ice Barrage on another player within Castle Wars. (members only) |
-| `ArdougneMagicGuildDiary` | ArdougneMagicGuildDiary | achievements | yes | Credits the Ardougne diary task for entering the Magic Guild. (members only) |
-| `ArdougneMasterFarmerDiary` | ArdougneMasterFarmerDiary | achievements | yes | Credits the Ardougne diary task for pickpocketing the Master Farmer north of Ardougne. (members only) |
-| `ArdougneNecromancerIslandDiary` | ArdougneNecromancerIslandDiary | achievements | yes | Credits the Ardougne diary task for visiting the island east of the Necromancer's tower. (members only) |
-| `ArdougneNightshadeDiary` | ArdougneNightshadeDiary | achievements | yes | Credits the Ardougne diary task for collecting nightshade from the Skavid caves. (members only) |
-| `ArdougnePalmHealthDiary` | ArdougnePalmHealthDiary | achievements | yes | Credits the Ardougne diary task for checking the health of a palm tree near Tree Gnome Village. (members only) |
-| `ArdougnePoisonIvyDiary` | ArdougnePoisonIvyDiary | achievements | yes | Credits the Ardougne diary task for picking poison ivy berries from the patch south of Ardougne. (members only) |
-| `ArdougneRedSalamanderDiary` | ArdougneRedSalamanderDiary | achievements | yes | Credits the Ardougne diary task for catching a red salamander. (members only) |
-| `ArdougneSalveDiary` | ArdougneSalveDiary | achievements | yes | Credits the Ardougne diary task for imbuing a salve amulet at the Nightmare Zone or equipping an imbued one. (members only) |
-| `ArdougneSmithingDiary` | ArdougneSmithingDiary | achievements | yes | Credits the Ardougne diary smithing tasks: a mithril platebody near Ardougne and a dragon sq shield in West Ardougne. (members only) |
-| `ArdougneStrawberryFarmDiary` | ArdougneStrawberryFarmDiary | achievements | yes | Credits the Ardougne diary task for harvesting strawberries from the Ardougne farm. (members only) |
-| `ArdougneTeleportDiary` | ArdougneTeleportDiary | achievements | yes | Credits the Ardougne diary task for casting the Ardougne Teleport spell. (members only) |
-| `ArdougneTorstolDiary` | ArdougneTorstolDiary | achievements | yes | Credits the Ardougne diary task for picking torstol from the patch north of Ardougne. (members only) |
-| `ArdougneUnicornPenFairyRingDiary` | ArdougneUnicornPenFairyRingDiary | achievements | yes | Credits the Ardougne diary task for entering the unicorn pen in Ardougne Zoo using a fairy ring. (members only) |
-| `ArdougneWatchtowerDiary` | ArdougneWatchtowerDiary | achievements | yes | Credits the Ardougne diary task for teleporting to the Watchtower. (members only) |
-| `ArdougneYanilleDoorDiary` | ArdougneYanilleDoorDiary | achievements | yes | Credits the Ardougne diary task for picklocking the door to the basement of Yanille's Agility Dungeon. (members only) |
-| `ArdougneYanilleGrappleDiary` | ArdougneYanilleGrappleDiary | achievements | yes | Credits the Ardougne diary task for grappling over Yanille's south wall. (members only) |
 | `CollectionLog` | CollectionLog | achievements | yes | Collection log: records items obtained from drops and other sources, with the log and overview interfaces, new-item popups and a ::clog command. |
 | `CombatAchievements` | CombatAchievements | achievements | yes | Combat Achievements: 655 tasks in six tiers with points, Ghommal's tier rewards, the five interfaces and boss kill counts. |
-| `DesertFinish.AchievementDiaries` | DesertFinishAchievementDiaries | achievements | yes | Credits two Desert diary tasks: refilling waterskins in the desert with Humidify, and casting Ice Barrage on a foe in the desert. (members only) |
-| `FaladorDiary` | FaladorDiary | achievements | yes | Credits Falador diary tasks from other plugins' successful actions, such as the haircut, mind tiara, Entrana boat and Doric's blurite limbs. (members only) |
-| `FaladorDiaryRemainder` | FaladorDiaryRemainder | achievements | yes | Credits the last Falador diary tasks: Sir Renitee's family crest, the scarecrow, the north wall grapple, Rogues' Den wall safe and magic roots. (members only) |
-| `FremennikDiary` | FremennikDiary | achievements | yes | Credits Fremennik diary tasks from the actions the Wiki names, including the Rellekka tiara and Dagannoth Kings sequences. (members only) |
-| `FremennikLighthouseDiary` | FremennikLighthouseDiary | achievements | yes | Credits the Fremennik diary task for reaching the Lighthouse by the Waterbirth Island dungeon ladder, after Horror from the Deep. (members only) |
-| `KandarinDiary` | KandarinDiary | achievements | yes | Credits Kandarin diary tasks from actions other plugins already perform, in the places the Wiki names, such as the Seers' Village maple shortbow. (members only) |
-| `KandarinDiaryFinish` | KandarinDiaryFinish | achievements | yes | Credits the remaining Kandarin diary tasks, such as the Catherby candle and pet fish, the Hemenster chest, granite body and pyre ship. (members only) |
-| `KaramjaDiary` | KaramjaDiary | achievements | yes | Credits Karamja diary tasks from the gameplay that performs them, such as Musa Point, Brimhaven Dungeon, the TzHaar caves and slayer tasks. (members only) |
-| `KaramjaDiaryFinish` | KaramjaDiaryFinish | achievements | yes | Credits Karamja diary tasks the first pass missed, such as the Musa Point ferry, Crandor, Vigroy and Hajedy's cart and palm leaves. (members only) |
-| `KourendDiaryActivitiesFinish` | KourendDiaryActivitiesFinish | achievements | yes | Credits five Kourend diary tasks: an Arceuus Library book, a Piscarilius crane, Ginea and Khaled deliveries, and a bluegill at Molch Island. (members only) |
-| `KourendDiarySkillsFinish` | KourendDiarySkillsFinish | achievements | yes | Credits Kourend diary tasks for digging saltpetre, mining volcanic sulphur, an Ape Atoll teleport tablet and a battlestaff made in the Farming Guild. (members only) |
-| `KourendDiaryTravelFinish` | KourendDiaryTravelFinish | achievements | yes | Credits Kourend diary travel tasks: the Land's End boat, Tyss's spellbook switch, the Farming Guild, Kharedst's memoirs and Xeric's talisman. (members only) |
-| `KourendKebosDiary` | KourendKebosDiary | achievements | yes | Credits Kourend and Kebos diary tasks whose gameplay already exists, only on the successful action's own event and target. (members only) |
-| `LumbridgeDraynorDiary` | LumbridgeDraynorDiary | achievements | yes | Credits Lumbridge and Draynor diary tasks, such as water runes, anchovies, the River Lum grapple, Chaeldar's tasks and Puro-Puro implings. (members only) |
-| `MorytaniaActivities.AchievementDiaries` | MorytaniaActivitiesDiary | achievements | yes | Credits Morytania diary tasks for snelm crafting, Trouble Brewing, the Swamp Boaty, Guthix balance mixing and barehand shark fishing. (members only) |
-| `VarrockDiary` | VarrockDiary | achievements | yes | Credits Varrock diary tasks such as Thessalia's store, the newspaper, the pottery bowl, the spirit tree and the balloon, from other plugins' successes. (members only) |
-| `VarrockDiaryFinish` | VarrockDiaryFinish | achievements | yes | Credits five Varrock diary tasks: the Apothecary's strength potion, Gertrude's kitten colour, a white tree fruit, the spottier cape and Palace yew roots. (members only) |
-| `WesternProvincesDiary` | WesternProvincesDiary | achievements | yes | Credits Western Provinces diary tasks such as the copper longtail, novice Pest Control, Rantz's chompy hat, spined larupia and the Grand Tree shortcut. (members only) |
-| `WildernessDiary` | WildernessDiary | achievements | yes | Credits Wilderness diary tasks such as God Wars Dungeon bloodvelds, yew from Ent trunks, the Emblem Trader and god spells hitting players. (members only) |
-| `WildernessResourceDiary` | WildernessResourceDiary | achievements | yes | Credits Wilderness diary tasks done in the Resource Area: golden helmet, adamant scimitar, dark crabs and magic logs. (members only) |
-| `WildernessTriosDiary` | WildernessTriosDiary | achievements | yes | Tracks the Wilderness diary boss trios: Crazy archaeologist, Chaos Fanatic and Scorpia (hard), and Callisto, Venenatis and Vet'ion (elite). (members only) |
 | `AgentMcp` | AgentMcp | agent | yes | Runs an MCP server that lets a tool such as Claude Code drive an online player for testing. Active only when AGENT_MCP=1 is set. |
 | `AgilityPyramid` | AgilityPyramid | areas | yes | Moves the Agility Pyramid's sliding blocks on floors 1 and 3, which push players down a floor for 8 damage. The course itself is a separate plugin. (members only) |
-| `AncientPyramidMummies` | Ancient Pyramid Mummies | areas | yes | Ancient Pyramid mummy fire and water spell transformations. (members only) |
+| `AncientPyramidMummies` | Ancient Pyramid Mummies | areas | yes | Ancient Pyramid mummy transformations: fire spells and lit fire arrows set them alight, water spells douse them. (members only) |
 | `BrimhavenDungeon` | BrimhavenDungeon | areas | yes | Brimhaven Dungeon access: Saniboch's entry fee, the dungeon entrance and the vines that need an axe to go deeper. (members only) |
 | `Burthorpe` | Burthorpe | areas | yes | Animates the soldiers drilling, sparring and eating in Burthorpe's square, as captured. (members only) |
 | `CatacombsOfKourend` | CatacombsOfKourend | areas | yes | Catacombs of Kourend access: King Rada's statue, the vine ladder back up, the corner vines and the surface holes they open, and bones restoring Prayer points while buried or crushed there. (members only) |
@@ -546,6 +503,7 @@ This table lists bundled plugins that have a description. The world config page 
 | `SaveHistory` | SaveHistory | commands | yes | Owner commands ::snapshots and ::rollback, which list a player's saved copies and restore an earlier one. |
 | `SeasonalRares` | SeasonalRares | events | yes | Hands out discontinued seasonal rares during the world's own event windows, with ::rares to list what a player can claim. |
 | `AcceptAid` | AcceptAid | interface | yes | The Accept Aid setting that controls whether Lunar spells, cures and shared boosts can affect the player, refused for Ironmen. |
+| `ActivityAdviser` | ActivityAdviser | interface | yes | The Activity Adviser: the minimap button opens its quest suggestions, built from the cache quest table. |
 | `AlchemyWarningThreshold` | AlchemyWarningThreshold | interface | yes | Settings option for the item value above which casting Alchemy asks first. |
 | `AntiDragDelay` | AntiDragDelay | interface | yes | Settings option for the Anti Drag delay, asked as a number of milliseconds. |
 | `BankPin` | BankPin | interface | yes | The Bank PIN: the Banker settings, the keypad, the bank lock, and the guard on other PIN-protected actions. |
@@ -613,6 +571,7 @@ This table lists bundled plugins that have a description. The world config page 
 | `BarrowsEquipment` | BarrowsEquipment | items | yes | Barrows armour and weapons: durability that degrades over time, repairs, and the Dharok, Guthan, Verac, Torag and Karil set-effect combat modifiers. (members only) |
 | `BladeOfSaeldor` | BladeOfSaeldor | items | yes | Blade of Saeldor: uses one charge per swing and handles the inactive form, built on the shared crystal-weapon charge code. (members only) |
 | `BlightedSpellSacks` | BlightedSpellSacks | items | yes | Blighted spell sacks (ice, entangle, teleblock, surge, vengeance): each supplies a spell's entire rune cost where blighted items are allowed. (members only) |
+| `BoltPouch` | BoltPouch | items | yes | Adds the bolt pouch: four slots of up to 10,000 bolts, stored with Use, the Open interface's Remove and Unwield, and Hirko's sale. (members only) |
 | `Bonds` | Bonds | items | yes | Old school bonds: tradeable and untradeable forms, bond pouch interface, redeeming for membership days, converting and gifting bonds. |
 | `Bonecrusher` | Bonecrusher | items | yes | Bonecrusher: while charged and active in the inventory, crushes the bones a kill drops for Prayer XP, in full with the elite Morytania diary. (members only) |
 | `BountyHunterWeapons` | BountyHunterWeapons | items | yes | Restricts imbued Bounty Hunter weapons, like the dark bow (BH) and abyssal daggers (BH), to permitted PvP minigames and combat rings. (members only) |
@@ -663,6 +622,7 @@ This table lists bundled plugins that have a description. The world config page 
 | `MithrilSeeds` | MithrilSeeds | items | yes | Lets players plant mithril seeds to grow random flowers that can be picked, and removes the flower after a short time. (members only) |
 | `MythicalCape` | MythicalCape | items | yes | Lets the mythical cape teleport the player to the Myths' Guild from the inventory or worn, with no charges. (members only) |
 | `NeitiznotFaceguard` | NeitiznotFaceguard | items | yes | Handles the Basilisk jaw: Olaf the Bard's story, then attaching it to a Helm of Neitiznot to make the faceguard, and dismantling it again. (members only) |
+| `NeverKeptOnDeath` | NeverKeptOnDeath | items | yes | Destroys the untradeables that are never kept on death (League trophies, the Chronicle, items with no ground state) on a PvP death, instead of giving them back. (members only) |
 | `Obligator` | Obligator | items | yes | Adds the Obligator chain mace's multi-roll Thrust with reach behind the target and single-target Smash, plus charging with shards and runes. (members only) |
 | `OilLights` | OilLights | items | yes | Handles oil lamps and lanterns: assembling them, distilling lamp oil at the Rimmington still, lighting with a tinderbox and extinguishing them. (members only) |
 | `OpenableItems` | OpenableItems | items | yes | Gives the Open option on item packs, caskets, oysters, gem bags, sacks and similar items that hand over fixed or random contents. |
@@ -673,6 +633,7 @@ This table lists bundled plugins that have a description. The world config page 
 | `PharaohsSceptre` | PharaohsSceptre | items | yes | Adds the Pharaoh's sceptre: teleports to the great pyramids, charges, Desert Diary capacity and recharging at the guardian mummy. (members only) |
 | `PhoenixNecklace` | PhoenixNecklace | items | yes | Makes a worn Phoenix necklace heal 30% of Hitpoints and break when a hit leaves the wearer at 20% or less, except where food is banned. (members only) |
 | `Potions` | Potions | items | yes | Handles drinking potions: dose items, stat boosts and drains, antidotes, restores, stamina, anti-fire and other effects, and their timers. |
+| `QuestRewardDeathCoins` | QuestRewardDeathCoins | items | yes | Turns the barrelchest anchor and barrows gloves into coins for the killer on a PvP death. (members only) |
 | `RatBoneWeapons` | RatBoneWeapons | items | yes | Adds the rat bone mace, shortbow and staff made from Scurrius' spine: making them, the staff's charges and spell, and the rats-only bonus. (members only) |
 | `RevenantWeapons` | RevenantWeapons | items | yes | Adds Viggora's chainmace, the Ursine chainmace and Craw's bow: revenant ether charging, Wilderness damage bonus, uncharging and dismantling. (members only) |
 | `RingOfElements` | RingOfElements | items | yes | Charges the ring of the elements with runes and teleports beside the four elemental altars, one charge each, with a bank uncharge option. (members only) |
@@ -770,13 +731,7 @@ This table lists bundled plugins that have a description. The world config page 
 | `Wintertodt` | Wintertodt | minigames | yes | Adds Wintertodt: the world-wide round behind the Doors of Dinh, the camp outside and its reward cart. (members only) |
 | `FreeToPlay` | FreeToPlay | modes | no | Switches this world to free-to-play. The spawn must be inside a free-to-play area. |
 | `Ironman` | Ironman | modes | yes | Adds Ironman, Ultimate and Hardcore Ironman accounts, chosen at the Ironman tutor, downgraded with Adam, or set by the ::ironman command. |
-| `LeagueAreaUnlocks` | LeagueAreaUnlocks | modes | yes | Locks a league character to its unlocked areas, starting in Misthalin and Karamja and opening more as tasks reach each league's thresholds. (members only) |
-| `LeagueCombatMasteries` | LeagueCombatMasteries | modes | yes | Adds Raging Echoes combat masteries: three styles of six tiers bought with points from combat challenges, and the passives they grant. (members only) |
-| `LeagueMode` | LeagueMode | modes | yes | Runs a world as a league: gives each account a league character, the Leagues tab, rank and statistics panels, XP rate and the reward shop. (members only) |
-| `LeaguePacts` | LeaguePacts | modes | yes | Adds the Demonic Pacts tree of over 130 combat-boost nodes bought with pact points earned from pact tasks, with resets. (members only) |
-| `LeaguePoints` | LeaguePoints | modes | yes | Tracks League Points as the total of a league character's completed tasks, and announces awards and changes to the other league plugins. (members only) |
-| `LeagueRelics` | LeagueRelics | modes | yes | Adds league relics: eight tiers unlocked with League Points, three relics per tier, chosen permanently through the relic interface. (members only) |
-| `LeagueTasks` | LeagueTasks | modes | yes | Adds the league task lists, awarding League Points from kills, levels, quests and deeds, with the task interface opened from the side panel. (members only) |
+| `LeagueMode` | LeagueMode | modes | yes | Leagues characters, progression, tasks, relics, region unlocks, combat masteries, Demonic Pacts and rewards. (members only) |
 | `PvpMode` | PvpMode | modes | yes | Adds the ::presets and ::kits commands, opens presets after a PvP death, and lets accounts that may use presets have their prayers without the unlock quests. |
 | `AggressionToggle` | AggressionToggle | npcs | yes | Adds the ::aggro command, an administrator cheat that keeps monsters aggressive after the ten-minute tolerance, usable by all if commands allow. |
 | `Apothecary` | Apothecary | npcs | yes | Gives the Varrock Apothecary's strength-potion service: 5 coins, a limpwurt root and red spiders' eggs per potion, feeding the Varrock diary. |
@@ -885,31 +840,7 @@ This table lists bundled plugins that have a description. The world config page 
 | `RalosRise` | RalosRise | skills | yes | Prayer training at Ralos' Rise: blessing bones and wine at the altar, breaking blessed bones into shards and the libation bowl. (members only) |
 | `Reanimation` | Reanimation | skills | yes | Gives Prayer XP to the caster who kills a creature reanimated by an Arceuus ensouled-head spell. (members only) |
 | `Runecrafting` | Runecrafting | skills | yes | Runecrafting: entering altars with talismans or tiaras, crafting runes, binding tiaras, the Blood Altar and Dark Altar and exit portals. |
-| `Sailing` | Sailing | skills | yes | The client side of being aboard a boat: boarded varbits and the sailing sidepanel on the combat tab, set on boarding and cleared on leaving; off a boat, the combat tab offers the sidepanel as the Sailing side panel setting says. (members only) |
-| `Anchor` | SailingAnchor | skills | yes | A boat's anchor: dropping it stops the boat and holds it still until it's raised. (members only) |
-| `BarracudaTrials` | SailingBarracudaTrials | skills | yes | Sailing's Barracuda Trials: the Tempor Tantrum, Jubbly Jive and Gwenith Glide timed sea courses, with ranks and rewards. (members only) |
-| `BoatSelection` | SailingBoatSelection | skills | yes | The boat selection interface for choosing which of your boats to board at a gangplank or recover at a shipwright. (members only) |
-| `BoatTeleport` | SailingBoatTeleport | skills | yes | Teleport to boat tablets and the Sailing cape teleport, taking the player to a moored boat's dock without boarding it. (members only) |
-| `CargoHold` | SailingCargoHold | skills | yes | A boat's cargo hold: opening it, withdrawing and depositing cargo and salvage, and the tools compartment. (members only) |
-| `Charting` | SailingCharting | skills | yes | Sailing sea charting: 358 tasks across the seas, logged once each in the Captain's log for Sailing XP and sea bonuses. (members only) |
-| `SailingCommands` | SailingCommands | skills | yes | Developer commands for testing sailing: ::raft, ::skiff and ::sloop to moor boats, ::maxboat, ::boatinfo, ::sailmode and ::heading. (members only) |
-| `Crew` | SailingCrew | skills | yes | Sailing crewmates: recruiting them, the Crew Registrar, jobs at the helm, salvaging, cannons, repairs, banking cargo and courier crates. (members only) |
-| `CrystalExtractor` | SailingCrystalExtractor | skills | yes | The crystal extractor: switched on at sea it makes a crystal mote every 105 ticks, harvested for Sailing XP, a wind mote and sometimes a crystal shard. (members only) |
-| `Gangplank` | SailingGangplank | skills | yes | Boarding and disembarking boats at gangplanks and mooring points, and docking at a port's buoy, with fades and sounds. (members only) |
-| `Helm` | SailingHelm | skills | yes | Taking and leaving a boat's helm, the sidepanel sail buttons, trimming and setting sails, and steering the boat. (members only) |
-| `Kegs` | SailingKegs | skills | yes | Lets players fill a boat's keg with 25 ales, check it, fill glasses from it and empty it, and applies each ale's keg effect while aboard. (members only) |
-| `PortTasks` | SailingPortTasks | skills | yes | Sailing port tasks: courier and bounty tasks from notice boards and ledger tables, port masters and reward bags. (members only) |
-| `Salvaging` | SailingSalvaging | skills | yes | Shipwreck salvaging: a boat's salvaging hook reels salvage from wrecks for Sailing XP, and a salvaging station sorts it into loot. (members only) |
-| `Schematics` | SailingSchematics | skills | yes | Sailing schematics: unlocking boat parts and facilities, and where players acquire them. (members only) |
-| `SeaCombat` | SailingSeaCombat | skills | yes | Sailing boat combat: manning cannons, sea creatures attacking the boat, boat HP and repairs, corpse harvesting and ranged or magic from the deck. (members only) |
-| `Shipwright` | SailingShipwright | skills | yes | Shipwright NPCs' Buy-boat (the Boat Emporium) and Recover-boat, paying from the bank so a Port Wizard brings a boat to the port. (members only) |
-| `ShipwrightRepairs` | SailingShipwrightRepairs | skills | yes | Shipwright repairs for boats, attached from the Sailing repairs unit. (members only) |
-| `Shipyard` | SailingShipyard | skills | yes | Shipwright's Customise-boat takes you to the shipyard to swap a boat's hull, keel, sails or helm for another tier, paying materials for Construction XP. (members only) |
-| `ShipyardFacilities` | SailingShipyardFacilities | skills | yes | Lets players build, modify and remove facilities such as a range on a boat's hotspots while aboard it in the shipyard, at the cost of materials. (members only) |
-| `StaticShips` | SailingStaticShips | skills | yes | Lets players board ships that a quest or plugin spawns as scenery, such as the Barracuda Trials boats, which carry their own NPCs and objects. (members only) |
-| `SummonBoat` | SailingSummonBoat | skills | yes | Summon boat tablets: breaking one near a dock brings a chosen boat with a teleport focus to you, losing its port task cargo, salvage and fish. (members only) |
-| `TeleportWarning` | SailingTeleportWarning | skills | yes | Warns before a teleport spell takes the player off their boat at sea, when its All Settings row is on. (members only) |
-| `ShipwrightsWorkbench` | ShipwrightsWorkbench | skills | yes | The Shipwrights' Workbench: crafting hull parts, large hull parts and repair kits from planks and nails for Construction XP. (members only) |
+| `Sailing` | Sailing | skills | yes | Sailing boats, travel, shipyards, crews, port tasks, sea charting and combat. (members only) |
 | `ShootingStars` | ShootingStars | skills | yes | Crashed stars land around the world on a timer; players mine them layer by layer for stardust and trade it with Dusuri, with an optional landing announcement. |
 | `Slayer` | Slayer | skills | yes | Slayer: tasks, masters, points and rewards, superiors, finishers, and the slaughter and expeditious bracelets, built on the cache's Slayer tables. (members only) |
 | `Smithing` | Smithing | skills | yes | Smelting at furnaces and smithing at anvils, plus cannonballs, godswords, dragon and visage shields, barbarian spears, Varrock armour and Superheat Item. |

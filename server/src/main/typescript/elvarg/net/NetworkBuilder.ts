@@ -39,6 +39,7 @@ import {
   NATIVE_CLIENT_ATTRIBUTE,
   HANDSHAKE_CAPABILITY_NATIVE_CLIENT,
   XPDROPS_ENABLED_ATTRIBUTE,
+  dataOrbsHidden,
   encodeDefaultAnimations,
   encodeGameframeBootstrap,
   encodeHandshake,
@@ -210,6 +211,52 @@ function isSpecialAttackOrb(widgetId: number): boolean {
   );
   return specialAttackOrbIds.has(widgetId);
 }
+
+/**
+ * All Settings "Ctrl+click to invert run mode" (row 207), varbit 13132 `runinvert_mode` (enum
+ * 4074): 0 Never, 1 Walk -> Run Only, 2 Run -> Walk Only, 3 Always. Live starts it at Always.
+ */
+const RUN_INVERT_MODE_VARBIT = 13132;
+const RUN_INVERT_WALK_TO_RUN = 1;
+const RUN_INVERT_RUN_TO_WALK = 2;
+
+/** Whether a Ctrl-click may invert the player's run mode, walking or running as they are. */
+export function runInvertAllowed(player: Player, running: boolean): boolean {
+  if (!CachePipeline.isInitialized()) return true;
+  const mode = player.getPacketSender().getVarbit(RUN_INVERT_MODE_VARBIT);
+  return (mode & (running ? RUN_INVERT_RUN_TO_WALK : RUN_INVERT_WALK_TO_RUN)) !== 0;
+}
+
+/**
+ * The run choice a click's key byte asks for: whether to run, or null to follow the run setting.
+ * Ctrl (1) inverts the run mode as row 207 allows; Ctrl+Shift (2) is a staff teleport that
+ * plugins take over, and walks like a Ctrl-click for everyone else. The inversion holds for
+ * this click's walk only; the run setting and orb stay as they are.
+ */
+export function clickRunOverride(player: Player, modifierFlags: number): boolean | null {
+  if (modifierFlags !== 2 && (modifierFlags & 1) === 0) return null;
+  const running = player.isRunningReturn();
+  if (!runInvertAllowed(player, running)) return null;
+  return !running && player.getRunEnergy() > 0;
+}
+
+/** Clicks that walk the player to what they target; a walk click ("move") sets its own run choice. */
+const INTERACTION_CLICKS = new Set<string>([
+  "npc_option",
+  "object_option",
+  "player_option",
+  "ground_item_action",
+  "world_entity_option",
+  "item_on_player",
+  "item_on_npc",
+  "item_on_object",
+  "item_on_ground",
+  "spell_on_player",
+  "spell_on_npc",
+  "spell_on_object",
+  "spell_on_ground",
+  "inventory_use_on",
+]);
 
 const WORLD_INTERACTIONS = new Set([
   "move",
@@ -658,6 +705,14 @@ export class ClientConnection {
           this.channel.close(1011, "Login extension failed");
           return;
         }
+      }
+      // A Ctrl-click on an NPC, object, ground item or player inverts the run mode for the walk
+      // to it, as on a walk click; every such click replaces the last one's choice.
+      if (this.player && INTERACTION_CLICKS.has(packet.type)
+        && !(packet.type === "inventory_use_on" && packet.target.kind === "inventory")
+        && !(packet.type === "ground_item_action" && packet.option?.toLowerCase() === "examine")) {
+        const modifierFlags = "modifierFlags" in packet ? packet.modifierFlags ?? 0 : 0;
+        this.player.getMovementQueue().setClickRunOverride(clickRunOverride(this.player, modifierFlags));
       }
       switch (packet.type) {
         case "plugin_message": {
@@ -1647,7 +1702,7 @@ export class ClientConnection {
     // stores; the client maps the standard mounts onto the chosen layout.
     // Mobile clients resolve to the stock mobile toplevel (601) instead.
     const layoutRoot = resolveGameframeRoot(player);
-    for (const packet of encodeGameframeBootstrap(player.getUsername(), layoutRoot, player.getAttribute(XPDROPS_ENABLED_ATTRIBUTE) === true, GameConstants.WORLD_TYPE.label)) this.send(packet);
+    for (const packet of encodeGameframeBootstrap(player.getUsername(), layoutRoot, player.getAttribute(XPDROPS_ENABLED_ATTRIBUTE) === true, GameConstants.WORLD_TYPE.label, !dataOrbsHidden(player))) this.send(packet);
     player.getPacketSender()
       // Publish the saved spellbook before the remaining login state and quest recovery.
       .sendTabInterface(6, player.getSpellbook().getInterfaceId())
@@ -1672,11 +1727,7 @@ export class ClientConnection {
     // At a boat's helm a click sets the heading (the client normally sends SET_HEADING).
     if (BoatManager.steerToward(player, x, y)) return;
     player.getCombat().reset();
-    // Ctrl (1) inverts the run toggle for this walk; Ctrl+Shift (2) is a staff teleport that
-    // plugins take over, and walks like a Ctrl-click for everyone else.
-    const invert = modifierFlags === 2 || (modifierFlags & 1) !== 0;
-    // The inversion holds for this path only; the run setting and orb stay as they are.
-    const runOverride = forceRun ? true : invert ? !player.isRunningReturn() && player.getRunEnergy() > 0 : null;
+    const runOverride = forceRun ? true : clickRunOverride(player, modifierFlags);
     // MovementQueue owns the destination flag and de-duplicates it; sending it
     // here as well double-posts the marker on every walk click.
     player.getMovementQueue().requestWalk(

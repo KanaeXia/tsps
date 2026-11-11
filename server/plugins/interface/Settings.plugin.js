@@ -1,5 +1,5 @@
 // Settings: "All Settings" browser (134), the keybindings panel (121) and the
-// side panel's "Game client layout" dropdown (116:40).
+// "Game client layout" dropdown, on the side panel (116:40) and in All Settings.
 // Component ids, varbits and the settings catalog order below are verified
 // against cache rev 237 and cross-checked with RuneLite (InterfaceID.Settings,
 // VarbitID).
@@ -79,7 +79,9 @@ const UNMUTED_DEFAULT_VOLUME = 100;
 // children of 116:40, so clicks only reach us when that range has op1 flags
 // (encodeGameframeFlags sends them).
 const DISPLAY_LAYOUT_DROPDOWN = DISPLAY_SETTINGS_DROPDOWN_BUTTONS_UID;
-// Enum 3509 order: Fixed, Resizable Classic, Resizable Modern, Resizable 317, Fixed 317.
+// Enum 3509 order: Fixed, Resizable Classic, Resizable Modern, Resizable 317, Fixed 317. The cache
+// has the first three; our client adds the two 317 layouts, to both dropdowns.
+const GAMEFRAME_LAYOUT_ENUM = 3509;
 const GAMEFRAME_LAYOUT_ROOTS = [548, 164, 161, 161, 548];
 const GAMEFRAME_317_OPTION = 3;
 const GAMEFRAME_317_FIXED_OPTION = 4;
@@ -87,6 +89,10 @@ const GAMEFRAME_317_VARP = 7995; // mirrors client/common/ui/gameframeLayout.ts
 const CLIENT_LAYOUT_317_ATTRIBUTE = "client-layout317";
 const DEFAULT_GAMEFRAME_ROOT = 161;
 const ORBS_PANE_UID = (ROOT_INTERFACE << 16) | 33;
+// All Settings > Interfaces: "Game client layout" (12), a dropdown on enum 3509 like the side
+// panel's, and "Show data orbs" (8), a toggle on varbit 4084 orbs_disabled.
+const GAME_CLIENT_LAYOUT_SETTING = 12;
+const SHOW_DATA_ORBS_SETTING = 8;
 // world.json "gameframe" -> the dropdown option (enum 3509 index) it forces on login.
 const WORLD_GAMEFRAME_OPTIONS = {
   "modern-fixed": 0,
@@ -141,9 +147,10 @@ const SETTINGS_VALUES_ATTRIBUTE = "settings:values";
 // The varps the browser client transmits whole when a row changes its varbit in the client: the
 // cache's toggle script (3965) flips Anti Drag (115), precise timing (82) and Esc closes (57)
 // there before the click is sent, and the buff bar's relic op (script 3231) flips Display Relics
-// (127) with no click at all. The rows saved from them are the settings.json rows on these varps;
-// other bits (the collection-log notifications on 2856) belong to their own plugins.
-const TRANSMITTED_SETTING_VARPS = new Set([1224, 1734, 2856]);
+// (127) with no click at all. The Minimenu rows (4503) flip there too, and the spacing slider
+// changes its varbit with no click at all. The rows saved from them are the settings.json rows on
+// these varps; other bits (the collection-log notifications on 2856) belong to their own plugins.
+const TRANSMITTED_SETTING_VARPS = new Set([1224, 1734, 2856, 4503]);
 // Cache 241 settings structs3107..3755/4286/2735 and reader script6716.
 /** questlist_hide_in_progress and questlist_hide_completed: toggles before rev 242, dropdowns since. */
 const QUEST_LIST_SHOW_VARBITS = [13775, 13777];
@@ -185,9 +192,19 @@ const COLOUR_RESETS = {
   107: varpsOf(OPAQUE_CHAT_COLOURS), 108: varpsOf(TRANSPARENT_CHAT_COLOURS), 109: varpsOf(SPLIT_CHAT_COLOURS),
   228: [3409, 3410, 3411, 3412], 489: [5235, 5236, 5401, 5237],
 };
-const SETTINGS_COLOUR_MODAL_UID = (ALL_SETTINGS_INTERFACE_ID << 16) | 2;
+// The picker (colour_pallet) opens as an overlay in All Settings' popup layer, which script 4185
+// sizes it against. Its palette swatches and custom-colour buttons need op1 to be clickable;
+// a swatch or Ok sends the colour as a count reply, Cancel or close sends CANCEL_COLOUR.
+const SETTINGS_COLOUR_MODAL_UID = (ALL_SETTINGS_INTERFACE_ID << 16) | 9;
 const SETTINGS_COLOUR_INTERFACE = 288;
 const SETTINGS_COLOUR_SCRIPT = 4185;
+const SETTINGS_COLOUR_PALETTE = (SETTINGS_COLOUR_INTERFACE << 16) | 11;
+const SETTINGS_COLOUR_PALETTE_LAST = 152;
+const SETTINGS_COLOUR_CUSTOM = (SETTINGS_COLOUR_INTERFACE << 16) | 8;
+const SETTINGS_COLOUR_CUSTOM_LAST = 4;
+// settings_colour_modal_opened: 1 while the picker is open.
+const SETTINGS_COLOUR_MODAL_OPENED_VARBIT = 12284;
+const OVERLAY = 1;
 const CANCEL_COLOUR = 2147483647;
 const pendingColours = new WeakMap();
 // Rows and dropdown options that may reach us (0..512). Search
@@ -206,6 +223,18 @@ const ALL_SETTINGS_VOLUME_VARPS = new Map([
 // "Reset volume sliders to default" (a button row): every slider back to a new account's 100.
 const RESET_VOLUME_SETTING = 468;
 const DEFAULT_VOLUME = 100;
+// Interfaces > Minimenu options: "Minimenu spacing value" (a number row) and "Reset minimenu
+// spacing" (a button row) set the spacing the slider row (393, varbit 11523) keeps, then run
+// script 7460, which clamps it to 0-100 and applies it in the client as the slider does.
+// Ours: the prompt's wording (no capture of it).
+const MINIMENU_SPACING_SETTING = 393;
+const MINIMENU_SPACING_VALUE_SETTING = 394;
+const RESET_MINIMENU_SPACING_SETTING = 395;
+const MINIMENU_SPACING_SCRIPT = 7460;
+const MAX_MINIMENU_SPACING = 100;
+const MINIMENU_SPACING_PROMPT = "Enter the minimenu spacing (0-100):";
+const FLOATER_CHATBOX_VARBIT = 16075;
+const CHATBOX_BUSY_VARBIT = 12393;
 
 const KEYBINDINGS_INTERFACE_ID = 121;
 const KEYBINDINGS_RESTORE_DEFAULTS = (KEYBINDINGS_INTERFACE_ID << 16) | 104;
@@ -337,7 +366,9 @@ function catalog() {
       settings.set(Number(settingId), {
         category: categoryId,
         type: Number(params.get(PARAM_SETTING_TYPE) ?? SETTING_TYPE_TOGGLE),
-        optionCount: options === undefined ? 0 : CacheDefinitions.getEnumValues(Number(options)).size,
+        optionCount: options === undefined ? 0
+          : Number(options) === GAMEFRAME_LAYOUT_ENUM ? GAMEFRAME_LAYOUT_ROOTS.length
+          : CacheDefinitions.getEnumValues(Number(options)).size,
         lockedText: Number(params.get(PARAM_SETTING_LOCKABLE)) === 1 ? params.get(PARAM_SETTING_LOCKED_TEXT) : undefined,
       });
     }
@@ -669,7 +700,40 @@ function sendGameframeLayout(player, root) {
   // The client moves the open mounts onto the new root, but live also reopens the orbs on
   // its orbs pane, which re-runs their onLoad scripts that place the Activity Adviser and
   // store orbs for this layout.
-  sender.sendSubInterface(ORBS_PANE_UID, pluginApi.core.orbsGroupFor(root), 1);
+  if (!pluginApi.core.dataOrbsHidden(player)) sender.sendSubInterface(ORBS_PANE_UID, pluginApi.core.orbsGroupFor(root), 1);
+}
+
+/** "Game client layout" chosen in All Settings: the same switch as the side panel's dropdown. */
+function chooseGameClientLayout(request) {
+  if (request.handled || request.settingId !== GAME_CLIENT_LAYOUT_SETTING) return;
+  const root = selectGameframeOption(request.player, request.option);
+  if (root === undefined) return;
+  request.handled = true;
+  sendGameframeLayout(request.player, root);
+}
+
+/** Live closes the orbs while orbs_disabled is 1 and opens them when it goes back to 0. */
+function showDataOrbs(player) {
+  const sender = player.getPacketSender();
+  if (pluginApi.core.dataOrbsHidden(player)) sender.closeSubInterface(ORBS_PANE_UID);
+  else sender.sendSubInterface(ORBS_PANE_UID, pluginApi.core.orbsGroupFor(getGameframeRoot(player)), 1);
+}
+
+function clickShowDataOrbs(request) {
+  if (request.handled || request.settingId !== SHOW_DATA_ORBS_SETTING) return;
+  request.handled = toggleSetting(request.player, SHOW_DATA_ORBS_SETTING);
+  if (request.handled) showDataOrbs(request.player);
+}
+
+/**
+ * Something that hid the orbs for a while (the Leagues tutorial) is done with them: the
+ * player's own choice comes back, and the orbs open or stay closed to match.
+ */
+function restoreDataOrbs({ player }) {
+  const row = SETTINGS[SHOW_DATA_ORBS_SETTING];
+  const key = varKey(row);
+  sendSettingVar(player, key, savedSettings(player)[key] ?? row.default ?? 0);
+  showDataOrbs(player);
 }
 
 function receiveGameframeLayout(event) {
@@ -718,12 +782,16 @@ function openColour(player, settingId) {
   const sender = player.getPacketSender();
   const [varp, defaultColour] = COLOUR_SETTINGS[settingId];
   const stored = sender.getVarp(varp);
-  sender.sendSubInterface(SETTINGS_COLOUR_MODAL_UID, SETTINGS_COLOUR_INTERFACE, 0);
+  sender.sendVarbit(SETTINGS_COLOUR_MODAL_OPENED_VARBIT, 1);
+  sender.sendSubInterface(SETTINGS_COLOUR_MODAL_UID, SETTINGS_COLOUR_INTERFACE, OVERLAY);
+  sender.sendInterfaceFlagsRange(SETTINGS_COLOUR_PALETTE, 0, SETTINGS_COLOUR_PALETTE_LAST, TRANSMIT_OP1);
+  sender.sendInterfaceFlagsRange(SETTINGS_COLOUR_CUSTOM, 0, SETTINGS_COLOUR_CUSTOM_LAST, TRANSMIT_OP1);
   sender.sendClientScript(SETTINGS_COLOUR_SCRIPT, SETTINGS_COLOUR_MODAL_UID, stored > 0 ? stored - 1 : defaultColour);
   const action = { acceptsZero: true, acceptsNegative: true, execute(value) {
     if (pendingColours.get(player) !== action) return;
     if (player.getEnteredAmountAction && player.getEnteredAmountAction() !== action) return;
     pendingColours.delete(player);
+    sender.sendVarbit(SETTINGS_COLOUR_MODAL_OPENED_VARBIT, 0);
     sender.closeSubInterface(SETTINGS_COLOUR_MODAL_UID);
     if (value === CANCEL_COLOUR) return;
     if (!Number.isInteger(value) || value < -1 || value > 0xffffff) return;
@@ -750,6 +818,7 @@ function endSettingsSearch({ player, interfaceId }) {
     const action = pendingColours.get(player);
     pendingColours.delete(player);
     if (action && player.getEnteredAmountAction?.() === action) player.setEnteredAmountAction(null);
+    if (action) player.getPacketSender().sendVarbit(SETTINGS_COLOUR_MODAL_OPENED_VARBIT, 0);
   }
   if (interfaceId !== ALL_SETTINGS_INTERFACE_ID) return;
   player.getPacketSender()
@@ -808,6 +877,43 @@ function resetVolumeSliders(request) {
     request.player.applyAudioSettingFromClient?.(varpId, DEFAULT_VOLUME);
     sender.sendConfig(varpId, DEFAULT_VOLUME);
   }
+}
+
+/** The minimenu spacing set, saved with its slider row and applied in the client. */
+function setMinimenuSpacing(player, value) {
+  const spacing = Math.max(0, Math.min(MAX_MINIMENU_SPACING, Math.trunc(Number(value) || 0)));
+  setSettingVar(player, varKey(SETTINGS[MINIMENU_SPACING_SETTING]), spacing);
+  player.getPacketSender().sendClientScript(MINIMENU_SPACING_SCRIPT, spacing);
+}
+
+/** "Reset minimenu spacing" clicked: no spacing, as a new account starts. */
+function resetMinimenuSpacing(request) {
+  if (request.handled || request.settingId !== RESET_MINIMENU_SPACING_SETTING) return;
+  request.handled = true;
+  setMinimenuSpacing(request.player, 0);
+}
+
+/** "Minimenu spacing value" clicked: the spacing is asked for as a number. */
+function askMinimenuSpacing(request) {
+  if (request.handled || request.settingId !== MINIMENU_SPACING_VALUE_SETTING) return;
+  request.handled = true;
+  const { player } = request;
+  const sender = player.getPacketSender();
+  sender.sendVarbit(FLOATER_CHATBOX_VARBIT, 1);
+  sender.sendVarbit(CHATBOX_BUSY_VARBIT, 1);
+  const closed = () => {
+    sender.sendVarbit(FLOATER_CHATBOX_VARBIT, 0);
+    sender.sendVarbit(CHATBOX_BUSY_VARBIT, 0);
+  };
+  player.setEnteredAmountAction({
+    acceptsZero: true,
+    execute: (amount) => {
+      setMinimenuSpacing(player, amount);
+      closed();
+    },
+    cancel: closed,
+  });
+  sender.sendEnterAmountPrompt(MINIMENU_SPACING_PROMPT);
 }
 
 function enableVolumeSliders(player) {
@@ -923,7 +1029,8 @@ function saveTransmittedSettings(transmission) {
   for (const { settingId, row, key, startBit, mask } of transmittedSettingRows(varpId)) {
     const next = (value >>> startBit) & mask;
     if (next === (saved[key] ?? row.default ?? 0)) continue;
-    changed = true;
+    // Only a toggle's click follows its transmission (a slider or dropdown change has none to stand for).
+    if (catalog().settings.get(settingId)?.type === SETTING_TYPE_TOGGLE) changed = true;
     if (!refuseLockedSetting(player, settingId)) setSettingVar(player, key, next);
   }
   if (varpId === ESC_CLOSES_VARP) {
@@ -1035,7 +1142,12 @@ module.exports = {
     api.onCustomEvent("interface:closed", endSettingsSearch);
     api.onCustomEvent("settings:set", setSettingValue);
     api.onCustomEvent("settings:setting-clicked", resetVolumeSliders);
+    api.onCustomEvent("settings:setting-clicked", resetMinimenuSpacing);
+    api.onCustomEvent("settings:setting-clicked", askMinimenuSpacing);
     api.onCustomEvent("settings:setting-clicked", clickEscCloses);
+    api.onCustomEvent("settings:setting-clicked", clickShowDataOrbs);
+    api.onCustomEvent("settings:option-chosen", chooseGameClientLayout);
+    api.onCustomEvent("settings:restore-data-orbs", restoreDataOrbs);
     api.onInterfaceActionButton(ALL_SETTINGS_SETTINGS_CLICKZONE, clickSetting);
     api.onInterfaceActionButton(ALL_SETTINGS_DROPDOWN_BUTTONS, clickDropdownOption);
     api.onInterfaceActionButton(ALL_SETTINGS_DROPDOWN_CLOSE, closeDropdown);

@@ -9,6 +9,7 @@ const {
 } = require("./ConsumableEffects");
 const { TimerKey } = require("../../src/main/typescript/elvarg/util/timers/TimerKey");
 const { Skill } = require("../../src/main/typescript/elvarg/game/model/Skill");
+const { ChatType } = require("../../src/main/typescript/elvarg/net/protocol/ClientProtocol");
 const { Sound } = require("../../src/main/typescript/elvarg/game/Sound");
 const { Sounds } = require("../../src/main/typescript/elvarg/game/Sounds");
 const { Animation } = require("../../src/main/typescript/elvarg/game/model/Animation");
@@ -122,8 +123,18 @@ function damageButKeepAlive(player, amount) {
   player.setHitpoints(next);
 }
 
-function applyPoisonImmunity(player, seconds, message = true, fullVenomCure = false) {
-  if (player.isVenomed() && !fullVenomCure) {
+/**
+ * The anti-venoms' spam lines (none for the antipoisons: 473 recorded drinks send only "You drink some of
+ * your antipoison potion."). Anti-venom: "It cures your venom." when venomed (rsprox_transcripts/235/03340.txt),
+ * else "It grants you immunity from poison." (234/00799.txt); anti-venom+ and extended: "It grants you immunity
+ * from venom." (226/01637.txt, 224/01439.txt).
+ */
+const ANTI_VENOM_LINE = (wasVenomed) => (wasVenomed ? "It cures your venom." : "It grants you immunity from poison.");
+const ANTI_VENOM_PLUS_LINE = () => "It grants you immunity from venom.";
+
+function applyPoisonImmunity(player, seconds, message = true, fullVenomCure = false, line = null) {
+  const wasVenomed = player.isVenomed();
+  if (wasVenomed && !fullVenomCure) {
     curePoison(player);
     if (message) player.sendMessage("The potion weakens the venom to poison.");
     return;
@@ -136,8 +147,8 @@ function applyPoisonImmunity(player, seconds, message = true, fullVenomCure = fa
   if (remaining < seconds) {
     timer.start(seconds);
   }
-  if (message) {
-    player.sendMessage(`You are now immune to poison for another ${Math.max(remaining, seconds)} seconds.`);
+  if (message && line) {
+    player.getPacketSender().sendTypedMessage(ChatType.SPAM, line(wasVenomed));
   }
 }
 
@@ -473,6 +484,61 @@ function processBoostDecay(player) {
   }
 }
 
+/** `stat_boosts_hud_update_restore_down_timer`: (period, ticks left) of the boost drain cycle. */
+const RESTORE_DOWN_TIMER_SCRIPT = 4518;
+const BOOST_DECAY_TICKS = BOOST_DECAY_MS / 600;
+const PRESERVE_DECAY_TICKS = (BOOST_DECAY_MS + PRESERVE_EXTENSION_MS) / 600;
+
+/**
+ * The modified stats overlay's "Boosts draining" timer, sent alongside the restore timer: the ticks
+ * left in the boost cycle, over a 150-tick period while Preserve is on. With nothing boosted it
+ * shows a full period.
+ */
+function sendBoostDrainTimer({ player }) {
+  if (player?.isPlayerBot?.()) return;
+  const { PrayerHandler } = pluginApi.core;
+  const preserve = PrayerHandler.isActivated(player, PrayerHandler.PRESERVE);
+  const stretched = Boolean(player.getAttribute(ATTR_BOOST_CYCLE_PRESERVED));
+  const period = preserve || stretched ? PRESERVE_DECAY_TICKS : BOOST_DECAY_TICKS;
+  const now = Date.now();
+  const nextDecayAt = Number(player.getAttribute(ATTR_BOOST_CYCLE));
+  // An area holding boosts (Rogues' Den) pauses the cycle: nothing is draining there.
+  const pause = { player, allowed: true };
+  pluginApi.emitCustomEvent("stats:boost-decay", pause);
+  let remaining = period;
+  if (pause.allowed && hasDecayingBoost(player) && Number.isFinite(nextDecayAt) && nextDecayAt > 0) {
+    let decayAt = nextDecayAt;
+    let cycleStretched = stretched;
+    // A cycle ending this tick, before the decay has run: Preserve stretches it, or the next one starts.
+    if (decayAt <= now) {
+      if (preserveStretchesCycle(player, now)) {
+        decayAt += PRESERVE_EXTENSION_MS;
+        cycleStretched = true;
+      } else {
+        decayAt += BOOST_DECAY_MS * (Math.floor((now - decayAt) / BOOST_DECAY_MS) + 1);
+        cycleStretched = false;
+      }
+    }
+    // A cycle Preserve is going to stretch ends 30 seconds later.
+    if (!cycleStretched && preserve && decayAt - Number(player.getAttribute(ATTR_PRESERVE_SINCE)) >= PRESERVE_WARMUP_MS) {
+      decayAt += PRESERVE_EXTENSION_MS;
+    }
+    remaining = clamp(Math.ceil((decayAt - now) / 600), 1, period);
+  }
+  player.getPacketSender().sendClientScript(RESTORE_DOWN_TIMER_SCRIPT, period, remaining);
+}
+
+/** Whether a stat sits above its resting level on the boost cycle (not Hitpoints, Prayer or a held boost). */
+function hasDecayingBoost(player) {
+  const pinned = timedEffectSkillIndexes(player);
+  for (const skill of Skill.values()) {
+    const index = skill.getIndex();
+    if (index === Skill.HITPOINTS.getIndex() || index === Skill.PRAYER.getIndex() || pinned.has(index)) continue;
+    if (getCurrentLevel(player, skill) > getSkillManager(player).getRestingLevel(skill)) return true;
+  }
+  return false;
+}
+
 /** Preserve stretches a cycle once, when it has been on for 15 seconds as the cycle ends. */
 function preserveStretchesCycle(player, now) {
   if (player.getAttribute(ATTR_BOOST_CYCLE_PRESERVED)) return false;
@@ -731,7 +797,8 @@ for (const [id, cup, boost, animation] of [[Items.CUP_OF_TEA_9, Items.EMPTY_CUP_
   [Items.CUP_OF_TEA_11, Items.PORCELAIN_CUP_2, 2, 3703], [Items.CUP_OF_TEA_13, Items.PORCELAIN_CUP_3, 3, 3704]]) {
   registerPotion({ name: "Cup of tea", chains: [[id], [id + 1]], emptyItemId: cup,
     requiresFoodPermission: true, effect: player => boostSkill(player, Skill.CONSTRUCTION, boost, 0),
-    drink: { animation, messages: (itemId) => [itemId === id ? "You drink the cup of tea." : "You drink the cup of milky tea.", "You feel refreshed and ready for more building."] } });
+    // rsprox: the first line is a game message, the second spam.
+    drink: { animation, messages: (itemId) => [{ text: itemId === id ? "You drink the cup of tea." : "You drink the cup of milky tea.", game: true }, "You feel refreshed and ready for more building."] } });
 }
 for (const [id, effect, emptyItemId = Items.BEER_GLASS_4] of [
   [Items.BEER_3, player => { boostSkill(player, Skill.STRENGTH, 1, 0.02); lowerSkillByCurrent(player, Skill.ATTACK, 1, 0.06); }],
@@ -1038,17 +1105,17 @@ registerPotion({
 registerPotion({
   name: "Anti-venom",
   chains: [doseChain("ANTI_VENOM_4_", "ANTI_VENOM_3_", "ANTI_VENOM_2_", "ANTI_VENOM_1_")],
-  effect: (player) => applyPoisonImmunity(player, 738, true, true),
+  effect: (player) => applyPoisonImmunity(player, 738, true, true, ANTI_VENOM_LINE),
 });
 registerPotion({
   name: "Anti-venom+",
   chains: [doseChain("ANTI_VENOM_4__3", "ANTI_VENOM_3__3", "ANTI_VENOM_2__3", "ANTI_VENOM_1__3")],
-  effect: (player) => applyPoisonImmunity(player, 900, true, true),
+  effect: (player) => applyPoisonImmunity(player, 900, true, true, ANTI_VENOM_PLUS_LINE),
 });
 registerPotion({
   name: "Extended anti-venom+",
   chains: [doseChain("EXTENDED_ANTI_VENOM_4_", "EXTENDED_ANTI_VENOM_3_", "EXTENDED_ANTI_VENOM_2_", "EXTENDED_ANTI_VENOM_1_")],
-  effect: (player) => applyPoisonImmunity(player, 1062, true, true),
+  effect: (player) => applyPoisonImmunity(player, 1062, true, true, ANTI_VENOM_PLUS_LINE),
 });
 
 registerPotion({
@@ -1600,14 +1667,22 @@ function handlePotionDrink(player, itemId, slot) {
   inventory.setItem(slot, new Item(replacement, replacement === NO_EMPTY_ITEM ? 0 : 1, meta)).refreshItems();
   entry.potion.effect(player);
 
+  // Live sends the drink lines as spam (filterable): rsprox has "You drink some of your goading
+  // potion." and its doses-left lines, the beer and cider lines, "You have finished your potion."
+  // and the vial-smash line all as type=spam. A `{ text, game: true }` line is a game message
+  // (the house's "You drink the cup of tea.").
+  const spam = (text) => player.getPacketSender().sendTypedMessage(ChatType.SPAM, text);
   if (entry.potion.drink?.messages) {
-    for (const message of entry.potion.drink.messages(itemId)) player.sendMessage(message);
+    for (const message of entry.potion.drink.messages(itemId)) {
+      if (message?.game === true) player.sendMessage(message.text);
+      else spam(String(message?.text ?? message));
+    }
   } else if (smashVial) {
-    player.sendMessage("You quickly smash the empty vial using the trick a Barbarian taught you.");
+    spam("You quickly smash the empty vial using the trick a Barbarian taught you.");
   } else if (entry.replacementId === entry.potion.emptyItemId) {
-    player.sendMessage(entry.potion.area === "chambers-of-xeric"
-      ? "You have finished your potion. The gourd vial disintegrates."
-      : "You have finished your potion.");
+    // The gourd line is not captured; it stays a game message.
+    if (entry.potion.area === "chambers-of-xeric") player.sendMessage("You have finished your potion. The gourd vial disintegrates.");
+    else spam("You have finished your potion.");
   }
   pluginApi.emitCustomEvent("potions:drunk", { player, itemId, name: entry.potion.name, meta });
 
@@ -1899,7 +1974,7 @@ module.exports = {
     resumePrayerRegenerationTimer,
     clearDivineOnDeath,
     applyRankFrothyPotion, applyFoulChunkyPotion, applyRancidSlimyPotion, applyJarOfCongealedBlood,
-    processBoostDecay, notePreserveActivated, curePoisonAndVenom, pauseTimedEffects, resumeTimedEffects,
+    processBoostDecay, notePreserveActivated, sendBoostDrainTimer, curePoisonAndVenom, pauseTimedEffects, resumeTimedEffects,
     processStamina, staminaDrainModifier, staminaStatus,
     findPotionEntry: (itemId) => POTION_BY_ITEM_ID.get(itemId) ?? null,
     registerCopy,
@@ -1933,6 +2008,7 @@ module.exports = {
     api.onCustomEvent("potions:register", registerContentPotion);
     api.onCustomEvent("potions:share", sharePotion);
     api.onCustomEvent("prayer:activated", notePreserveActivated);
+    api.onCustomEvent("stats:restore-timer-sent", sendBoostDrainTimer);
     pluginApi = api;
     initDragonfireProtectionCoreAccess(api);
     PERSISTED_ATTRIBUTES.forEach((key) => api.persistAttribute(key));

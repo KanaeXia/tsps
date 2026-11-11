@@ -129,61 +129,25 @@ weapon for the bar to show. A borrowed special whose own code checks which weapo
 else is worn (the Eclipse atlatl's needs the Eclipse moon set), keeps those checks. The server logs a
 warning at startup for a weapon whose bar has no special behind it.
 
-### Custom Pets (`custom-pets.json`)
+### Adding pets from a plugin
 
-`server/data/definitions/custom-pets.json` makes a pet version of any NPC. Each pet needs a custom
-item of its own in `custom-items.json` first: the item you summon it from. Give that item's
-`objType` these options, as a real pet item has:
+A plugin can add pets of its own to the Pets plugin (the Plugin Hub's Custom Pets does). As the
+Pets plugin registers, it emits `pets:extensions` `{ pets, services }`. A listener pushes rows
+onto `pets`, each `{ petId, itemId, ... }`: `petId` is the follower's NPC id and `itemId` the item
+it's summoned from (Drop). Summoning, Pick-up, banking, following, relogging and ownership then
+work as for real pets. Any other fields stay on the row, and the plugin's `pets:interact`
+handler gets that row back as `pet`. `services` lends `getOwnedPetItems(player)`,
+`holdsPetItem(player, itemId)`, `getPetForItemId(itemId)` and `getPetByNpcId(npcId)`.
 
-```json
-"inventoryActions": [null, null, null, null, "Drop"]
-```
-
-Drop summons the pet. Then add a row for the pet:
-
-```json
-{
-  "version": 1,
-  "pets": [
-    {
-      "npcId": 12980,
-      "itemId": 50020,
-      "name": "Fennec fox",
-      "scale": 70,
-      "lines": ["Yip!", "*The fox's ears twitch.*"],
-      "chathead": "fennec-fox/chathead.dat"
-    }
-  ]
-}
-```
-
-| Field | What it does |
-| --- | --- |
-| `npcId` | The NPC the pet looks like: its models, recolours, idle and walk animations |
-| `itemId` | The pet's item, a row of `custom-items.json` with Drop as its fifth option |
-| `name` | The follower's name |
-| `scale` | Its size in percent of the NPC's, 10 to 400 (default 100) |
-| `lines` | What it says on Talk-to: one line, picked at random each time |
-| `petNpcId` | Optional: the follower's own NPC id, from 50000 to 65534. Default: the item id |
-| `chathead` | Optional: a `.dat` model under `server/data/models`, shown as the pet's head when it talks. Without it, the NPC's own chathead shows, if it has one |
-
-At server start each pet gets a follower NPC: the NPC cloned under `petNpcId`, with a pet's options
-(Talk-to, Pick-up), no combat level, one tile and the scale applied. It is sent to clients with the
-other custom definitions. A `chathead` model is sent with the custom items' models, as model
-2,000,000 plus the follower's NPC id. It is shown still: the game's talking expressions are
-animations for human heads and would bend another model. The pet then works like a real one: Drop to summon, Pick-up, banking,
-following, coming back after a relog, and being recorded as owned when it is awarded
-(`pets:award { player, itemId }`).
-
-Probita's own window lists only the game's 72 pets, so custom pets get an extra dialogue option
-with her instead, "Can I reclaim my custom pets?". It gives back every custom pet the player owns
-but no longer has anywhere: not following, carried, banked, in a house or in a grave. Each needs a
-free inventory space.
-
-A row with a problem (an item that isn't in `custom-items.json` or lacks Drop, an empty name or
-`lines`, a scale out of range, a duplicate item or NPC id, a `chathead` that isn't an existing
-`.dat` inside `server/data/models`) loads no custom pets at all, with every
-problem logged under `[custom-pets]`.
+Plugin Hub plugins in `plugins/imported/` normally register before Pets, and custom items are
+loaded by then. The listener must be registered before Pets emits the event. A dependency that
+delays the plugin until after Pets registers will miss it. A follower NPC of a plugin's own is a
+custom definition registered under its own source,
+`CacheDefinitions.registerCustomDefinitions(rows, "my-plugin")`, which the cache editor's
+document doesn't replace. The cache editor rejects saves that claim an id owned by another source.
+If a saved row conflicts at startup, the editor logs the conflict, skips that row, and keeps it on disk.
+The client receives editor definitions first, then one packet per plugin source. Registration refuses
+a source whose compressed definitions exceed the packet limit, leaving the previously registered rows intact.
 
 ### Custom Widgets
 

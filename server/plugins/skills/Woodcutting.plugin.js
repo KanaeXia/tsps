@@ -137,7 +137,7 @@ const LUMBERJACK_SET_BONUS = 0.005;
 
 // OSRS Wiki (Woodcutting, Maple tree): the Kandarin Diary medium reward makes the maples in Seers'
 // Village give 110 XP per log; the Lumberjack outfit bonus applies on top. The box is the diary's
-// own Seers' Village region (plugins/achievements/diaries/KandarinDiaryFinish.plugin.js).
+// own Seers' Village region (plugins/achievements/diaries/KandarinDiaryFinish.AchievementDiaries.js).
 const SEERS_VILLAGE = { minX: 2670, maxX: 2780, minY: 3430, maxY: 3530, z: 0 };
 
 // OSRS Wiki seed nest table (1,011 slots). `text` is the seed as the search line names it (rsprox
@@ -842,6 +842,8 @@ function rollForesterRationEnergy(player, axe) {
   }
   player.addRunEnergyUnits(2000);
   player.getPacketSender().sendRunEnergy();
+  // Wiki (Forester's ration): "a game message in the chatbox will state" this, with a regular axe.
+  player.sendMessage("You consume a Forester's ration and feel energised.");
   return true;
 }
 

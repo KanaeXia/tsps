@@ -180,6 +180,7 @@ type PluginLoadCandidate = {
   plugin: PluginModule;
   pluginName: string;
   dependsOn: string[];
+  deferredApi?: PluginApi;
 };
 
 type PluginPerfEventStat = {
@@ -773,6 +774,7 @@ export class PluginManager {
 
     PluginManager.recordLoadedConfigDeclarations(acceptedDeclarations);
     PluginManager.warnAboutInvalidConfigValues(scopedSettings);
+    PluginManager.emitCustomEvent("plugins:loaded", { names: new Set(PluginManager.loadedPlugins) });
 
     if (PluginManager.lastPersistenceOverride) {
       console.info(PluginManager.lastPersistenceOverride);
@@ -2523,6 +2525,7 @@ export class PluginManager {
 
     while (pending.length > 0) {
       let progress = false;
+      const deferred: PluginLoadCandidate[] = [];
       for (let i = 0; i < pending.length; i++) {
         const candidate = pending[i];
         const missingDeps = candidate.dependsOn.filter(
@@ -2532,18 +2535,22 @@ export class PluginManager {
           continue;
         }
 
-        if (!PluginManager.registerPluginCandidate(candidate)) {
-          pending.splice(i, 1);
-          i--;
-          progress = true;
-          continue;
+        const api = PluginManager.registerPluginCandidate(candidate);
+        if (api && !candidate.deferredApi) {
+          loadedByName.add(candidate.pluginName);
+          if (typeof candidate.plugin.registerDeferred === "function") {
+            deferred.push({ ...candidate, dependsOn: [], deferredApi: api });
+          }
         }
-        loadedByName.add(candidate.pluginName);
         pending.splice(i, 1);
         i--;
         progress = true;
       }
 
+      if (deferred.length > 0) {
+        pending.push(...deferred);
+        pending.sort((a, b) => a.pluginPath.localeCompare(b.pluginPath));
+      }
       if (!progress) {
         break;
       }
@@ -2567,18 +2574,23 @@ export class PluginManager {
 
   private static registerPluginCandidate(
     candidate: PluginLoadCandidate
-  ): boolean {
+  ): PluginApi | null {
     const previousPlugin = PluginContext.enter(candidate.pluginName);
     try {
-      candidate.plugin.register(PluginManager.createApi(candidate.pluginName));
-      PluginManager.loadedPlugins.push(candidate.pluginName);
-      return true;
+      const api = candidate.deferredApi ?? PluginManager.createApi(candidate.pluginName);
+      if (candidate.deferredApi) {
+        candidate.plugin.registerDeferred?.(api);
+      } else {
+        candidate.plugin.register(api);
+        PluginManager.loadedPlugins.push(candidate.pluginName);
+      }
+      return api;
     } catch (err) {
       console.error(
         `[plugins] failed to initialize ${path.basename(candidate.pluginPath)}`,
         err
       );
-      return false;
+      return null;
     } finally {
       PluginContext.exit(previousPlugin);
     }
@@ -2688,6 +2700,7 @@ export class PluginManager {
       encodeGameframeBootstrap: require("../net/protocol/ClientProtocol").encodeGameframeBootstrap,
       resolveGameframeRoot: require("../net/protocol/ClientProtocol").resolveGameframeRoot,
       orbsGroupFor: require("../net/protocol/ClientProtocol").orbsGroupFor,
+      dataOrbsHidden: require("../net/protocol/ClientProtocol").dataOrbsHidden,
       encodeFinePosition: require("../net/protocol/ClientProtocol").encodeFinePosition,
       Boundary: require(`${model}/Boundary`).Boundary,
       PolygonalBoundary: require(`${model}/PolygonalBoundary`).PolygonalBoundary,

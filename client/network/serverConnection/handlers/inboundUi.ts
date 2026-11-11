@@ -1,4 +1,5 @@
 import { getCustomDefinitionKey } from "../../../custom/definitions/CustomDefinitionStore";
+import { isDefinitionDataset, loadFromPayload } from "../../../common/gamemode/GamemodeContentStore";
 import { applyClanChannelDelta, applyClanSettingsDelta } from "../../../common/social/Clans";
 import { ClientState } from "../../../game/ClientState";
 import {
@@ -315,7 +316,6 @@ export function handleInboundUi(msg: any): boolean {
             return true;
         }
         try {
-            const { loadFromPayload } = require("../../../common/gamemode/GamemodeContentStore");
             const itemRevision = CustomItemRegistry.revision;
             const archiveKey = getDefinitionArchiveKey();
             const definitionsKey = getCustomDefinitionKey();
@@ -331,21 +331,19 @@ export function handleInboundUi(msg: any): boolean {
                 mv?.spotAnimTypeLoader?.clearCache();
                 mv?.renderer?.invalidateAnimationCaches?.();
             }
-            if (msg.payload?.datasets?.some((dataset: any) =>
-                dataset.key === "customItems" || dataset.key === "customModels" ||
-                (dataset.key === "definitionArchives" || dataset.key === "customDefinitions"))) {
+            if (datasets?.some((dataset: any) =>
+                dataset.key === "customItems" || dataset.key === "customModels" || isDefinitionDataset(dataset))) {
                 mv?.objTypeLoader?.clearCache();
                 mv?.objModelLoader?.clearCache();
-                if (datasets?.some((dataset: any) => (dataset.key === "definitionArchives" || dataset.key === "customDefinitions"))) {
+                if (datasets?.some(isDefinitionDataset)) {
                     mv?.npcTypeLoader?.clearCache();
                     mv?.locTypeLoader?.clearCache();
                     mv?.seqTypeLoader?.clearCache();
                     mv?.renderer?.invalidateDefinitionCaches();
                 }
             }
-            if (animations || msg.payload?.datasets?.some((dataset: any) =>
-                dataset.key === "customItems" || dataset.key === "customModels" ||
-                dataset.key === "definitionArchives" || dataset.key === "customDefinitions")) {
+            if (animations || datasets?.some((dataset: any) =>
+                dataset.key === "customItems" || dataset.key === "customModels" || isDefinitionDataset(dataset))) {
                 mv?.workerPool?.runAll((worker: any) => worker.setCustomContent(msg.payload))
                     .catch((error: unknown) => console.error("Custom worker content failed", error));
             }
