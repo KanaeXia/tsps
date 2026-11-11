@@ -13,6 +13,10 @@
  * - scale: its size, in percent of the NPC's (default 100).
  * - lines: what it says when talked to, one picked at random each time.
  * - petNpcId (optional): the follower's own NPC id; the item id by default.
+ * - chathead (optional): a .dat model under server/data/models (as custom items' models), shown
+ *   as the pet's head when it speaks. It is sent to clients as custom model
+ *   CHATHEAD_MODEL_BASE + the follower's NPC id. The talking expressions are animations for human
+ *   heads, so a custom chathead is shown still. Without it the NPC's own chathead shows, if any.
  *
  * Each pet becomes a follower NPC: a custom definition (CacheDefinitions, source "custom-pets")
  * cloned from npcId, with a pet's options (Talk-to, Pick-up), no combat level, one tile, and the
@@ -30,6 +34,12 @@ const FOLLOWER_ACTIONS = ["Talk-to", null, null, "Pick-up", null];
 /** A pet item's options: Drop summons it (Pets.onPetItemDropPolicy). */
 const ITEM_ACTIONS = [null, null, null, null, "Drop"];
 const MIN_SCALE = 10, MAX_SCALE = 400;
+/** A chathead's custom model id: this plus the follower's NPC id (custom items' models use 1,000,000+). */
+const CHATHEAD_MODEL_BASE = 2_000_000;
+const MODEL_PATH = /^[a-zA-Z0-9._/-]+\.dat$/;
+const MIN_MODEL_BYTES = 18, MAX_MODEL_BYTES = 1024 * 1024;
+/** No chathead animation: the talking expressions only fit human heads. */
+const STILL = -1;
 const PROBITA_LOST_OPTION = "I've lost a pet. Have you got it?";
 const RECLAIM_OPTION = "Can I reclaim my custom pets?";
 
@@ -38,9 +48,23 @@ let core = null;
 let services = null;
 /** The loaded pets, as rows of the Pets plugin's table (with `custom` set). */
 let pets = [];
+/** The chathead model ids this loader last added to the custom models. */
+let loadedChatheads = new Set();
 
 function definitionsDirectory(coreApi) {
   return coreApi?.GameConstants?.DEFINITIONS_DIRECTORY ?? path.resolve(__dirname, "../../../data/definitions");
+}
+
+/** A chathead's file, or a problem: a .dat under the models directory, 18 bytes to 1 MiB. */
+function chatheadFile(chathead, modelsDirectory) {
+  if (typeof chathead !== "string" || !MODEL_PATH.test(chathead)) return { problem: "chathead must be a .dat path under server/data/models, such as \"fennec-fox/chathead.dat\"" };
+  const root = path.resolve(modelsDirectory);
+  const file = path.resolve(root, chathead);
+  if (!file.startsWith(`${root}${path.sep}`)) return { problem: `chathead ${chathead} is outside server/data/models` };
+  if (!fs.existsSync(file)) return { problem: `chathead ${chathead} doesn't exist in server/data/models` };
+  const size = fs.statSync(file).size;
+  if (size < MIN_MODEL_BYTES || size > MAX_MODEL_BYTES) return { problem: `chathead ${chathead} must be ${MIN_MODEL_BYTES} bytes to 1 MiB` };
+  return { file };
 }
 
 function read(directory) {
@@ -52,7 +76,7 @@ function read(directory) {
 }
 
 /** Every problem with one row, against the cache and custom-items.json. */
-function problemsOf(row, index, { npcCount, customItems, seenItems, seenNpcs }) {
+function problemsOf(row, index, { npcCount, customItems, seenItems, seenNpcs, modelsDirectory }) {
   const where = `${FILE} pets[${index}]`;
   const problems = [];
   if (!row || typeof row !== "object") return [`${where}: not an object`];
@@ -76,11 +100,15 @@ function problemsOf(row, index, { npcCount, customItems, seenItems, seenNpcs }) 
   if (!Number.isInteger(petNpcId) || petNpcId < Math.max(50000, npcCount) || petNpcId >= 65535) {
     problems.push(`${where}: the follower's NPC id ${petNpcId} must be from ${Math.max(50000, npcCount)} to 65534 (set petNpcId)`);
   } else if (seenNpcs.has(petNpcId)) problems.push(`${where}: NPC id ${petNpcId} is already another custom pet's`);
+  if (row.chathead !== undefined) {
+    const { problem } = chatheadFile(row.chathead, modelsDirectory);
+    if (problem) problems.push(`${where}: ${problem}`);
+  }
   return problems;
 }
 
 /** The follower's custom NPC definition: the NPC's look with a pet's options, size and scale. */
-function followerDefinition(row, base) {
+function followerDefinition(row, base, chatheadModelId) {
   const scale = (row.scale ?? 100) / 100;
   const scaled = (value) => Math.max(1, Math.round((Number.isFinite(value) && value > 0 ? value : 128) * scale));
   return {
@@ -97,6 +125,7 @@ function followerDefinition(row, base) {
       isClickable: true,
       widthScale: scaled(base?.widthScale),
       heightScale: scaled(base?.heightScale),
+      ...(chatheadModelId !== undefined ? { chatheadModelIds: [chatheadModelId] } : {}),
     },
   };
 }
@@ -105,7 +134,11 @@ function followerDefinition(row, base) {
  * Reads custom-pets.json, registers each follower's NPC definition and returns the pets as
  * rows of the Pets plugin's table. A bad file loads no custom pets, with every problem logged.
  */
-function load(coreApi, { directory = definitionsDirectory(coreApi), log = console } = {}) {
+function load(coreApi, {
+  directory = definitionsDirectory(coreApi),
+  modelsDirectory = path.resolve(directory, "../models"),
+  log = console,
+} = {}) {
   core = coreApi;
   pets = [];
   let rows;
@@ -126,7 +159,7 @@ function load(coreApi, { directory = definitionsDirectory(coreApi), log = consol
   const seenItems = new Set(), seenNpcs = new Set();
   const problems = [];
   rows.forEach((row, index) => {
-    problems.push(...problemsOf(row, index, { npcCount, customItems, seenItems, seenNpcs }));
+    problems.push(...problemsOf(row, index, { npcCount, customItems, seenItems, seenNpcs, modelsDirectory }));
     if (row && typeof row === "object") {
       seenItems.add(row.itemId);
       seenNpcs.add(row.petNpcId ?? row.itemId);
@@ -137,20 +170,39 @@ function load(coreApi, { directory = definitionsDirectory(coreApi), log = consol
     log.error?.("[custom-pets] no custom pets loaded");
     return [];
   }
-  const definitions = rows.map((row) => followerDefinition(row, CacheDefinitions.getNpc(row.npcId)));
+  // Chathead models join the custom models (custom items' first), replacing any this loader added before.
+  const chatheads = [];
+  for (const row of rows) {
+    if (row.chathead === undefined) continue;
+    const id = CHATHEAD_MODEL_BASE + (row.petNpcId ?? row.itemId);
+    chatheads.push({ id, data: fs.readFileSync(chatheadFile(row.chathead, modelsDirectory).file).toString("base64") });
+  }
+  const others = CacheDefinitions.getCustomModels().filter((model) => !loadedChatheads.has(model.id));
+  const taken = chatheads.find((model) => others.some((other) => other.id === model.id));
+  const tooBig = chatheads.find((model) => coreApi.encodeContentData
+    && coreApi.encodeContentData("server", [{ key: "customModels", rows: [model] }]).length > 0xffff);
+  if (taken || tooBig) {
+    log.error?.(taken ? `[custom-pets] chathead model id ${taken.id} is already a custom model's; no custom pets loaded`
+      : `[custom-pets] chathead model ${tooBig.id} is too big to send to clients; no custom pets loaded`);
+    return [];
+  }
+  const definitions = rows.map((row) => followerDefinition(row, CacheDefinitions.getNpc(row.npcId),
+    row.chathead !== undefined ? CHATHEAD_MODEL_BASE + (row.petNpcId ?? row.itemId) : undefined));
   try {
     CacheDefinitions.registerCustomDefinitions(definitions, SOURCE);
   } catch (error) {
     log.error?.(`[custom-pets] ${error.message}; no custom pets loaded`);
     return [];
   }
+  CacheDefinitions.setCustomModels([...others, ...chatheads]);
+  loadedChatheads = new Set(chatheads.map((model) => model.id));
   pets = rows.map((row, index) => ({
     enumName: `CUSTOM_${definitions[index].id}`,
     petId: definitions[index].id,
     morphId: 0,
     itemId: row.itemId,
     dialogue: -1,
-    custom: { name: row.name.trim(), lines: row.lines.slice() },
+    custom: { name: row.name.trim(), lines: row.lines.slice(), chathead: row.chathead !== undefined },
   }));
   if (pets.length) log.log?.(`[custom-pets] loaded ${pets.length} custom pet(s)`);
   return pets;
@@ -164,8 +216,10 @@ function talk(request) {
   const lines = pet.custom.lines;
   const line = lines[Math.floor(Math.random() * lines.length)];
   const { DialogueChainBuilder, NpcDialogue, EndDialogue } = core;
+  // A custom chathead stays still; the NPC's own keeps the usual expression.
+  const expression = pet.custom.chathead ? STILL : undefined;
   player.getDialogueManager().startDialogues(new DialogueChainBuilder().add(
-    new NpcDialogue(0, npc.getId(), line),
+    new NpcDialogue(0, npc.getId(), line, undefined, expression),
     new EndDialogue(1),
   ));
   request.handled = true;
@@ -237,5 +291,5 @@ function attach(pluginApi, helpers) {
 module.exports = {
   load, attach,
   _test: { problemsOf, followerDefinition, lostPets, reclaimAll, probitaMenu, probitaChoice, talk, pets: () => pets,
-    SOURCE, FOLLOWER_ACTIONS, ITEM_ACTIONS, RECLAIM_OPTION },
+    SOURCE, FOLLOWER_ACTIONS, ITEM_ACTIONS, RECLAIM_OPTION, CHATHEAD_MODEL_BASE, chatheadFile },
 };

@@ -150,7 +150,8 @@ Drop summons the pet. Then add a row for the pet:
       "itemId": 50020,
       "name": "Fennec fox",
       "scale": 70,
-      "lines": ["Yip!", "*The fox's ears twitch.*"]
+      "lines": ["Yip!", "*The fox's ears twitch.*"],
+      "chathead": "fennec-fox/chathead.dat"
     }
   ]
 }
@@ -164,10 +165,13 @@ Drop summons the pet. Then add a row for the pet:
 | `scale` | Its size in percent of the NPC's, 10 to 400 (default 100) |
 | `lines` | What it says on Talk-to: one line, picked at random each time |
 | `petNpcId` | Optional: the follower's own NPC id, from 50000 to 65534. Default: the item id |
+| `chathead` | Optional: a `.dat` model under `server/data/models`, shown as the pet's head when it talks. Without it, the NPC's own chathead shows, if it has one |
 
 At server start each pet gets a follower NPC: the NPC cloned under `petNpcId`, with a pet's options
 (Talk-to, Pick-up), no combat level, one tile and the scale applied. It is sent to clients with the
-other custom definitions. The pet then works like a real one: Drop to summon, Pick-up, banking,
+other custom definitions. A `chathead` model is sent with the custom items' models, as model
+2,000,000 plus the follower's NPC id. It is shown still: the game's talking expressions are
+animations for human heads and would bend another model. The pet then works like a real one: Drop to summon, Pick-up, banking,
 following, coming back after a relog, and being recorded as owned when it is awarded
 (`pets:award { player, itemId }`).
 
@@ -177,7 +181,8 @@ but no longer has anywhere: not following, carried, banked, in a house or in a g
 free inventory space.
 
 A row with a problem (an item that isn't in `custom-items.json` or lacks Drop, an empty name or
-`lines`, a scale out of range, a duplicate item or NPC id) loads no custom pets at all, with every
+`lines`, a scale out of range, a duplicate item or NPC id, a `chathead` that isn't an existing
+`.dat` inside `server/data/models`) loads no custom pets at all, with every
 problem logged under `[custom-pets]`.
 
 ### Custom Widgets
