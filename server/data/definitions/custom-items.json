@@ -70,7 +70,7 @@
       "placeholderTemplate": -1
     },
     "specialAttack": { "energy": 50 },
-    "itemDef": { "tradeable": false,"weaponInterface":"EXASPR","equipmentType":"WEAPON","doubleHanded":false,"stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":9645142,"bloodMoneyValue":8000,"highAlch":750000,"lowAlch":500000,"dropValue":1250000,"blockAnim":14257,"standAnim":14251,"walkAnim":14252,"runAnim":14254,"standTurnAnim":14252,"turn180Anim":14252,"turn90CWAnim":14252,"turn90CCWAnim":14252,"attackAnim":{"stab":50000,"slash":50002,"crush":14255},"attackSound":{"stab":[{"id":11874,"frame":5},{"id":11875,"frame":8},{"id":3881,"frame":8}],"slash":[{"id":11874,"frame":5},{"id":11875,"frame":8},{"id":2540,"frame":8}]},"weight":10,"bonuses":[127,162,141,20,0,44,20,31,39,0,81,0,0,15],"requirements":[90,0,90,80,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] },
+    "itemDef": { "tradeable": false,"weaponInterface":"EXASPR","equipmentType":"WEAPON","doubleHanded":false,"stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":1723645142,"bloodMoneyValue":4272433,"highAlch":1292733856,"lowAlch":861822571,"dropValue":1723645142,"blockAnim":14257,"standAnim":14251,"walkAnim":14252,"runAnim":14254,"standTurnAnim":14252,"turn180Anim":14252,"turn90CWAnim":14252,"turn90CCWAnim":14252,"attackAnim":{"stab":50000,"slash":50002,"crush":14255},"attackSound":{"stab":[{"id":11874,"frame":5},{"id":11875,"frame":8},{"id":3881,"frame":8}],"slash":[{"id":11874,"frame":5},{"id":11875,"frame":8},{"id":2540,"frame":8}]},"weight":10,"bonuses":[127,162,141,20,0,44,20,31,39,0,81,0,0,15],"requirements":[90,0,90,80,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] },
     "models": {
       "1500010": "exalted-spring/drop.dat",
       "1500011": "exalted-spring/equip.dat"
@@ -146,7 +146,7 @@
       "placeholderTemplate": -1
     },
     "specialAttack": { "energy": 25 },
-    "itemDef": { "tradeable": false,"equipmentType":"WEAPON","weaponInterface":"SHORTBOW","doubleHanded":false,"bonuses":[0,0,0,0,127,0,0,0,0,0,78,0,0,0],"requirements":[70,0,70,0,85,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"blockAnim":424,"standAnim":813,"walkAnim":1205,"runAnim":1210,"standTurnAnim":823,"turn180Anim":820,"turn90CWAnim":821,"turn90CCWAnim":821 },
+    "itemDef": { "tradeable": false,"equipmentType":"WEAPON","weaponInterface":"SHORTBOW","doubleHanded":false,"bonuses":[0,0,0,0,127,0,0,0,0,0,78,0,0,0],"requirements":[70,0,70,0,85,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"blockAnim":424,"standAnim":813,"walkAnim":1205,"runAnim":1210,"standTurnAnim":823,"turn180Anim":820,"turn90CWAnim":821,"turn90CCWAnim":821,"value":1723645142,"bloodMoneyValue":4272433,"highAlch":1292733856,"lowAlch":861822571,"dropValue":1723645142 },
     "models": {
       "1500020": "sanguine-atlatl/drop.dat",
       "1500021": "sanguine-atlatl/equip.dat",
@@ -335,7 +335,7 @@
       "placeholder": 52001,
       "placeholderTemplate": 14401
     },
-    "itemDef": { "tradeable": false,"equipmentType":"CAPE","doubleHanded":false,"stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":84,"highAlch":12,"lowAlch":8,"dropValue":2,"blockAnim":424,"weight":0,"bonuses":[0,0,0,0,0,9,9,9,9,9,0,0,0,4],"equipSound":2238 },
+    "itemDef": { "tradeable": false },
     "models": {
       "1530010": "blank-skillcape/drop.dat"
     }
@@ -348,7 +348,7 @@
       "examine": "Rather cozy when hanged from your shoulders.",
       "model": 1520020,
       "maleModel": 1520021,
-      "femaleModel": 1520021,
+      "femaleModel": 1520022,
       "maleModel1": -1,
       "maleModel2": -1,
       "femaleModel1": -1,
@@ -374,8 +374,9 @@
     },
     "itemDef": { "tradeable": false,"equipmentType":"CAPE","doubleHanded":false,"stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":84,"highAlch":12,"lowAlch":8,"dropValue":2,"blockAnim":424,"weight":0,"bonuses":[0,0,0,0,0,9,9,9,9,9,0,0,0,4],"equipSound":2238 },
     "models": {
-      "1520010": "twisted-coat-hang/drop.dat",
-      "1520011": "twisted-coat-hang/equip.dat"
+      "1520020": "twisted-coat-hang/drop.dat",
+      "1520021": "twisted-coat-hang/equip.dat",
+      "1520022": "twisted-coat-hang/equip-female.dat"
     }
   },
   {
@@ -410,9 +411,9 @@
       "placeholder": 52002,
       "placeholderTemplate": 14401
     },
-    "itemDef": { "tradeable": false,"equipmentType":"CAPE","doubleHanded":false,"stackable":false,"tradeable":true,"dropable":true,"sellable":true,"value":84,"highAlch":12,"lowAlch":8,"dropValue":2,"blockAnim":424,"weight":0,"bonuses":[0,0,0,0,0,9,9,9,9,9,0,0,0,4],"equipSound":2238 },
+    "itemDef": { "tradeable": false },
     "models": {
-      "1530010": "twisted-coat-hang/drop.dat"
+      "1530020": "twisted-coat-hang/drop.dat"
     }
   },
   {
