@@ -1019,5 +1019,79 @@
       "1521080": "desert-default/drop.dat",
       "1521081": "desert-default/equip2.dat"
     }
+  },
+  {
+    "id": 54000,
+    "baseItemId": 1,
+    "objType": {
+      "name": "Fennec fox",
+      "examine": "What big ears!",
+      "model": 1540000,
+      "maleModel": -1,
+      "femaleModel": -1,
+      "maleModel1": -1,
+      "maleModel2": -1,
+      "femaleModel1": -1,
+      "femaleModel2": -1,
+      "zoom2d": 1100,
+      "xan2d": 512,
+      "yan2d": 0,
+      "zan2d": 0,
+      "offsetX2d": 0,
+      "offsetY2d": 0,
+      "recolorFrom": [],
+      "recolorTo": [],
+      "retextureFrom": [],
+      "retextureTo": [],
+      "inventoryActions": [null, null, null, null, "Drop"],
+      "isTradable": false,
+      "note": -1,
+      "noteTemplate": -1,
+      "unnotedId": -1,
+      "notedId": -1,
+      "placeholder": 54001,
+      "placeholderTemplate": -1
+    },
+    "itemDef": { "tradeable": false },
+    "models": {
+      "1540000": "fennec-fox/drop.dat"
+    }
+  },
+  {
+    "id": 54001,
+    "baseItemId": 1,
+    "objType": {
+      "name": "Fennec fox",
+      "examine": "What big ears!",
+      "model": 1540010,
+      "maleModel": -1,
+      "femaleModel": -1,
+      "maleModel1": -1,
+      "maleModel2": -1,
+      "femaleModel1": -1,
+      "femaleModel2": -1,
+      "zoom2d": 1100,
+      "xan2d": 512,
+      "yan2d": 0,
+      "zan2d": 0,
+      "offsetX2d": 0,
+      "offsetY2d": 0,
+      "recolorFrom": [],
+      "recolorTo": [],
+      "retextureFrom": [],
+      "retextureTo": [],
+      "inventoryActions": [null, null, null, null, "Drop"],
+      "isTradable": false,
+      "note": -1,
+      "noteTemplate": -1,
+      "unnotedId": -1,
+      "notedId": -1,
+      "placeholder": 54000,
+      "placeholderTemplate": 14401
+    },
+    "itemDef": { "tradeable": false },
+    "models": {
+      "1540010": "fennec-fox/drop.dat"
+    }
   }
 ]

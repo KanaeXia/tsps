@@ -3,6 +3,7 @@
 52000-52099 armor, stray pieces
 521x0-529x9 armor, x-separate by set
 53000-53999 armor placeholders
+54000-54999 Other items
 
 50000 : Dragonic Katana
 50001 : Exalted Spring
