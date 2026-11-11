@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { NavigationButton } from "@runelite/client/ui/NavigationButton";
+import { keepFocus } from "./sidebarFocus";
 
 /** RuneLite's toolbar: a side rail, or a bottom row in portrait mode. */
 export function SidebarRail({
@@ -24,6 +25,7 @@ export function SidebarRail({
                         key={button.tooltip}
                         type="button"
                         className={`rl-sidebar-rail-button${active ? " active" : ""}`}
+                        onMouseDown={keepFocus}
                         onClick={() => onClick(button)}
                         aria-label={button.tooltip}
                         aria-pressed={button.panel ? active : undefined}

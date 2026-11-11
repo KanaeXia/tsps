@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { runeliteImage } from "@runelite/client/ui/runeliteImages";
+import { keepFocus } from "./sidebarFocus";
 import type { SidebarStore } from "./SidebarStore";
 
 /** How near the game's right edge the pointer must be to show the arrow (ClientUI: 15 + 10). */
@@ -46,6 +47,7 @@ export function SidebarToggleArrow({ store }: { store: SidebarStore }): JSX.Elem
                 type="button"
                 className={`rl-sidebar-toggle${collapsed ? "" : " close"}`}
                 style={{ backgroundImage: `url(${runeliteImage("open_rs.png")})` }}
+                onMouseDown={keepFocus}
                 onClick={() => store.toggleCollapsed()}
                 aria-label={label}
                 title={`${label} (Ctrl+F11)`}
