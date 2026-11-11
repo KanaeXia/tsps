@@ -18,7 +18,7 @@ const FOX = 12980;
 /** A custom item with Drop as its fifth option (custom-items.json's Dragonic katana). */
 const ITEM = 50000;
 const LINES = ["Yip!", "*The fox's ears twitch.*"];
-let core, directory, next = 900;
+let core, directory, models, next = 900;
 
 function writePets(pets) {
   fs.writeFileSync(path.join(directory, "custom-pets.json"), JSON.stringify({ version: 1, pets }));
@@ -26,7 +26,7 @@ function writePets(pets) {
 
 function load(pets) {
   writePets(pets);
-  Pets.__internals.addCustomPets(core, { directory, log: { log() {}, error() {} } });
+  Pets.__internals.addCustomPets(core, { directory, modelsDirectory: models, log: { log() {}, error() {} } });
 }
 
 before(async () => {
@@ -37,6 +37,10 @@ before(async () => {
   core.RegionManager.loadMapFiles(2611, 3295);
   PM.emitServerStartup({});
   directory = fs.mkdtempSync(path.join(os.tmpdir(), "custom-pets-"));
+  // A chathead to point at: the Fennec fox's drop model stands in for one.
+  models = fs.mkdtempSync(path.join(os.tmpdir(), "custom-pet-models-"));
+  fs.mkdirSync(path.join(models, "fox"));
+  fs.copyFileSync(path.resolve(__dirname, "../data/models/fennec-fox/drop.dat"), path.join(models, "fox/chathead.dat"));
   load([{ npcId: FOX, itemId: ITEM, name: "Fennec fox", scale: 70, lines: LINES }]);
 });
 
@@ -44,6 +48,7 @@ after(() => {
   load([]);
   PM.emitServerShutdown({});
   fs.rmSync(directory, { recursive: true, force: true });
+  fs.rmSync(models, { recursive: true, force: true });
 });
 
 function player(t) {
@@ -170,6 +175,40 @@ test("a bad row loads no custom pets and says why", () => {
   }
   writePets([{ npcId: FOX, itemId: ITEM, name: "Fennec fox", scale: 70, lines: LINES }]);
   Custom.load(core, { directory, log: { log() {}, error() {} } });
+});
+
+test("a chathead model becomes the follower's head, and its talk stays still", (t) => {
+  const CHATHEAD = Custom._test.CHATHEAD_MODEL_BASE + ITEM;
+  load([{ npcId: FOX, itemId: ITEM, name: "Fennec fox", scale: 70, lines: LINES, chathead: "fox/chathead.dat" }]);
+  t.after(() => load([{ npcId: FOX, itemId: ITEM, name: "Fennec fox", scale: 70, lines: LINES }]));
+  assert.deepEqual(core.CacheDefinitions.getNpc(ITEM).chatheadModelIds, [CHATHEAD]);
+  const model = core.CacheDefinitions.getCustomModels().find((entry) => entry.id === CHATHEAD);
+  assert.equal(model?.data, fs.readFileSync(path.join(models, "fox/chathead.dat")).toString("base64"), "sent with the custom models");
+  assert.ok(core.CacheDefinitions.getCustomModels().some((entry) => entry.id < 2_000_000), "custom items' models are kept");
+
+  const { p } = player(t);
+  p.getInventory().add(new core.Item(ITEM), false);
+  Pets.__internals.drop(p, ITEM, false);
+  const follower = p.getAttribute("pets:current");
+  const chains = spoken(t, p);
+  PM.emitCustomEvent("pets:interact", { player: p, npc: follower, pet: Pets.__internals.PET_BY_ID.get(ITEM), action: "Talk-to", handled: false });
+  const line = chains.flatMap((chain) => [...chain.dialogues.values()]).find((entry) => typeof entry.getNpcId === "function");
+  assert.equal(line.expression, -1, "no human talking animation on a custom head");
+
+  load([{ npcId: FOX, itemId: ITEM, name: "Fennec fox", scale: 70, lines: LINES }]);
+  assert.ok(!core.CacheDefinitions.getCustomModels().some((entry) => entry.id === CHATHEAD), "dropped again when the row loses it");
+  assert.notDeepEqual(core.CacheDefinitions.getNpc(ITEM).chatheadModelIds, [CHATHEAD]);
+});
+
+test("a chathead must be an existing .dat inside the models folder", () => {
+  const check = (chathead) => Custom._test.problemsOf({ npcId: FOX, itemId: ITEM, name: "X", lines: ["a"], chathead }, 0,
+    { npcCount: 20000, customItems: new Map([[ITEM, { objType: { inventoryActions: [null, null, null, null, "Drop"] } }]]),
+      seenItems: new Set(), seenNpcs: new Set(), modelsDirectory: models });
+  assert.deepEqual(check("fox/chathead.dat"), []);
+  assert.ok(check("fox/missing.dat").some((line) => line.includes("doesn't exist")));
+  assert.ok(check("fox/chathead.png").some((line) => line.includes(".dat path")));
+  assert.ok(check("../outside.dat").some((line) => line.includes("outside")));
+  assert.ok(check(42).some((line) => line.includes(".dat path")));
 });
 
 test("an item without Drop as its fifth option is refused", () => {
