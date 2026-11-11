@@ -1093,5 +1093,79 @@
     "models": {
       "1540010": "fennec-fox/drop.dat"
     }
+  },
+  {
+    "id": 54002,
+    "baseItemId": 1,
+    "objType": {
+      "name": "Hans",
+      "examine": "Guy!",
+      "model": 1540020,
+      "maleModel": -1,
+      "femaleModel": -1,
+      "maleModel1": -1,
+      "maleModel2": -1,
+      "femaleModel1": -1,
+      "femaleModel2": -1,
+      "zoom2d": 1100,
+      "xan2d": 512,
+      "yan2d": 0,
+      "zan2d": 0,
+      "offsetX2d": 0,
+      "offsetY2d": 0,
+      "recolorFrom": [],
+      "recolorTo": [],
+      "retextureFrom": [],
+      "retextureTo": [],
+      "inventoryActions": [null, null, null, null, "Drop"],
+      "isTradable": false,
+      "note": -1,
+      "noteTemplate": -1,
+      "unnotedId": -1,
+      "notedId": -1,
+      "placeholder": 54003,
+      "placeholderTemplate": -1
+    },
+    "itemDef": { "tradeable": false },
+    "models": {
+      "1540020": "fennec-fox/drop.dat"
+    }
+  },
+  {
+    "id": 54003,
+    "baseItemId": 1,
+    "objType": {
+      "name": "Fennec fox",
+      "examine": "Guy!",
+      "model": 1540030,
+      "maleModel": -1,
+      "femaleModel": -1,
+      "maleModel1": -1,
+      "maleModel2": -1,
+      "femaleModel1": -1,
+      "femaleModel2": -1,
+      "zoom2d": 1100,
+      "xan2d": 512,
+      "yan2d": 0,
+      "zan2d": 0,
+      "offsetX2d": 0,
+      "offsetY2d": 0,
+      "recolorFrom": [],
+      "recolorTo": [],
+      "retextureFrom": [],
+      "retextureTo": [],
+      "inventoryActions": [null, null, null, null, "Drop"],
+      "isTradable": false,
+      "note": -1,
+      "noteTemplate": -1,
+      "unnotedId": -1,
+      "notedId": -1,
+      "placeholder": 54002,
+      "placeholderTemplate": 14401
+    },
+    "itemDef": { "tradeable": false },
+    "models": {
+      "1540030": "fennec-fox/drop.dat"
+    }
   }
 ]
