@@ -120,6 +120,26 @@ test('Exalted Spring with a special armed or a spell set is not shaped by the mu
   player.setSpecialActivated(true);
   assert.equal(resolver.resolve(player), null);
 });
+test('Exalted Spring plays a trail graphic for its attack type: stab 50001, slash 50003, crush 50011', t => {
+  const { player, npc } = actors(t, EXALTED_SPRING);
+  const exasp = core.WeaponInterfaces.EXASPR;
+  assert.ok(exasp, 'the EXASPR weapon interface');
+  player.setWeapon(exasp);
+  const played = [];
+  player.performGraphic = graphic => { played.push([graphic.getId(), graphic.getPriority()]); };
+  // By button: Stab, Slash, Smash (crush), Block (a slash attack).
+  const expected = [50001, 50003, 50011, 50003];
+  assert.equal(exasp.getFightType().length, 4);
+  for (const type of exasp.getFightType()) {
+    player.setFightType(type);
+    played.length = 0;
+    resolver.resolve(player).start(player, npc);
+    assert.deepEqual(played, [[expected[type.getChildId()], core.Priority.HIGH]], 'button ' + type.getChildId());
+  }
+  player.setSpecialActivated(true);
+  assert.equal(resolver.resolve(player), null, 'its special attack plays its own graphics');
+});
+
 test('Exalted Spring: each accurate hitsplat that lands may burn the target (ExaltedSpring.plugin)', t => {
   const { player, npc } = actors(t, EXALTED_SPRING), result = roll(player, npc, [true, false], 47);
   burns.length = 0;

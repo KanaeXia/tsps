@@ -273,6 +273,13 @@ export class ClientState {
         return this.isKeybindPressed(81);
     }
 
+    /**
+     * Check if Alt key is pressed (key 86)
+     */
+    static isAltPressed(): boolean {
+        return this.isKeybindPressed(86);
+    }
+
     // ========================================
     // UTILITY METHODS
     // ========================================

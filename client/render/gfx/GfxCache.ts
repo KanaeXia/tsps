@@ -1,6 +1,7 @@
 import { Model } from "../../rs/model/Model";
 import { ModelData } from "../../rs/model/ModelData";
 import type { TextureLoader } from "../../rs/texture/TextureLoader";
+import { buildActorNormals } from "../buffer/ActorNormals";
 import { getModelFacesFiltered, SceneBuffer } from "../buffer/SceneBuffer";
 import type { WebGLOsrsRenderer } from "../WebGLOsrsRenderer";
 
@@ -227,7 +228,11 @@ export class GfxCache {
             true,
         );
         const faces = getModelFacesFiltered(model, textureLoader, transparent);
-        if (faces.length > 0) sceneBuf.addModel(model, faces, undefined, true, new Uint16Array(model.verticesCount));
+        // Smooth vertex normals for HD lighting (welded in the rest pose), with the graphic's own
+        // lit colours: without them HD lit each triangle flat and bent trails looked faceted.
+        if (faces.length > 0) {
+            sceneBuf.addModel(model, faces, undefined, true, buildActorNormals(model, base), false, -1, true);
+        }
         const out = {
             vertices: sceneBuf.vertexBuf.byteArray(),
             indices: new Int32Array(sceneBuf.indices),

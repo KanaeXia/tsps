@@ -1227,7 +1227,8 @@ export class InputManager {
             // Ours: a held key's auto-repeat doesn't run key-down listeners again, so holding
             // Ctrl+M opens the World Map once.
             if (!event.repeat) this.keyDownCodes.push(osrsKeyCode);
-            if (osrsKeyCode === 82) {
+            // Ctrl and Alt (82, 86): menus read them (ctrl-click run, Menu Entry Swapper+).
+            if (osrsKeyCode === 82 || osrsKeyCode === 86) {
                 ClientState.setKeybindState(osrsKeyCode, true);
             }
         }
@@ -1292,7 +1293,7 @@ export class InputManager {
                 this.keyArray[osrsKeyCode] = 0;
             }
             this.osrsKeyState[osrsKeyCode] = 0;
-            if (osrsKeyCode === 82) {
+            if (osrsKeyCode === 82 || osrsKeyCode === 86) {
                 ClientState.setKeybindState(osrsKeyCode, false);
             }
             this.keyUpCodes.push(osrsKeyCode);
@@ -1322,6 +1323,7 @@ export class InputManager {
         this.setShiftHeld(false);
         this.keys.clear();
         ClientState.setKeybindState(82, false);
+        ClientState.setKeybindState(86, false);
         this.resetMouse();
     };
 

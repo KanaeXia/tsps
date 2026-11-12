@@ -19,6 +19,7 @@ module.exports = function registerExaltedSpringSpecialAttack(api) {
     Graphic, GraphicHeight, Location, MeleeCombatMethod, PendingHit, Skill, TaskManager, World } = api.core;
 
   const EXALTED_SPRING = 50001;
+  const EXALTED_SPRING_GFX = 50012;
   const ID = "exalted_spring";
   /** Used without a cost in custom-items.json; that entry sets the real one. */
   const DEFAULT_DRAIN = 50;
@@ -42,7 +43,7 @@ module.exports = function registerExaltedSpringSpecialAttack(api) {
   let visuals = null;
   const getVisuals = () => (visuals ??= {
     animation: new Animation(11124),
-    graphic: new Graphic(2804),
+    graphic: new Graphic(EXALTED_SPRING_GFX),
   });
 
   /** Whether any tile of the target (an NPC's whole footprint, a player's one tile) lies in the square. */
@@ -128,9 +129,13 @@ module.exports = function registerExaltedSpringSpecialAttack(api) {
       }
       const special = CombatSpecial.getById(ID);
       CombatSpecial.drain(player, special ? special.getDrainAmountForWeaponId(EXALTED_SPRING) : DEFAULT_DRAIN);
+      const combat = player.getCombat();
+      // Measured as a swing's animation is (Combat.attack does this; a button-press special skips
+      // it), so combat knows it is still playing: dropping a target meanwhile (one picked up by
+      // auto-retaliate, killed by the slam) then leaves it alone instead of resetting it.
+      combat.expectAttackAnimation();
       player.performAnimation(getVisuals().animation);
       player.performGraphic(getVisuals().graphic);
-      const combat = player.getCombat();
       combat.setAttackDelay(Math.max(combat.getAttackDelay(), ANIMATION_TICKS));
 	  player.getPacketSender().sendSound(10039, 1, 60);
 	  
@@ -147,7 +152,7 @@ module.exports = function registerExaltedSpringSpecialAttack(api) {
 	    // Players in this instance who can see the tile (World.sendLocalGraphicsObj ignores instances).
 	    const show = (graphic) => player.getPacketSender().sendGlobalGraphic(graphic, tile);
 		if (i === (leng * leng - 1) / 2) {
-	      show(new Graphic(3108), tile);
+	      //show(new Graphic(3108), tile);
 		} else if (i < (leng * leng - 1) / 2 ) {
 		  if (col - RADIUS === 0) {
 			show(new Graphic(2993, 60), tile);

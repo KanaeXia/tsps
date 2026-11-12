@@ -539,6 +539,7 @@ export class SceneBuffer {
         actorNormals?: Uint16Array,
         doubleSided: boolean = false,
         locId: number = -1,
+        bakedColours: boolean = false,
     ): void {
         if (faces.length === 0) {
             return;
@@ -629,6 +630,12 @@ export class SceneBuffer {
             let baseHsl = model.faceColors?.[index] ?? (hslA & 0xffff);
             if (model.overrideAmount !== 0) baseHsl = this.applyColorOverride(baseHsl, model);
             baseHsl &= 0xffff;
+            // bakedColours (graphics): HD keeps each vertex's OSRS-lit colour and only takes the
+            // smooth normal, so effects keep their brightness. Textured faces keep face normals.
+            const smooth = normals !== undefined && (!bakedColours || textureIndex === -1);
+            const wordA = smooth ? (normals[fa] << 16) | (bakedColours ? hslA & 0xffff : baseHsl) : 0;
+            const wordB = smooth ? (normals[fb] << 16) | (bakedColours ? hslB & 0xffff : baseHsl) : 0;
+            const wordC = smooth ? (normals[fc] << 16) | (bakedColours ? hslC & 0xffff : baseHsl) : 0;
 
             const vxa = sceneX + verticesX[fa];
             const vxb = sceneX + verticesX[fb];
@@ -658,7 +665,7 @@ export class SceneBuffer {
                 reuseVertices,
                 renderLayer ?? priority,
                 renderLayer !== undefined,
-                normals ? (normals[fa] << 16) | baseHsl : 0,
+                wordA,
             );
             const index1 = this.vertexBuf.addVertex(
                 vxb,
@@ -672,7 +679,7 @@ export class SceneBuffer {
                 reuseVertices,
                 renderLayer ?? priority,
                 renderLayer !== undefined,
-                normals ? (normals[fb] << 16) | baseHsl : 0,
+                wordB,
             );
             const index2 = this.vertexBuf.addVertex(
                 vxc,
@@ -686,7 +693,7 @@ export class SceneBuffer {
                 reuseVertices,
                 renderLayer ?? priority,
                 renderLayer !== undefined,
-                normals ? (normals[fc] << 16) | baseHsl : 0,
+                wordC,
             );
 
             this.indices.push(index0, index1, index2);

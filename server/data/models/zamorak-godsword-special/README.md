@@ -6,7 +6,7 @@ Extracted from the rev 241 cache, with what the server's `ZamorakGodsword.Specia
 | --- | --- | --- |
 | `player.dat` | A player to animate: the default male body kits (head 3, jaw 14, torso 18, arms 26, hands 34, legs 38, feet 42) and the Zamorak godsword's male wear model (27653), joined into one model with their labels | models 217, 246, 28515, 26632, 10218, 27639, 181, 27653 |
 | `player-anim/` | The player's animation, `zgs_special_player`: 25 frames, 53 ticks, frame map 0 (the player skeleton). In the cache it also puts item 11808 (the godsword) in the right hand and empties the left hand while it plays; this copy has those two settings removed, so the player keeps their own weapon and shield | sequence 7638 |
-| `graphic/` | The orange sword trail: `spotanim.dat`, `model.dat` and its animation `dh_sword_update_zamorak_special_spotanim` in `graphic/anim/` (40 frames, 53 ticks, mostly fading parts of the trail in and out) | spot animation 1210, model 28085, sequence 7051 |
+| `graphic/` | The sword trail, recoloured violet (below): `spotanim.dat`, `model.dat` and its animation `dh_sword_update_zamorak_special_spotanim` in `graphic/anim/` (40 frames, 53 ticks, mostly fading parts of the trail in and out) | spot animation 1210, model 28085, sequence 7051 |
 | `preview.png` | Every 4th tick of both, rendered from the Blender preview | |
 
 The block of ice on the target is a different graphic (369) and isn't included.
@@ -24,8 +24,18 @@ In Blender (with the three add-ons installed, see `../README.md`):
    pose a bone in Pose Mode and key it.
 
 The body kits keep their default colours (the game recolours them with the player's chosen
-colours). Blender doesn't apply the graphic's lighting (ambient 30), so the trail looks redder
-than the game's orange.
+colours). Blender doesn't apply the graphic's lighting (ambient 30), so the trail looks darker
+than in game.
+
+`graphic/model.dat` is recoloured to the hue of the Ancient godsword special's graphic (hue 49, a
+violet; `../ancient-godsword-special/graphic/`). Each colour keeps its saturation and lightness:
+
+| Faces | Cache colour | Now |
+| --- | --- | --- |
+| 130 (the trail) | 2995: hue 2 (orange), saturation 7, lightness 51 | 51123: hue 49, saturation 7, lightness 51 |
+| 84 (its pale edge) | 64741: hue 63, saturation 1, lightness 101 | 50405: hue 49, saturation 1, lightness 101 |
+
+The cache's orange model is in git history (commit 0dd87d74f). `preview.png` still shows it.
 
 In game, these are custom animation 50000 (`zgs_special_keep_weapon`, the player's swing),
 custom animation 50001 (`zgs_special_trail_spotanim`) and custom graphic 50000

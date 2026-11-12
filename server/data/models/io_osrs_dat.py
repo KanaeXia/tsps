@@ -29,7 +29,7 @@
 bl_info = {
     "name": "OSRS model (.dat)",
     "author": "tsps",
-    "version": (1, 0, 0),
+    "version": (1, 1, 0),
     "blender": (2, 79, 0),
     "location": "File > Import / Export > OSRS model (.dat)",
     "description": "Import and export OSRS cache model files with vertex group labels",
@@ -48,6 +48,10 @@ from bpy_extras.io_utils import ExportHelper, ImportHelper
 from mathutils import Matrix, Vector
 
 SCALE = 128.0
+# Export writes the model as modelled: without an OSRS animation's Armature modifier, and with fade
+# material copies as the material they copy (1.1.0). The graphic add-on checks this before export:
+# an older copy installed in Blender exported the pose and the fades of the current frame.
+EXPORTS_AS_MODELLED = True
 LABEL_PREFIX = "label_"
 BONE_PREFIX = "bone_"
 MATERIAL_PREFIX = "osrs_"

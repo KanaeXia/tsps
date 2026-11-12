@@ -3,19 +3,43 @@
     { "id": 50000, "name": "zgs_special_keep_weapon", "path": "zamorak-godsword-special/player-anim" },
     { "id": 50001, "name": "zgs_special_trail_spotanim", "path": "zamorak-godsword-special/graphic/anim" },
     { "id": 50002, "name": "ngs_special_keep_weapon", "path": "ancient-godsword-special/player-anim" },
+    { "id": 50003, "name": "ngs_special_trail_spotanim", "path": "ancient-godsword-special/graphic/anim" },
     { "id": 50004, "name": "ags_special_keep_weapon", "path": "armadyl-godsword-special/player-anim" },
     { "id": 50006, "name": "bgs_special_keep_weapon", "path": "bandos-godsword-special/player-anim" },
     { "id": 50008, "name": "sgs_special_keep_weapon", "path": "saradomin-godsword-special/player-anim" },
     { "id": 50010, "name": "bm_atlatl_keep_weapon", "path": "bloodmoon-atlatl-attack" },
+    { "id": 50011, "name": "kisten_special_trail_spotanim", "path": "kisten-special/graphic/anim" },
+    { "id": 50012, "name": "maul_special_trail_spotanim", "path": "maul-special/graphic/anim" },
     { "id": 51000, "name": "dancemoves", "path": "jig-emote/player-anim" }
   ],
   "graphics": [
     {
-      "id": 50000,
+      "id": 50001,
       "name": "zgs_special_trail",
       "path": "zamorak-godsword-special/graphic",
       "model": 1900000,
       "animation": "zgs_special_trail_spotanim"
+    },
+    {
+      "id": 50003,
+      "name": "ngs_special_trail",
+      "path": "ancient-godsword-special/graphic",
+      "model": 1900001,
+      "animation": "ngs_special_trail_spotanim"
+    },
+    {
+      "id": 50011,
+      "name": "kisten_special_trail",
+      "path": "kisten-special/graphic",
+      "model": 1900002,
+      "animation": "kisten_special_trail_spotanim"
+    },
+    {
+      "id": 50012,
+      "name": "maul_special_trail",
+      "path": "maul-special/graphic",
+      "model": 1900003,
+      "animation": "maul_special_trail_spotanim"
     }
   ]
 }

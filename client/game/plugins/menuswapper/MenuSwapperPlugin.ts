@@ -1,5 +1,6 @@
 import { Plugin, type PluginDescriptor } from "@runelite/client/plugins/Plugin";
 import { inject } from "@runelite/client/plugins/PluginInjector";
+import { PluginManager } from "@runelite/client/plugins/PluginManager";
 import { ClientToolbar } from "@runelite/client/ui/ClientToolbar";
 import type { NavigationButton } from "@runelite/client/ui/NavigationButton";
 import { createMenuSwapperNavigationButton } from "./MenuSwapperPanel";
@@ -49,6 +50,14 @@ export class MenuSwapperPlugin extends Plugin {
 
     private readonly listeners = new Set<MenuSwapperPluginListener>();
     private readonly clientToolbar = inject(ClientToolbar);
+    /** Set when a plugin manager built this plugin: the panel shows Menu Entry Swapper+ there. */
+    readonly pluginManager: PluginManager | undefined = (() => {
+        try {
+            return inject(PluginManager);
+        } catch {
+            return undefined;
+        }
+    })();
     private navButton?: NavigationButton;
     private readonly persistence?: MenuSwapperPluginPersistence;
     private config: MenuSwapperPluginConfig;

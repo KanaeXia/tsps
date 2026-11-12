@@ -23,7 +23,7 @@
 bl_info = {
     "name": "OSRS graphic (spotanim.dat)",
     "author": "tsps",
-    "version": (1, 0, 0),
+    "version": (1, 1, 0),
     "blender": (2, 79, 0),
     "location": "File > Import / Export > OSRS graphic",
     "description": "Import and export OSRS graphics (spot animations): model, animation and definition",
@@ -116,6 +116,11 @@ if bpy is not None:
             import io_osrs_anim
         except ImportError:
             raise RuntimeError("install and enable the OSRS model and OSRS animation add-ons too")
+        if not getattr(io_osrs_dat, "EXPORTS_AS_MODELLED", False):
+            # Before 1.1.0 it exported the posed model and the current frame's fades (an
+            # invisible, collapsed graphic), so refuse rather than write that.
+            raise RuntimeError("the installed OSRS model add-on (io_osrs_dat.py) is out of date: "
+                               "install server/data/models/io_osrs_dat.py again and restart Blender")
         return io_osrs_dat, io_osrs_anim
 
     def import_graphic(context, path):

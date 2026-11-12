@@ -42,6 +42,7 @@ import { ItemStatsPlugin } from "../../../game/plugins/itemstats/ItemStatsPlugin
 import { ItemPricesPlugin } from "../../../game/plugins/itemprices/ItemPricesPlugin";
 import { ItemRarityPlugin } from "../../../game/plugins/itemrarity/ItemRarityPlugin";
 import { MenuSwapperPlugin } from "../../../game/plugins/menuswapper/MenuSwapperPlugin";
+import { MenuSwapperPlusPlugin } from "../../../game/plugins/menuswapperplus/MenuSwapperPlusPlugin";
 import { DoorKickerPlugin } from "../../../game/plugins/doorkicker/DoorKickerPlugin";
 import { InventorySetupsPlugin } from "../../../game/plugins/inventorysetups/InventorySetupsPlugin";
 import { LootTrackerPlugin } from "../../../game/plugins/loottracker/LootTrackerPlugin";
@@ -99,6 +100,8 @@ export const CORE_PLUGINS: ReadonlyArray<PluginClass> = [
     TilePacksPlugin,
     VisualMetronomePlugin,
     MenuSwapperPlugin,
+    // After Menu Swapper: its key swaps win over that plugin's.
+    MenuSwapperPlusPlugin,
     // After Menu Swapper: its "Inventory tag" submenu joins the swapped menu.
     InventoryTagsPlugin,
     ItemStatsPlugin,

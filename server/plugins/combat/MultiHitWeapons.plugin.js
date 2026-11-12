@@ -6,9 +6,12 @@
  *
  * Exalted Spring (custom item, data/definitions/custom-items.json; a server design, not an OSRS
  * weapon): two independently rolled hits, each up to the full maximum. The first lands on the
- * tick of the attack and the second a tick later, against any target.
+ * tick of the attack and the second a tick later, against any target. Each attack also plays a
+ * trail for its attack type: the custom graphics in data/definitions/custom-animations.json.
  */
 const EXALTED_SPRING = 50001;
+/** By the style's attack type (FightType bonus type): stab, slash (Block too) and crush. */
+const EXALTED_SPRING_GRAPHICS = { 0: 50001, 1: 50003, 2: 50011 };
 
 function resolver(core) {
   const { ItemIdentifiers: ids } = core;
@@ -25,6 +28,12 @@ function resolver(core) {
     }
   })();
   const exaltedSpring = new (class extends core.MeleeCombatMethod {
+    start(character, target) {
+      super.start(character, target);
+      const graphic = EXALTED_SPRING_GRAPHICS[character.getAsPlayer().getFightType().getBonusType()];
+      if (graphic !== undefined) character.performGraphic(new core.Graphic(graphic, core.Priority.HIGH));
+    }
+
     hits(character, target) {
       return [new core.PendingHit(character, target, this, {
         hitAmount: 2, hitDelays: [0, 1], landsOnAttackTick: true, ordinary: true,

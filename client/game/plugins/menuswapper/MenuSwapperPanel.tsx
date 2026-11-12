@@ -3,6 +3,8 @@ import { useCallback, useSyncExternalStore, type JSX } from "react";
 import { NavigationButton } from "@runelite/client/ui/NavigationButton";
 import { imageIcon, runeliteImage } from "@runelite/client/ui/runeliteImages";
 import type { MenuSwapperPlugin } from "./MenuSwapperPlugin";
+import { MenuSwapperPlusPlugin } from "../menuswapperplus/MenuSwapperPlusPlugin";
+import { MenuSwapperPlusSection } from "../menuswapperplus/MenuSwapperPlusSection";
 import type { MenuSwap, MenuSwapKind, MenuSwapperPresets } from "./types";
 
 const PRESET_LABELS: ReadonlyArray<[keyof MenuSwapperPresets, string]> = [
@@ -19,11 +21,29 @@ function swapRows(swaps: Record<string, MenuSwap>, kind: MenuSwapKind): SwapRow[
     return Object.entries(swaps).map(([key, swap]) => ({ kind, key, swap }));
 }
 
+/** Menu Entry Swapper+, while it is enabled: its key swaps go in this panel. */
+function useEnabledPlus(plugin: MenuSwapperPlugin): MenuSwapperPlusPlugin | undefined {
+    const manager = plugin.pluginManager;
+    const subscribe = useCallback(
+        (listener: () => void) => (manager ? manager.subscribe(listener) : () => {}),
+        [manager],
+    );
+    const getSnapshot = useCallback(
+        () =>
+            manager?.isEnabled(MenuSwapperPlusPlugin)
+                ? manager.getPlugin(MenuSwapperPlusPlugin)
+                : undefined,
+        [manager],
+    );
+    return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
+
 /** The Menu Entry Swapper's sidebar panel: presets, and the saved swaps with remove buttons. */
 export function MenuSwapperPanel({ plugin }: { plugin: MenuSwapperPlugin }): JSX.Element {
     const subscribe = useCallback((listener: () => void) => plugin.subscribe(listener), [plugin]);
     const getSnapshot = useCallback(() => plugin.getState(), [plugin]);
     const { config } = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+    const plus = useEnabledPlus(plugin);
     const rows = [...swapRows(config.swaps, "left"), ...swapRows(config.shiftSwaps, "shift")].sort(
         (a, b) => a.swap.name.localeCompare(b.swap.name),
     );
@@ -49,6 +69,8 @@ export function MenuSwapperPanel({ plugin }: { plugin: MenuSwapperPlugin }): JSX
                     <span>{label}</span>
                 </label>
             ))}
+
+            {plus && <MenuSwapperPlusSection plugin={plus} />}
 
             <div className="rl-sidebar-panel-title">Your swaps</div>
             {rows.length === 0 && <p className="rl-sidebar-panel-copy">No swaps saved yet.</p>}

@@ -51,13 +51,15 @@ test("custom animations get their own frame group, with the cache's frames", () 
 test("the other godsword specials keep the player's weapon and shield too", () => {
   // The ids custom-animations.json gives them (renumbered from 50002-50005 on 2026-11-10).
   const specials = { 50002: 9171, 50004: 7644, 50006: 7642, 50008: 7640 };
-  Object.entries(specials).forEach(([id, cacheId], k) => {
+  Object.entries(specials).forEach(([id, cacheId]) => {
     const seq = CacheDefinitions.getSeq(Number(id));
     const original = CacheDefinitions.getSeq(cacheId);
     // The same frames as the cache's; 50002 (Ancient) was retimed faster in Blender (3dd703baf).
     assert.equal(seq.frameLengths.length, original.frameLengths.length, `${id}: as many frames as ${cacheId}`);
     if (Number(id) !== 50002) assert.deepEqual(seq.frameLengths, original.frameLengths, `${id}: same timing as ${cacheId}`);
-    assert.ok(seq.frameIds.every((frame) => frame >> 16 === FIRST_FRAME_GROUP + 2 + k), `${id}: its own frame group`);
+    // Each animation's frames are in group 30000 + its position in custom-animations.json.
+    const position = loaded.animations.findIndex((entry) => entry.id === Number(id));
+    assert.ok(seq.frameIds.every((frame) => frame >> 16 === FIRST_FRAME_GROUP + position), `${id}: its own frame group`);
     assert.equal(seq.rightHandItem, -1, `${id}: keeps the weapon`);
     assert.equal(seq.leftHandItem, -1, `${id}: keeps the shield`);
     assert.ok(original.rightHandItem > 512 && original.leftHandItem === 0, `${cacheId}: the cache's shows the godsword`);
@@ -91,15 +93,23 @@ test("combat sees a custom animation's length and priorities, not an empty cache
 });
 
 test("custom graphics point at their model and animation, and names resolve", () => {
-  const gfx = CacheDefinitions.getSpotanim(50000);
-  assert.equal(gfx.modelId, 1900000);
-  assert.equal(gfx.animationId, 50001);
-  assert.equal(CacheDefinitions.getCustomSpotanimId("zgs_special_trail"), 50000);
+  // The ids custom-animations.json gives them (the ZGS trail was renumbered from 50000 on 2026-11-11).
+  const graphics = [
+    [50001, 1900000, 50001, "zgs_special_trail"],
+    [50003, 1900001, 50003, "ngs_special_trail"],
+    [50011, 1900002, 50011, "kisten_special_trail"],
+  ];
+  for (const [id, model, animation, name] of graphics) {
+    const gfx = CacheDefinitions.getSpotanim(id);
+    assert.equal(gfx.modelId, model, `${name}: its model`);
+    assert.equal(gfx.animationId, animation, `${name}: its animation`);
+    assert.equal(CacheDefinitions.getCustomSpotanimId(name), id);
+    assert.equal(CacheDefinitions.hasDefinition("spotanim", id), true);
+  }
   assert.equal(CacheDefinitions.getSeqId("zgs_special_keep_weapon"), 50000);
   assert.equal(CacheDefinitions.getSeqId("zgs_special_player"), 7638, "the cache's own name still finds the cache's");
   assert.equal(CacheDefinitions.getSeqName(50001), "zgs_special_trail_spotanim");
   assert.equal(CacheDefinitions.hasDefinition("seq", 50000), true);
-  assert.equal(CacheDefinitions.hasDefinition("spotanim", 50000), true);
   assert.equal(CacheDefinitions.getSeqId("zgs_special_keep_weapon_nope"), null);
   const row = loaded.rows.find((r) => r.kind === "spotanim");
   assert.equal(row.model.id, 1900000);

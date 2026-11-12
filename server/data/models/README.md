@@ -11,6 +11,11 @@ Install: File > User Preferences > Add-ons > Install Add-on from File..., pick `
 tick **Import-Export: OSRS model (.dat)**, then Save User Settings. It adds
 File > Import > OSRS model (.dat) and File > Export > OSRS model (.dat).
 
+Blender keeps its own copy of an installed add-on. When `io_osrs_dat.py`, `io_osrs_anim.py` or
+`io_osrs_gfx.py` changes here, install it again and restart Blender. The graphic add-on refuses to
+export with a model add-on older than 1.1.0, which exported a graphic's posed model and its
+current frame's fades: a collapsed, invisible graphic.
+
 Import:
 - reads every model encoding the client does (old, v1, v2, v3);
 - one game tile (128 units) is 1 Blender unit, standing upright;

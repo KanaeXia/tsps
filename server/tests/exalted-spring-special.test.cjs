@@ -141,6 +141,17 @@ test("in single-combat it hits one NPC: the current target when it is in the are
   assert.deepEqual([...slam(t, p).keys()], [near], "without one, the nearest");
 });
 
+test("dropping a target picked up mid-slam (auto-retaliate) doesn't cut its animation", (t) => {
+  const p = player(t, MULTI);
+  const struck = npc(t, sized(1), [MULTI[0] + 1, MULTI[1]]);
+  slam(t, p);
+  assert.equal(p.getAnimation()?.getId(), 11124, "the slam plays");
+  // Auto-retaliate turns on an NPC the slam hit; the slam kills it and combat drops it.
+  p.getCombat().attack(struck, true);
+  p.getCombat().reset();
+  assert.equal(p.getAnimation()?.getId(), 11124, "no reset (65535) replaces it");
+});
+
 /** An NPC with no combat option (a banker, say): it can't be fought at all. */
 function peaceful() {
   const N = core.NpcIdentifiers;
