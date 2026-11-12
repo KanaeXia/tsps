@@ -706,6 +706,14 @@ export interface PluginItemUseFilter {
   fallback?: boolean;
 }
 
+export interface PluginItemActionOptions {
+  /**
+   * Run after every other item-action handler, and only when none took the click: an item's own
+   * answer when no content claimed it (a spade dug where nothing is buried).
+   */
+  fallback?: boolean;
+}
+
 export interface PluginItemOnObjectEvent {
   player: any;
   object: any;
@@ -1211,7 +1219,11 @@ export interface PluginApi {
   onSpellCast(handler: (event: PluginSpellCastEvent) => void): void;
   onItemAction(handler: (event: PluginItemActionEvent) => void): void;
   /** Exact item name and inventory option matching. Return false to fall through. */
-  onItemAction(itemName: string, actions: Record<string, (event: PluginItemActionEvent) => void | boolean>): void;
+  onItemAction(
+    itemName: string,
+    actions: Record<string, (event: PluginItemActionEvent) => void | boolean>,
+    options?: PluginItemActionOptions
+  ): void;
   onItemDropPolicy(handler: (event: PluginItemDropEvent) => void): void;
   onItemFirstAction(
     handler: (event: PluginItemActionEvent) => void | boolean

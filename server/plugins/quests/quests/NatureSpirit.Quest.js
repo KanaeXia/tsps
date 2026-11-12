@@ -165,7 +165,8 @@ module.exports = function registerNatureSpiritQuest(api) {
   const POUCH_DELAY_TICKS = 1; // the cache effect lasts 18 client cycles
 
   const GROTTO_INTERIOR = { x: 3441, y: 9736, z: 0 };
-  const GROTTO_SURFACE = { x: 3443, y: 3338, z: 0 };
+  // rsprox 227/01846.txt tick 4478 (also 226/01638, 226/01695, 227/00101): the exit lands here.
+  const GROTTO_SURFACE = { x: 3440, y: 3337, z: 0 };
   const FILLIMAN_CAMP = { x: 3440, y: 3336, z: 0 };
   const NATURE_SPIRIT_CAMP = { x: 3441, y: 9738, z: 0 };
   const WASHING_BOWL_TILE = { x: 3437, y: 3337, z: 0 };
@@ -1140,15 +1141,27 @@ module.exports = function registerNatureSpiritQuest(api) {
    * not appear"): passing through it writes stage 10. Doors still swings the gate.
    */
   function handleSwampGate(request) {
-    if (SWAMP_GATE_IDS.has(request.objectId)) recordSwampEntry(request.player);
+    if (!SWAMP_GATE_IDS.has(request.objectId)) return;
+    const { player } = request;
+    // rsprox 226/01638.txt:21691 (leaving, tick 1005) and :21802 (entering, tick 1014), also
+    // 237/01134.txt:300241/301999: every crossing has its line, whatever the quest stage.
+    if (player.getLocation().getY() < SWAMP_GATE_PASSAGE.y) {
+      player.sendMessage("You skip gladly out of murky Mort Myre.");
+      return;
+    }
+    if (!recordSwampEntry(player)) player.sendMessage(ENTER_SWAMP_MESSAGE);
   }
 
+  const ENTER_SWAMP_MESSAGE = "You walk into the gloomy atmosphere of Mort Myre.";
+
+  /** True when the quest step was recorded (and its line sent). */
   function recordSwampEntry(player) {
     const stage = quest.getStage(player);
-    if (stage < STAGE_STARTED || stage >= STAGE_ENTERED_SWAMP) return;
+    if (stage < STAGE_STARTED || stage >= STAGE_ENTERED_SWAMP) return false;
     quest.setStage(player, STAGE_ENTERED_SWAMP);
-    player.sendMessage("You walk into the gloomy atmosphere of Mort Myre.");
+    player.sendMessage(ENTER_SWAMP_MESSAGE);
     ensureWashingBowl(player);
+    return true;
   }
 
   /** Opening credits its actor; walking through another player's open gate must credit the walker. */
@@ -1177,9 +1190,17 @@ module.exports = function registerNatureSpiritQuest(api) {
     if (objectId === GROTTO_ID && option.includes("enter")) {
       event.handled = true;
       // Before the ritual, trying the entrance summons Filliman outside instead.
-      if (quest.getStage(player) < STAGE_PERFORMED_RITUAL) {
-        player.sendMessage("You prepare to enter the Druid's grotto.");
+      const stage = quest.getStage(player);
+      if (stage < STAGE_PERFORMED_RITUAL) {
         ensureQuestNpcs(player, true);
+        // Wiki Transcript:Nature Spirit, "If the player attempts to enter the Grotto" (finding Filliman):
+        // the line, "A shifting apparition appears in front of you.", then Filliman, by the amulet.
+        if (stage >= STAGE_ENTERED_SWAMP && stage < STAGE_SPOKEN_FILLIMAN) {
+          // As Talk-to: the conversation records the attempt (15) or, with the amulet, speaking (20).
+          startTranscript(api, player, FILLIMAN_NPC_ID, "Nature Spirit", fillimanVariant(stage, player));
+          return;
+        }
+        player.sendMessage("You prepare to enter the Druid's grotto.");
         return;
       }
       player.moveTo(new Location(GROTTO_INTERIOR.x, GROTTO_INTERIOR.y, quest.isComplete(player) ? 1 : GROTTO_INTERIOR.z));
@@ -1191,7 +1212,13 @@ module.exports = function registerNatureSpiritQuest(api) {
     }
     if ((objectId === GROTTO_EXIT_ID || objectId === ObjectIdentifiers.GROTTO_4) && (option.includes("exit") || option.includes("leave"))) {
       event.handled = true;
-      player.moveTo(new Location(GROTTO_SURFACE.x, GROTTO_SURFACE.y, GROTTO_SURFACE.z));
+      // rsprox 227/01846.txt ticks 4477-4478: the prepare line, then a tick later the crawl line and the move.
+      player.sendMessage("You prepare to exit the Druid's grotto.");
+      const { TaskManager, CountdownTask } = api.core;
+      TaskManager.submit(new CountdownTask(player, 1, () => {
+        player.sendMessage("You crawl back out of the grotto.");
+        player.moveTo(new Location(GROTTO_SURFACE.x, GROTTO_SURFACE.y, GROTTO_SURFACE.z));
+      }));
       return;
     }
     if (objectId === ObjectIdentifiers.GROTTO_2 && option.includes("search")) {
@@ -1232,7 +1259,7 @@ module.exports = function registerNatureSpiritQuest(api) {
     skills.updateSkill(Skill.PRAYER);
     player.setPrayerPointDrain(0);
     player.getPacketSender().sendSoundEffect(api.core.Sound.PRAYER_RECHARGE.getId(), 1, 0, 0);
-    player.sendMessage("You recharge your Prayer points.");
+    player.sendMessage("You recharge your prayer points at the altar of nature."); // rsprox 227/01846.txt tick 4473
     return true;
   }
 

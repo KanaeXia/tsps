@@ -485,6 +485,7 @@ This table lists bundled plugins that have a description. The world config page 
 | `MultiHitWeapons` | MultiHitWeapons | combat | yes | Twin-hit weapons such as sulphur blades, tecpatls and Torag's hammers: independent accuracy rolls and two hitsplats on the same tick. |
 | `PlayerHitSounds` | PlayerHitSounds | combat | yes | Plays the hurt sound to players struck in combat, in the voice their Hit sounds setting chooses. |
 | `PvpStatistics` | PvpStatistics | combat | yes | Tracks PvP kills, deaths, kill streaks and Elo rating, separating player and bot opponents. |
+| `PvpTutorial` | PvpTutorial | combat | yes | No PvP tutorial is active, so spells count the player's own runes in instances and on boats. |
 | `Retribution` | Retribution | combat | yes | The Retribution prayer: when its user dies, nearby enemies take damage up to a quarter of their Prayer level, with its graphic and sound. |
 | `SkullPrevention` | SkullPrevention | combat | yes | The PK Skull Prevention setting, which refuses attacks that would skull the player. |
 | `SpecialAttacks` | SpecialAttacks | combat | yes | Weapon special attacks, one handler per weapon from the dragon dagger to the Osmumten's fang, each with its own combat method and drain. |
@@ -657,7 +658,7 @@ This table lists bundled plugins that have a description. The world config page 
 | `SkillCapes` | SkillCapes | items | yes | Handles skillcapes and the max cape: buying from the skill masters, trimming, Boost, teleports, worn options and their perks. (members only) |
 | `SlayerHelmet` | SlayerHelmet | items | yes | Adds the black mask and Slayer helmet: Slayer-task accuracy and damage boosts, assembling and disassembling, and imbuing with a scroll. (members only) |
 | `SlayersStaff` | SlayersStaff | items | yes | Adds Magic Dart for 55 Slayer with staves such as the Slayer's staff, plus the Slayer's staff (e)'s charges and Slayer's enchantment. (members only) |
-| `Spade` | Spade | items | yes | Plays the digging animation and sound for the Dig option on spades, while leaving the click open for treasure trails and quest digs. |
+| `Spade` | Spade | items | yes | Plays the digging animation and sound for the Dig option on spades, leaves the click open for treasure trails and quest digs, and says nothing was found when none of them claims it. |
 | `SpellRuneSaving` | SpellRuneSaving | items | yes | Gives the Staff of the dead family a 1 in 7 chance, and the Kodai wand a 15% chance, to save a spell's runes. (members only) |
 | `SpiritShields` | SpiritShields | items | yes | Lets a holy elixir turn a spirit shield into a blessed spirit shield at 85 Prayer. (members only) |
 | `StorageItems` | StorageItems | items | yes | Adds the coal bag, gem bag, gem pouch, fish barrel, log basket, Forestry kit, plank sack and tackle box, filled by gathering skills. (members only) |
@@ -770,6 +771,7 @@ This table lists bundled plugins that have a description. The world config page 
 | `Pets` | Pets | npcs | yes | Pet followers: summoning, dismissing, item-backed ownership, storage, Probita reclaim, Metamorphosis variants and pet-specific behaviour. |
 | `RandomEvents` | RandomEvents | npcs | yes | Random events: Genie, Drill Demon, Mime, Maze, Pillory and others, plus the Lamp and Book of Knowledge; owner-only ::randevt tests them. |
 | `Revenants` | Revenants | npcs | yes | Revenant combat, the shared revenant drop table, bracelet of ethereum, amulet of avarice and Revenant maledictus. (members only) |
+| `RisingSunInn` | RisingSunInn | npcs | yes | Lets players talk to Emily across the Rising Sun Inn bar. |
 | `RogueTrader` | RogueTrader | npcs | yes | Ali Morrisane's Rogue Trader errands after The Feud (runes, blackjacks, clothes) that unlock his stock and cheaper magic carpets. (members only) |
 | `RuniteGolem` | RuniteGolem | npcs | yes | Runite Golems in the Resource Area: a killed golem leaves a runite rock mineable for a minute, then respawns after five minutes. (members only) |
 | `Sawmill` | Sawmill | npcs | yes | Sawmill operators: Buy-plank turns logs and coins into planks, with the amount menu and the Wiki's refusal messages. (members only) |
@@ -785,6 +787,7 @@ This table lists bundled plugins that have a description. The world config page 
 | `TrainingSkeleton` | TrainingSkeleton | npcs | yes | Respawns the Edgeville training skeleton at its post as soon as it dies, rather than after the normal delay. |
 | `Tutors` | Tutors | npcs | yes | Lumbridge combat and skill tutors: hands out training weapons, runes, tools and other starter gear, with a shared 30-minute claim for ranged and magic. |
 | `Tyss` | Tyss | npcs | yes | Tyss at the Dark Altar toggles the Arceuus spellbook from his Spellbook option and two dialogue choices. (members only) |
+| `UndeadDruids` | UndeadDruids | npcs | yes | Undead Druids use melee at melee range and magic from range, matching the Wiki and RSProx 2966. (members only) |
 | `Wyrms` | Wyrms | npcs | yes | Wyrm and wyrmling combat: melee when the target is adjacent, magic from range, with separate max hits per style. (members only) |
 | `Wyson` | Wyson | npcs | yes | Wyson the gardener sells woad leaves through his dialogue: 15 coins for one leaf, 20 coins for two. |
 | `Zahur` | Zahur | npcs | yes | Zahur in Nardah makes unfinished potions from clean herbs and vials of water or blood for 200 coins each, after the hard Desert Diary or with a Herblore cape. (members only) |

@@ -525,6 +525,11 @@ function cookOne(player, session) {
     });
     Common.addXp(player, cookable.xp);
     Common.api.emitCustomEvent("skills:produced", { player, skill: Skill.COOKING, itemId: cookable.cooked, amount: 1, xp: cookable.xp, kind: "cook" });
+  } else if (cookable.failsWithoutBurning) {
+    // Wiki (Drunk dragon): "sometimes no experience is gained" until 38 Cooking, but "you will always
+    // receive a finished drunk dragon": the item, no XP, no burn line (none is recorded for it).
+    player.getInventory().addItem(new Item(session.cookable.burnt, 1));
+    countCook(player, false);
   } else {
     player.getInventory().addItem(new Item(session.cookable.burnt, 1));
     if (cookable.returnOnBurn && cookable.returnItem !== undefined) inventory.addItem(new Item(cookable.returnItem, 1));
