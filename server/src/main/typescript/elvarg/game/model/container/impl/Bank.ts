@@ -605,13 +605,15 @@ export class Bank extends ItemContainer {
         return familyPlaceholder >= 0 ? familyPlaceholder : item.getId();
     }
 
-    /** Removes the placeholder in `slot` of `tab`. */
+    /**
+     * Removes the placeholder in `slot` of `tab`: the items after it move up into its slot, so a
+     * release leaves no gap (unlike a withdrawal with placeholders off).
+     */
     public static releasePlaceholder(player: Player, tab: number, slot: number): void {
-        const item = player.getBank(tab).getItems()[slot];
+        const bank = player.getBank(tab);
+        const item = bank.getItems()[slot];
         if (!item || item.getId() < 0 || item.getAmount() !== 0) return;
-        item.setId(-1);
-        item.setMeta(null);
-        player.getBank(tab).refreshItems();
+        bank.removeSlot(slot).refreshItems();
     }
 
     public static viewTab(player: Player, tab: number): void {

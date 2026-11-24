@@ -1596,3 +1596,15 @@ test("an item dragged onto a gap moves into it; a drag from a gap moves nothing"
   assert.deepEqual(Bank.layout(player).map(({ item }) => item.getId()), [A, C]);
   assert.equal(Bank.resolveDisplaySlot(player, 1).item.getId(), C);
 });
+
+test("releasing a placeholder takes its slot out: the items after it move up, leaving no gap", () => {
+  const player = createPlayer();
+  for (const id of [LAVA_BATTLESTAFF, TRIDENT, MYSTIC_LAVA_STAFF]) player.getBank(0).add(new Item(id, 1), false);
+  player.getBank(0).getItems()[1].setAmount(0);
+
+  Bank.handleWidgetAction(player, { groupId: Bank.MAIN_INTERFACE_ID, childId: 12, buttonNum: 8, option: "Release", slot: 1 });
+
+  assert.deepEqual(Bank.layout(player).map(({ item }) => item.getId()), [LAVA_BATTLESTAFF, MYSTIC_LAVA_STAFF]);
+  assert.equal(Bank.resolveDisplaySlot(player, 1).item.getId(), MYSTIC_LAVA_STAFF);
+});
+
