@@ -1779,8 +1779,12 @@ export class OsrsClient {
             getPlayerDesign: () => this.playerDesign,
             getObjTypeLoader: () => this.objTypeLoader,
             getLeftClickOpensMenu: () => this.settings.leftClickOpensMenu,
-            openWidgetMenuAt: (canvasX, canvasY) =>
-                (this.renderer?.canvas as any)?.__inputBridge?.openMenuAt?.(canvasX, canvasY),
+            // The input bridge (and its menu handler) is on the WidgetsOverlay's GL canvas, as the
+            // click registry is, not on the main game canvas.
+            openWidgetMenuAt: (canvasX, canvasY) => {
+                const canvas = (this.renderer as any)?.getWidgetsGLCanvas?.() ?? this.renderer?.canvas;
+                (canvas as any)?.__inputBridge?.openMenuAt?.(canvasX, canvasY);
+            },
             getInventory: () => this.inventory,
             getMinimapZoomEnabled: () => this.minimapZoomEnabled,
             getMenuOpen: () => this.menuOpen,
